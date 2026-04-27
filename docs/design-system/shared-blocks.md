@@ -240,7 +240,131 @@ Estas son cosas que se identificaron pero requieren su propio lote:
 - [ ] Crear `<PersonCard>` para los listados de conductores.
 - [ ] Cubrir tests visuales (Storybook o similar) para los bloques
       compartidos.
+- [ ] Cuando el schema agregue per-trip driver, simplificar
+      `getDriverAssetHistory` (hoy atribuye trips a chofer vía
+      overlap de eventos · ver comentario en el archivo).
 
 ---
 
-**Última actualización**: lote E3b
+## N. `<DriverAssetHistoryPanel>` · Histórico de conductores por vehículo
+
+**Archivo**: `src/components/maxtracker/DriverAssetHistoryPanel.tsx`
+
+**Qué es**: panel que lista los conductores que pasaron por un
+vehículo en las últimas 12 semanas, con stats de uso (viajes, km,
+tiempo al volante, días) y un mini-heatmap GitHub-style por
+chofer. Cada card es un Link al 360 del conductor; el conductor
+actualmente asignado se pinea arriba con un pill "Actual".
+
+**Data shape**: viene de `getDriverAssetHistory(assetId)` en
+`@/lib/queries/driver-asset-history`. La atribución de trips a
+chofer es heurística (overlap de eventos con personId dentro de
+la ventana del trip · fallback al currentDriver). Esta heurística
+queda obsoleta el día que el schema agregue `Trip.personId`.
+
+**Dónde se usa**:
+
+- `/gestion/vehiculos/[id]?tab=persona` (Lote E5 · C)
+- (futuro) reutilizable en `/gestion/conductores/[id]` con
+  inversión de eje (vehículos que el chofer usó)
+
+**Contrato visual**:
+
+```
+[Avatar]  Nombre Apellido  [Actual]  [Score 78]
+                                                         42 viajes · 1.240 km · 45h 30m · 18 días
+                                                         ████░░░██░██░ ... 84-day heatmap
+                                                         "Última actividad hace 2 días"  →
+```
+
+**Reglas de oro**:
+
+- El heatmap usa la misma rampa cyan que `<ActivityHeatmap>` para
+  coherencia visual cross-page.
+- El score pill usa los tokens semánticos `--grn-*` / `--ora-*` /
+  `--red-*` (no inventar otros).
+- La altura del card debe absorber 7 filas de heatmap (8px) +
+  caption · ~84px en desktop, fluye a stack en <1100px.
+
+---
+
+## O. `<AssetRouteMap>` · Mini route map con SSR-safe wrapper
+
+**Archivo**: `src/components/maxtracker/AssetRouteMap.tsx`
+
+**Qué es**: wrapper público sobre `AssetMiniMap` que aplica el
+mismo patrón que `<LeafletMap>`: dynamic import con `ssr:false`
+para que páginas server puedan importarlo sin pull de leaflet en
+el SSR pass.
+
+**Por qué existe**: `AssetMiniMap` ya hace el render de la
+polyline y los markers de inicio/fin, pero como es `"use client"`
+con dependencias leaflet, importarlo desde un Server Component
+sin wrapper rompe el build. `AssetRouteMap` resuelve eso.
+
+**Dónde se usa**:
+
+- `/gestion/vehiculos/[id]?tab=overview` (Lote E5 · E)
+- (potencial) cualquier otra página server que quiera el mini
+  route map sin SSR pain.
+
+**Regla**: nunca importar `AssetMiniMap` directamente desde una
+página · siempre via `<AssetRouteMap>`.
+
+---
+
+## P. `<TripsTable>` · prop `sortHostMode`
+
+**Archivo**: `src/components/maxtracker/TripsTable.tsx`
+
+**Cambio en lote E5**: prop opcional `sortHostMode` que permite
+override del href del sort header. Sin la prop, el sort se
+comporta como antes (push a `/seguimiento/viajes?...`). Con la
+prop, el sort queda en la página host.
+
+**Por qué datos en lugar de callback**: la prop tiene que cruzar
+el límite Server → Client (la host page suele ser Server
+Component, TripsTable es Client). Next.js App Router **no
+serializa funciones** a través de ese límite — falla en runtime
+con "Functions cannot be passed directly to Client Components".
+La prop se diseñó como datos planos (string + objeto) que sí
+serializan. TripsTable, que ya es Client Component, construye
+la URL internamente.
+
+**Caso de uso**: cuando `<TripsTable>` se embebe inline en otra
+página (ej. la 360 del vehículo, tab Histórico), el usuario no
+debe ser sacado de la página al ordenar:
+
+```tsx
+<TripsTable
+  trips={trips}
+  sortParams={filters}
+  sortHostMode={{
+    basePath: `/gestion/vehiculos/${assetId}`,
+    preserveParams: { tab: "historico" },
+  }}
+/>
+```
+
+`basePath` es la ruta sin query string · `preserveParams` son
+los params que deben mantenerse en TODOS los URLs de sort
+(típicamente la tab activa). TripsTable agrega encima los
+`sort` / `dir` del nuevo estado.
+
+**Regla**: si la TripsTable se monta fuera de
+`/seguimiento/viajes`, **siempre** pasar `sortHostMode` o el
+sort va a desencajar al usuario.
+
+**Anti-pattern · NO HACER**:
+
+```tsx
+// ❌ Esto rompe en runtime: las funciones no cruzan el límite
+//    Server → Client del App Router.
+<TripsTable
+  sortHrefBuilder={(next) => `/foo?sort=${next.sort}`}
+/>
+```
+
+---
+
+**Última actualización**: lote E5 + fix CSS modules / server-client boundary

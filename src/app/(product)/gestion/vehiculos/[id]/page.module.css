@@ -238,3 +238,99 @@
   background: rgba(22, 163, 74, 0.12);
   color: #16a34a;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Overview · Route map wrap (Lote E5 · E)
+   ─────────────────────────────────────────────────────────────
+   The mini RouteMap of the last day. Sized to 380px to honor
+   AssetMiniMap's intrinsic min-height while keeping the
+   Overview compact enough to also show events/alarms on the
+   right column without forcing a long scroll.
+   ═══════════════════════════════════════════════════════════ */
+
+.routeMapWrap {
+  position: relative;
+  height: 380px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--brd);
+}
+
+.routeMapWrap > div {
+  height: 100%;
+}
+
+/* The page-level rule
+     `.mapColumn :global(.leaflet-container) { height: 320px }`
+   was correct for the legacy single-pin map but conflicts with
+   the mini-route map (and AssetMiniMap's own 380px min-height).
+   Override inside the wrap so the polyline fills the 380px box. */
+.routeMapWrap :global(.leaflet-container) {
+  height: 100% !important;
+  min-height: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Histórico tab (Lote E5 · D)
+   ─────────────────────────────────────────────────────────────
+   Inline trip listing. The strip above the table shows the
+   active range and trip count so the user knows what they're
+   looking at without checking the URL.
+   ═══════════════════════════════════════════════════════════ */
+
+.historicoTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historicoMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  font-family: var(--m);
+}
+
+.historicoMetaLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+  font-weight: 500;
+}
+
+.historicoMetaValue {
+  font-size: 12px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.historicoMetaSep {
+  color: var(--t3);
+  font-size: 12px;
+}
+
+.historicoMetaCount {
+  font-size: 12px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Persona tab (Lote E5 · C)
+   ─────────────────────────────────────────────────────────────
+   Driver-history panel · the panel brings its own card styling,
+   we just provide the section header spacing.
+   ═══════════════════════════════════════════════════════════ */
+
+.personaTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

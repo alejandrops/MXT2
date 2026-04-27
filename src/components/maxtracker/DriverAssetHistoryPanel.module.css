@@ -1,0 +1,271 @@
+/* ════════════════════════════════════════════════════════════
+   DriverAssetHistoryPanel · /gestion/vehiculos/[id]?tab=persona
+   ════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Empty state ────────────────────────────────────────── */
+
+.empty {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--t2);
+}
+
+.empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.empty p + p {
+  margin-top: 8px;
+}
+
+.emptyHint {
+  color: var(--t3);
+  font-size: 12px !important;
+}
+
+/* ── Card · driver row ──────────────────────────────────── */
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) auto 1fr 16px;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 18px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.card:hover {
+  background: var(--bg);
+  border-color: var(--brd2);
+}
+
+.card:hover .chev {
+  color: var(--tx);
+  transform: translateX(2px);
+}
+
+/* ── Identity column ─────────────────────────────────────── */
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tx);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.currentPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  background: var(--blu-bg);
+  color: var(--blu-t);
+  border: 1px solid var(--blu-brd);
+  border-radius: 999px;
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scorePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreGood {
+  background: var(--grn-bg);
+  color: var(--grn-t);
+  border-color: var(--grn-brd);
+}
+
+.scoreWarn {
+  background: var(--ora-bg);
+  color: var(--ora-t);
+  border-color: var(--yel-brd);
+}
+
+.scoreBad {
+  background: var(--red-bg);
+  color: var(--red-t);
+  border-color: var(--red-b);
+}
+
+/* ── Stats column ───────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, auto));
+  gap: 14px 22px;
+  margin: 0;
+  padding: 0;
+  align-items: end;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+}
+
+.statValue {
+  margin: 0;
+  font-family: var(--m);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tx);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  margin: 0;
+  font-family: var(--m);
+  font-size: 9.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+/* ── Heatmap column ─────────────────────────────────────── */
+
+.heatmapCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  justify-self: end;
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-columns: repeat(12, 8px);
+  grid-template-rows: repeat(7, 8px);
+  gap: 2px;
+}
+
+.heatCell {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  outline: 1px solid transparent;
+  transition: outline-color 0.1s;
+}
+
+.heatCell:hover {
+  outline-color: var(--t2);
+}
+
+.heatmapCaption {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Chevron ────────────────────────────────────────────── */
+
+.chev {
+  color: var(--t3);
+  transition: color 0.1s, transform 0.1s;
+  flex: 0 0 16px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .card {
+    grid-template-columns: 1fr 16px;
+    grid-template-rows: auto auto auto;
+    gap: 14px;
+    align-items: start;
+  }
+  .identity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .chev {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+  .stats {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .stat {
+    text-align: left;
+  }
+  .heatmapCol {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    align-items: flex-start;
+  }
+}

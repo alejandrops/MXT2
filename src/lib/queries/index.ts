@@ -16,5 +16,6 @@ export * from "./trips";
 export * from "./activity-heatmap";
 export * from "./groups";
 export * from "./asset-day-map";
+export * from "./driver-asset-history";
 export * from "./devices";
 export * from "./clients";

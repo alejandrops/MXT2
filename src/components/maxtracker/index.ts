@@ -64,3 +64,6 @@ export { AssetLiveStatus } from "./AssetLiveStatus";
 export { AssetMapTab } from "./AssetMapTab";
 export { PersonHeader } from "./PersonHeader";
 export { ActivityHeatmap } from "./ActivityHeatmap";
+export { TripsTable } from "./TripsTable";
+export { DriverAssetHistoryPanel } from "./DriverAssetHistoryPanel";
+export { AssetRouteMap } from "./AssetRouteMap";

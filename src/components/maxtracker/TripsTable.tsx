@@ -33,6 +33,34 @@ interface TripsTableProps {
   onHoverTrip?: (id: string | null) => void;
   /** Current URL state · used to preserve filters when sorting */
   sortParams: TripsParams;
+  /**
+   * Optional host mode for sort URLs. When set, clicking a
+   * sortable column header pushes to a URL built FROM THIS DATA
+   * instead of the default `/seguimiento/viajes?…`.
+   *
+   * Use this when embedding TripsTable inline in another page
+   * (e.g. /gestion/vehiculos/[id]?tab=historico) so the sort
+   * action stays on the host page instead of yanking the user
+   * to /seguimiento/viajes.
+   *
+   * Why data instead of a callback: this prop has to cross the
+   * Server → Client component boundary and Next.js App Router
+   * cannot serialize functions through that boundary. Passing
+   * plain data lets TripsTable (which is already a Client
+   * Component) construct the URL itself.
+   */
+  sortHostMode?: {
+    /** Base path with no query string · e.g. "/gestion/vehiculos/abc123" */
+    basePath: string;
+    /**
+     * Query params to preserve on every sort URL · e.g.
+     * `{ tab: "historico" }`. Only the sort/dir keys are added
+     * on top; other current filter params (from/to/assets/etc)
+     * are deliberately dropped because the host page implies
+     * its own filter context.
+     */
+    preserveParams?: Record<string, string>;
+  };
 }
 
 interface SortableColumn {
@@ -61,6 +89,7 @@ export function TripsTable({
   highlightedTripId,
   onHoverTrip,
   sortParams,
+  sortHostMode,
 }: TripsTableProps) {
   const router = useRouter();
 
@@ -101,9 +130,19 @@ export function TripsTable({
       // New column · use its default direction
       nextDir = col.defaultDir;
     }
-    router.push(
-      buildTripsHref(sortParams, { sort: col.key, sortDir: nextDir }),
-    );
+    if (sortHostMode) {
+      // Build the URL from plain data (this prop crossed the
+      // server/client boundary as JSON · see TripsTableProps).
+      const params = new URLSearchParams(sortHostMode.preserveParams);
+      if (col.key !== "startedAt") params.set("sort", col.key);
+      if (nextDir !== "desc") params.set("dir", nextDir);
+      const qs = params.toString();
+      router.push(`${sortHostMode.basePath}${qs ? `?${qs}` : ""}`);
+    } else {
+      router.push(
+        buildTripsHref(sortParams, { sort: col.key, sortDir: nextDir }),
+      );
+    }
   }
 
   if (trips.length === 0) {

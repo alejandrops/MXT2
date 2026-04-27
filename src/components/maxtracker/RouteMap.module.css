@@ -28,13 +28,17 @@
 }
 
 /* ── Stop marker pulse keyframes ─────────────────────────── */
-:global(.stop-marker) {
+/* Scoped under .map (local class) to satisfy CSS Modules'
+   "pure selectors" rule. The actual marker DOM is inside the
+   Leaflet container, which lives inside `.map`, so the
+   descendant selector still matches. */
+.map :global(.stop-marker) {
   background: transparent !important;
   border: 0 !important;
   pointer-events: none;
 }
 
-:global(.stop-tooltip) {
+.map :global(.stop-tooltip) {
   background: rgba(15, 23, 42, 0.90) !important;
   color: #fff !important;
   border: 0 !important;
@@ -46,7 +50,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30) !important;
 }
 
-:global(.stop-tooltip)::before {
+.map :global(.stop-tooltip)::before {
   border-top-color: rgba(15, 23, 42, 0.90) !important;
 }
 
@@ -61,8 +65,8 @@
   }
 }
 
-:global(.trip-start-marker),
-:global(.trip-end-marker) {
+.map :global(.trip-start-marker),
+.map :global(.trip-end-marker) {
   background: transparent !important;
   border: 0 !important;
 }
