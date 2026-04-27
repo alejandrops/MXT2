@@ -1,0 +1,406 @@
+/* ═══════════════════════════════════════════════════════════════
+   FleetHeatmap · matriz vehículos × tiempo · GitHub style
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--sf);
+}
+
+.scroll {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  background: var(--sf);
+}
+
+.matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--f);
+  font-size: 11px;
+}
+
+/* ── Columns sizing ───────────────────────────────────────── */
+
+.colAsset {
+  /* Sticky column · auto-width based on content */
+}
+
+.colCell {
+  width: var(--cell-w);
+}
+
+.colTotal {
+  /* auto */
+}
+
+/* ── Header row ───────────────────────────────────────────── */
+
+.headerRow {
+  background: var(--bg);
+}
+
+.thAsset {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  background: var(--bg);
+  padding: 6px 12px;
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t2);
+  border-right: 1px solid var(--brd);
+  border-bottom: 1px solid var(--brd);
+  text-align: left;
+  white-space: nowrap;
+  min-width: 200px;
+}
+
+.thCell {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 4px 0;
+  font-family: var(--f);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--t3);
+  text-align: center;
+  border-bottom: 1px solid var(--brd);
+  white-space: nowrap;
+  height: 22px;
+}
+
+.thWeekend {
+  color: var(--ora);
+}
+
+.thToday {
+  color: var(--blu);
+  font-weight: 700;
+}
+
+.thTotal {
+  position: sticky;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 6px 12px;
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t2);
+  border-left: 1px solid var(--brd);
+  border-bottom: 1px solid var(--brd);
+  text-align: right;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+/* ── Body rows ────────────────────────────────────────────── */
+
+.row {
+  background: var(--sf);
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.row:hover .tdAsset,
+.row:hover .tdTotal {
+  background: var(--bg);
+}
+
+.tdAsset {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sf);
+  padding: 4px 12px;
+  border-right: 1px solid var(--brd);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  min-width: 200px;
+  height: calc(var(--cell-h) + var(--cell-gap) * 2);
+}
+
+.assetLink {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--tx);
+}
+
+.assetLink:hover .assetName {
+  color: var(--blu);
+  text-decoration: underline;
+}
+
+.assetName {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.assetPlate {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+.tdCell {
+  padding: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  width: var(--cell-w);
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* ── The cell square (this is the actual visual) ─────────── */
+
+.tdCell::before {
+  content: "";
+  display: inline-block;
+  width: calc(var(--cell-w) - var(--cell-gap) * 2);
+  height: var(--cell-h);
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.04);
+  vertical-align: middle;
+  transition: outline 0.06s, transform 0.06s;
+}
+
+.cellInteractive {
+  cursor: pointer;
+}
+
+.cellInteractive:hover::before {
+  outline: 2px solid var(--tx);
+  outline-offset: 1px;
+  transform: scale(1.15);
+  z-index: 3;
+}
+
+.cellToday::before {
+  outline: 1.5px solid var(--blu);
+  outline-offset: 1px;
+}
+
+.cellWeekend::before {
+  background: rgba(255, 142, 38, 0.10);
+}
+
+/* ── Intensity buckets · azul GitHub-style ───────────────── */
+
+.tdCell[data-intensity="0"]::before {
+  background: rgba(0, 0, 0, 0.05);
+}
+.tdCell.cellWeekend[data-intensity="0"]::before {
+  background: rgba(255, 142, 38, 0.10);
+}
+.tdCell[data-intensity="1"]::before {
+  background: #c8e6c9;
+}
+.tdCell[data-intensity="2"]::before {
+  background: #4caf50;
+}
+.tdCell[data-intensity="3"]::before {
+  background: #2e7d32;
+}
+.tdCell[data-intensity="4"]::before {
+  background: #1b5e20;
+}
+
+/* ── Total column ────────────────────────────────────────── */
+
+.tdTotal {
+  position: sticky;
+  right: 0;
+  background: var(--sf);
+  padding: 4px 12px;
+  border-left: 1px solid var(--brd);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--tx);
+}
+
+/* ── Empty row ───────────────────────────────────────────── */
+
+.emptyRow {
+  padding: 32px 12px;
+  text-align: center;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--t3);
+}
+
+/* ── Footer · totales por columna ────────────────────────── */
+
+.footRow {
+  background: var(--bg);
+}
+
+.tdFootAsset {
+  position: sticky;
+  left: 0;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 6px 12px;
+  border-top: 2px solid var(--brd);
+  border-right: 1px solid var(--brd);
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+.tdFootCell {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--bg);
+  padding: 0;
+  border-top: 2px solid var(--brd);
+  height: 20px;
+  width: var(--cell-w);
+}
+
+.footBar {
+  width: calc(var(--cell-w) - var(--cell-gap) * 2);
+  height: 16px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.footBarFill {
+  width: 100%;
+  background: rgba(37, 99, 235, 0.45);
+  border-radius: 1px;
+  min-height: 1px;
+}
+
+.tdFootTotal {
+  position: sticky;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg);
+  padding: 6px 12px;
+  border-top: 2px solid var(--brd);
+  border-left: 1px solid var(--brd);
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--tx);
+}
+
+/* ── Legend ──────────────────────────────────────────────── */
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+.legendLabel {
+  margin: 0 4px;
+}
+
+.legendCell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+
+.legendCell[data-intensity="0"] {
+  background: rgba(0, 0, 0, 0.05);
+}
+.legendCell[data-intensity="1"] {
+  background: #c8e6c9;
+}
+.legendCell[data-intensity="2"] {
+  background: #4caf50;
+}
+.legendCell[data-intensity="3"] {
+  background: #2e7d32;
+}
+.legendCell[data-intensity="4"] {
+  background: #1b5e20;
+}
+
+.legendNote {
+  margin-left: 8px;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #1f2937;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  max-width: 280px;
+}
+
+.tooltipName {
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+.tooltipMeta {
+  font-size: 10.5px;
+  opacity: 0.8;
+  margin-bottom: 3px;
+}
+
+.tooltipValue {
+  font-family: var(--m);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipHint {
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+  font-style: italic;
+}

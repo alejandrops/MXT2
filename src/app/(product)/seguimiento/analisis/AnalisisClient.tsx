@@ -2,7 +2,6 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,22 +12,20 @@ import {
 } from "lucide-react";
 import {
   type ActivityMetric,
-  type AnalysisData,
   type AnalysisGranularity,
+  type FleetAnalysisData,
+  type ScopeFilters,
 } from "@/lib/queries";
 import { MetricSelector } from "@/components/maxtracker/activity/MetricSelector";
-import { Heatmap } from "@/components/maxtracker/analysis/Heatmap";
+import { FleetHeatmap } from "@/components/maxtracker/analysis/FleetHeatmap";
+import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { TrendLine } from "@/components/maxtracker/analysis/TrendLine";
 import styles from "./AnalisisClient.module.css";
-
-// ═══════════════════════════════════════════════════════════════
-//  AnalisisClient · una pantalla, 5 granularidades, drill-down
-// ═══════════════════════════════════════════════════════════════
 
 const BASE_PATH = "/seguimiento/analisis";
 
 interface Props {
-  data: AnalysisData;
+  data: FleetAnalysisData;
 }
 
 const GRANULARITY_TABS: {
@@ -43,55 +40,77 @@ const GRANULARITY_TABS: {
   { key: "year-months", label: "Año", hint: "por meses" },
 ];
 
+// Las granularidades cortas (día, semana) no necesitan trend abajo
+const SHOW_TREND: Record<AnalysisGranularity, boolean> = {
+  "day-hours": false,
+  "week-days": false,
+  "month-days": true,
+  "year-weeks": true,
+  "year-months": true,
+};
+
 export function AnalisisClient({ data }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  function navigate(over: {
+  function buildHref(over: {
     g?: AnalysisGranularity;
-    d?: string;
+    d?: string | null;
     m?: ActivityMetric;
-  }) {
+    scope?: ScopeFilters;
+  }): string {
     const params = new URLSearchParams();
     const g = over.g ?? data.granularity;
-    const d = over.d ?? data.anchorIso;
+    const d = over.d === null ? null : over.d ?? data.anchorIso;
     const m = over.m ?? data.metric;
+    const scope = over.scope ?? data.appliedScope;
+
     if (g !== "year-weeks") params.set("g", g);
-    // anchor: solo si no es hoy default
+
     const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const todayIso = `${todayLocal.getUTCFullYear()}-${String(todayLocal.getUTCMonth() + 1).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
-    if (d !== todayIso) params.set("d", d);
+    if (d && d !== todayIso) params.set("d", d);
     if (m !== "distanceKm") params.set("m", m);
+    if (scope.groupIds?.length) params.set("grp", scope.groupIds.join(","));
+    if (scope.vehicleTypes?.length)
+      params.set("type", scope.vehicleTypes.join(","));
+    if (scope.personIds?.length)
+      params.set("driver", scope.personIds.join(","));
+    if (scope.search) params.set("q", scope.search);
+
     const qs = params.toString();
-    startTransition(() =>
-      router.push(qs ? `${BASE_PATH}?${qs}` : BASE_PATH),
-    );
+    return qs ? `${BASE_PATH}?${qs}` : BASE_PATH;
+  }
+
+  function nav(over: Parameters<typeof buildHref>[0]) {
+    startTransition(() => router.push(buildHref(over)));
   }
 
   function goPrev() {
-    navigate({ d: data.prevAnchorIso });
+    nav({ d: data.prevAnchorIso });
   }
   function goNext() {
-    if (data.nextAnchorIso) navigate({ d: data.nextAnchorIso });
+    if (data.nextAnchorIso) nav({ d: data.nextAnchorIso });
   }
   function goToday() {
-    navigate({ d: undefined });
+    nav({ d: null });
   }
   function setGranularity(g: AnalysisGranularity) {
-    navigate({ g });
+    nav({ g });
   }
   function setMetric(m: ActivityMetric) {
-    navigate({ m });
+    nav({ m });
   }
-  function handleDrill(drillDate: string, drillTo: AnalysisGranularity) {
-    navigate({ g: drillTo, d: drillDate });
+  function setScope(scope: ScopeFilters) {
+    nav({ scope });
   }
-
-  const trend = computeTrend(data);
+  function handleDrill(date: string, drillTo: AnalysisGranularity) {
+    nav({ g: drillTo, d: date });
+  }
 
   return (
     <>
-      {/* ── Top toolbar · granularity + period nav + metric ──── */}
+      {/* ── Top toolbar · granularity + metric ─────────────── */}
       <div className={styles.toolbar}>
         <div className={styles.granularityTabs}>
           {GRANULARITY_TABS.map((tab) => {
@@ -101,9 +120,7 @@ export function AnalisisClient({ data }: Props) {
                 key={tab.key}
                 type="button"
                 onClick={() => setGranularity(tab.key)}
-                className={`${styles.granTab} ${
-                  active ? styles.granTabActive : ""
-                }`}
+                className={`${styles.granTab} ${active ? styles.granTabActive : ""}`}
               >
                 <span className={styles.granLabel}>{tab.label}</span>
                 <span className={styles.granHint}>{tab.hint}</span>
@@ -114,12 +131,18 @@ export function AnalisisClient({ data }: Props) {
 
         <div className={styles.toolbarSpacer} />
 
-        <div className={styles.metricWrap}>
-          <MetricSelector value={data.metric} onChange={setMetric} />
-        </div>
+        <MetricSelector value={data.metric} onChange={setMetric} />
       </div>
 
-      {/* ── Period header ────────────────────────────────────── */}
+      {/* ── Scope filters ──────────────────────────────────── */}
+      <ScopeFiltersBar
+        scope={data.appliedScope}
+        available={data.scope}
+        rowCount={data.rows.length}
+        onChange={setScope}
+      />
+
+      {/* ── Period header ──────────────────────────────────── */}
       <div className={styles.periodHeader}>
         <div className={styles.periodNav}>
           <button
@@ -155,34 +178,49 @@ export function AnalisisClient({ data }: Props) {
           <span className={styles.periodSub}>{data.periodSubLabel}</span>
         </div>
 
-        <div className={styles.periodTotal}>
-          <span className={styles.totalLabel}>{data.metricLabel}</span>
-          <span className={styles.totalValue}>
-            {formatValue(data.total, data.metric)}
-          </span>
-          <Delta
-            deltaPct={data.deltaPct}
-            previous={data.previousTotal}
-            metric={data.metric}
-          />
+        <div className={styles.periodMetrics}>
+          <div className={styles.metricBlock}>
+            <span className={styles.metricLabel}>{data.metricLabel}</span>
+            <span className={styles.metricValue}>
+              {formatValue(data.total, data.metric)}
+            </span>
+            <Delta
+              deltaPct={data.deltaPct}
+              previous={data.previousTotal}
+              metric={data.metric}
+            />
+          </div>
+          <div className={styles.metricBlock}>
+            <span className={styles.metricLabel}>{data.averageLabel}</span>
+            <span className={styles.metricValueSm}>
+              {formatValue(data.averageValue, data.metric)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── Heatmap principal ────────────────────────────────── */}
+      {/* ── Heatmap ────────────────────────────────────────── */}
       <section className={styles.heatmapSection}>
-        <Heatmap
+        <FleetHeatmap
           data={data}
           onDrill={handleDrill}
           formatValue={(v) => formatValue(v, data.metric)}
         />
       </section>
 
-      {/* ── Trend line + Top assets · 2 columnas ─────────────── */}
-      <div className={styles.bottom}>
-        <section className={`${styles.bottomCard} ${styles.trendCard}`}>
+      {/* ── Trend (solo en granularidades largas) ──────────── */}
+      {SHOW_TREND[data.granularity] && data.trend.length > 0 && (
+        <section className={styles.trendSection}>
           <header className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Evolución</h2>
-            <span className={styles.cardSub}>{trend.subtitle}</span>
+            <h2 className={styles.cardTitle}>Evolución agregada</h2>
+            <span className={styles.cardSub}>
+              Suma de toda la flota seleccionada por{" "}
+              {data.granularity === "month-days"
+                ? "día"
+                : data.granularity === "year-weeks"
+                  ? "semana"
+                  : "mes"}
+            </span>
           </header>
           <TrendLine
             points={data.trend}
@@ -190,46 +228,7 @@ export function AnalisisClient({ data }: Props) {
             formatValue={(v) => formatValue(v, data.metric)}
           />
         </section>
-
-        <section className={`${styles.bottomCard} ${styles.topCard}`}>
-          <header className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Top 5 vehículos</h2>
-            <span className={styles.cardSub}>{data.metricLabel}</span>
-          </header>
-          {data.topAssets.length === 0 ? (
-            <div className={styles.empty}>Sin actividad en el período.</div>
-          ) : (
-            <table className={styles.topTable}>
-              <tbody>
-                {data.topAssets.map((a, i) => (
-                  <tr key={a.assetId} className={styles.topRow}>
-                    <td className={styles.topRank}>#{i + 1}</td>
-                    <td className={styles.topName}>
-                      <Link
-                        href={`/gestion/vehiculos/${a.assetId}`}
-                        className={styles.assetLink}
-                      >
-                        {a.assetName}
-                      </Link>
-                      {a.assetPlate && (
-                        <span className={styles.topPlate}>
-                          {a.assetPlate}
-                        </span>
-                      )}
-                    </td>
-                    <td className={styles.topGroup}>
-                      {a.groupName ?? <span className={styles.dim}>—</span>}
-                    </td>
-                    <td className={styles.topValue}>
-                      <strong>{formatValue(a.value, data.metric)}</strong>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </div>
+      )}
     </>
   );
 }
@@ -255,7 +254,8 @@ function Delta({
         : deltaPct < -0.02
           ? "down"
           : "flat";
-  const isReverseSign = metric === "speedingCount" || metric === "highEventCount";
+  const isReverseSign =
+    metric === "speedingCount" || metric === "highEventCount";
   const sentiment =
     isReverseSign && trend === "up"
       ? styles.deltaBad
@@ -279,7 +279,7 @@ function Delta({
       </span>
       <span className={styles.deltaPrev}>
         {previous !== null
-          ? `vs ${formatValue(previous, metric)} antes`
+          ? `vs ${formatValue(previous, metric)}`
           : "sin histórico"}
       </span>
     </div>
@@ -287,23 +287,8 @@ function Delta({
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Helpers
+//  Format helpers
 // ═══════════════════════════════════════════════════════════════
-
-function computeTrend(data: AnalysisData): { subtitle: string } {
-  switch (data.granularity) {
-    case "day-hours":
-      return { subtitle: "Por hora" };
-    case "week-days":
-      return { subtitle: "Por día" };
-    case "month-days":
-      return { subtitle: "Por día" };
-    case "year-weeks":
-      return { subtitle: "Por semana" };
-    case "year-months":
-      return { subtitle: "Por mes" };
-  }
-}
 
 function formatValue(v: number, metric: ActivityMetric): string {
   if (v === 0) return "0";
@@ -313,9 +298,7 @@ function formatValue(v: number, metric: ActivityMetric): string {
     })} km`;
   }
   if (metric === "fuelLiters") {
-    return `${v.toLocaleString("es-AR", {
-      maximumFractionDigits: 1,
-    })} L`;
+    return `${v.toLocaleString("es-AR", { maximumFractionDigits: 1 })} L`;
   }
   if (metric === "activeMin" || metric === "idleMin") {
     return formatMinutes(v);

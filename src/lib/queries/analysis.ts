@@ -1,24 +1,25 @@
 // ═══════════════════════════════════════════════════════════════
-//  Queries · Análisis temporal
+//  Queries · Análisis temporal · matriz vehículos × tiempo
 //  ─────────────────────────────────────────────────────────────
-//  Una sola query · getAnalysisData · sirve a las 5 granularidades:
-//    · day-hours    · 24 columnas
-//    · week-days    · 7 columnas
-//    · month-days   · grid calendario
-//    · year-weeks   · 7 filas (DOW) × 53 cols · estilo GitHub
-//    · year-months  · 12 columnas
+//  Una sola query · getFleetAnalysis · sirve a las 5 granularidades.
+//  La data shape es uniforme · cambia solo la cantidad de columnas.
 //
-//  Fuentes:
-//    · day-hours  → Trip + Event (hora-grain dinámico)
-//    · week-days, month-days, year-weeks → AssetDriverDay
-//    · year-months → AssetWeeklyStats agregado a mes
+//  Cell = (vehículo, subdivisión temporal) → valor de la métrica.
+//  Drill-down: click en celda → baja un nivel de zoom.
 //
+//  Granularidades:
+//    · day-hours    · 24 cols  · drill: ninguno
+//    · week-days    · 7 cols   · drill: day-hours
+//    · month-days   · ~30 cols · drill: day-hours
+//    · year-weeks   · 53 cols  · drill: week-days
+//    · year-months  · 12 cols  · drill: month-days
+//
+//  Filtros · multi-select de grupos, tipos, choferes + search libre.
 //  Cero lecturas a Position.
 // ═══════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
 import {
-  arLocalMidnightUtc,
   iterDays,
   METRIC_LABELS,
   type ActivityMetric,
@@ -27,7 +28,6 @@ import {
 
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
 const MS_DAY = 24 * 60 * 60 * 1000;
-const MS_HOUR = 60 * 60 * 1000;
 
 // ═══════════════════════════════════════════════════════════════
 //  Tipos
@@ -40,135 +40,609 @@ export type AnalysisGranularity =
   | "year-weeks"
   | "year-months";
 
-export interface AnalysisCell {
-  /** Identificador estable · usado como key React */
-  key: string;
-  /** Etiqueta corta dentro de la celda (ej "27", "Lun", "13:00") */
-  shortLabel: string;
-  /** Etiqueta larga para tooltip (ej "Lunes 27 abril 2026") */
-  fullLabel: string;
-  /** Valor de la métrica en esta celda */
-  value: number;
-  /** Posición row,col en el grid (0-indexed) */
-  row: number;
+export interface ScopeFilters {
+  groupIds?: string[];
+  vehicleTypes?: string[];
+  personIds?: string[];
+  search?: string;
+}
+
+export interface FleetCell {
+  /** Posición de la celda (0-indexed) */
   col: number;
-  /** Si la celda representa una fecha real (false = hueco del calendario) */
-  hasData: boolean;
-  /** Si esta celda representa al día/hora actual */
-  isToday: boolean;
-  /** Si esta celda corresponde al fin de semana */
-  isWeekend: boolean;
-  /** ISO date AR-local · para drill-down (null si no se puede bajar) */
-  drillDate: string | null;
-  /** Granularidad a la que se baja al hacer click (null = no drill) */
-  drillTo: AnalysisGranularity | null;
-}
-
-export interface TrendPoint {
-  /** Etiqueta del punto (X axis) */
-  label: string;
-  /** Valor numérico */
   value: number;
-  /** ISO date · usado para tooltip */
-  iso: string;
+  /** ¿Esta celda corresponde al período actual? */
+  isToday: boolean;
+  isWeekend: boolean;
+  /** ISO date AR-local del valor representado · null si futuro */
+  drillDate: string | null;
+  drillTo: AnalysisGranularity | null;
+  /** Etiqueta legible para tooltip */
+  fullLabel: string;
 }
 
-export interface TopAssetRow {
+export interface FleetRow {
   assetId: string;
   assetName: string;
   assetPlate: string | null;
   groupName: string | null;
-  value: number;
+  vehicleType: string;
+  cells: FleetCell[];
+  /** Total · suma o max según métrica */
+  total: number;
 }
 
-export interface AnalysisData {
+export interface ColLabel {
+  /** En qué col va · 0-indexed */
+  col: number;
+  /** Texto a mostrar */
+  label: string;
+  /** Si es weekend (para layouts con días) */
+  isWeekend?: boolean;
+  /** Si es el actual (para layouts con tiempo) */
+  isToday?: boolean;
+}
+
+export interface TrendPoint {
+  label: string;
+  value: number;
+  iso: string;
+}
+
+export interface FleetAnalysisData {
   granularity: AnalysisGranularity;
   metric: ActivityMetric;
   metricLabel: string;
-  /** UTC instants del rango total */
+  /** UTC instants del período */
   periodFrom: Date;
   periodTo: Date;
-  /** Etiqueta legible (ej "Abril 2026", "Semana del 21/04 al 27/04") */
+  /** Etiquetas legibles · ej "Abril 2026" */
   periodLabel: string;
-  /** "DD/MM/YYYY → DD/MM/YYYY" o similar */
   periodSubLabel: string;
-  /** Valor total (suma o max según métrica) */
+  /** Filas (vehículos) ordenadas por total desc */
+  rows: FleetRow[];
+  /** Etiquetas de columnas */
+  colLabels: ColLabel[];
+  colCount: number;
+  /** Total de la flota seleccionada (suma o max de todas las filas) */
   total: number;
-  /** Total del período anterior equivalente · null si no aplica */
   previousTotal: number | null;
-  /** Delta % vs anterior · null si previo == 0 o null */
   deltaPct: number | null;
-  /** Filas y columnas del grid · usadas por el componente Heatmap */
-  rows: number;
-  cols: number;
-  /** Etiquetas de filas (ej DOW) · vacío si no hay row labels */
-  rowLabels: string[];
-  /** Etiquetas de columnas (ej meses, semanas) · vacío si no hay */
-  colLabels: { label: string; col: number }[];
-  /** Las celdas del heatmap */
-  cells: AnalysisCell[];
-  /** Máximo de las celdas · usado para escala de intensidad */
-  maxCellValue: number;
-  /** Datos para el line chart de evolución (granularidad = celda) */
+  /** Para el line chart de evolución (suma vertical por columna) */
   trend: TrendPoint[];
-  /** Top 5 vehículos del período */
-  topAssets: TopAssetRow[];
-  /** ISO date del período centrado · usado por nav prev/next */
+  /** Máximo de cualquier celda · usado para escala de color */
+  maxCellValue: number;
+  /** Promedio diario/semanal/mensual de la métrica · contextual */
+  averageLabel: string;
+  averageValue: number;
+  /** Para nav prev/next/today */
   anchorIso: string;
-  /** Para nav · ISO date del período anterior y siguiente */
   prevAnchorIso: string;
-  nextAnchorIso: string | null; // null si es futuro
+  nextAnchorIso: string | null;
+  /** Filtros disponibles para los dropdowns */
+  scope: {
+    groups: { id: string; name: string }[];
+    vehicleTypes: { value: string; label: string }[];
+    drivers: { id: string; name: string }[];
+  };
+  /** Filtros aplicados (echo) */
+  appliedScope: ScopeFilters;
+  /** Si hay drill-down disponible para esta granularidad */
+  hasDrill: boolean;
 }
 
-interface AnalysisParams {
+interface FleetParams {
   granularity: AnalysisGranularity;
-  /** ISO date YYYY-MM-DD · el ancla del período (interpretado AR-local) */
+  /** YYYY-MM-DD · ancla AR-local */
   anchor: string;
   metric: ActivityMetric;
-  /** Para cálculo de "isToday" · default Date.now() */
+  scope?: ScopeFilters;
   now?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Public · getAnalysisData
+//  Public · getFleetAnalysis
 // ═══════════════════════════════════════════════════════════════
 
-export async function getAnalysisData(
-  params: AnalysisParams,
-): Promise<AnalysisData> {
+export async function getFleetAnalysis(
+  params: FleetParams,
+): Promise<FleetAnalysisData> {
   const now = params.now ?? Date.now();
-  const anchorDate = parseArIso(params.anchor);
+  const scope = params.scope ?? {};
+  const anchor = parseArIso(params.anchor);
 
-  switch (params.granularity) {
+  // 1 · Resolver período según granularidad
+  const periodSpec = computePeriodSpec(params.granularity, anchor, now);
+
+  // 2 · Cargar opciones disponibles para los filtros (independiente del scope)
+  const [allGroups, allDrivers] = await Promise.all([
+    db.group.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.person.findMany({
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    }),
+  ]);
+
+  // 3 · Cargar vehículos del scope
+  const assets = await loadAssets(scope);
+
+  // 4 · Cargar datos crudos para cada granularidad
+  const cells = await loadCellValues({
+    granularity: params.granularity,
+    metric: params.metric,
+    period: periodSpec,
+    assetIds: assets.map((a) => a.id),
+    personIds: scope.personIds,
+    now,
+  });
+
+  // 5 · Calcular previousTotal (rango anterior equivalente)
+  const previousTotal = await calcPreviousTotal({
+    granularity: params.granularity,
+    metric: params.metric,
+    anchor,
+    now,
+    assetIds: assets.map((a) => a.id),
+    personIds: scope.personIds,
+  });
+
+  // 6 · Construir filas
+  const rows: FleetRow[] = assets.map((a) => {
+    const rowCells = periodSpec.cols.map((col): FleetCell => {
+      const key = `${a.id}|${col.idx}`;
+      return {
+        col: col.idx,
+        value: cells.get(key) ?? 0,
+        isToday: col.isToday,
+        isWeekend: col.isWeekend,
+        drillDate: col.drillDate,
+        drillTo: drillTargetFor(params.granularity),
+        fullLabel: `${a.name} · ${col.fullLabel}`,
+      };
+    });
+    const total =
+      params.metric === "maxSpeedKmh"
+        ? Math.max(0, ...rowCells.map((c) => c.value))
+        : rowCells.reduce((acc, c) => acc + c.value, 0);
+    return {
+      assetId: a.id,
+      assetName: a.name,
+      assetPlate: a.plate,
+      groupName: a.group?.name ?? null,
+      vehicleType: a.vehicleType,
+      cells: rowCells,
+      total,
+    };
+  });
+
+  // 7 · Filtrar filas con 0 actividad (a menos que el scope sea pequeño)
+  const filteredRows =
+    rows.length <= 30
+      ? rows
+      : rows.filter((r) => r.total > 0).slice(0, 50);
+
+  // Sort by total desc
+  filteredRows.sort((a, b) => b.total - a.total);
+
+  // 8 · Trend agregado por columna (suma vertical)
+  const trend: TrendPoint[] = periodSpec.cols.map((col) => {
+    let sum = 0;
+    let max = 0;
+    for (const row of filteredRows) {
+      const cell = row.cells[col.idx];
+      if (!cell) continue;
+      sum += cell.value;
+      if (cell.value > max) max = cell.value;
+    }
+    return {
+      label: col.shortLabel,
+      value: params.metric === "maxSpeedKmh" ? max : sum,
+      iso: col.drillDate ?? "",
+    };
+  });
+
+  // 9 · Total general de la selección
+  const total =
+    params.metric === "maxSpeedKmh"
+      ? Math.max(0, ...filteredRows.map((r) => r.total))
+      : filteredRows.reduce((acc, r) => acc + r.total, 0);
+
+  const maxCellValue = filteredRows.reduce((m, r) => {
+    const rowMax = Math.max(0, ...r.cells.map((c) => c.value));
+    return Math.max(m, rowMax);
+  }, 0);
+
+  // 10 · Promedio · sólo aplica a métricas tipo "sum"
+  const avg = computeAverage(params.granularity, total, periodSpec, params.metric);
+
+  return {
+    granularity: params.granularity,
+    metric: params.metric,
+    metricLabel: METRIC_LABELS[params.metric],
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows: filteredRows,
+    colLabels: periodSpec.colLabels,
+    colCount: periodSpec.cols.length,
+    total,
+    previousTotal,
+    deltaPct: pct(total, previousTotal),
+    trend,
+    maxCellValue,
+    averageLabel: avg.label,
+    averageValue: avg.value,
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+    hasDrill: drillTargetFor(params.granularity) !== null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Period spec · una matriz de columnas por granularidad
+// ═══════════════════════════════════════════════════════════════
+
+interface PeriodCol {
+  idx: number;
+  /** Etiqueta corta (ej "Lun", "13h", "27", "S2", "Ene") */
+  shortLabel: string;
+  /** Etiqueta larga para tooltip */
+  fullLabel: string;
+  /** Si la columna corresponde a hoy/ahora */
+  isToday: boolean;
+  isWeekend: boolean;
+  /** Para drill-down · ISO date del centro de la columna · null = futuro */
+  drillDate: string | null;
+  /** UTC instants para query · inicio inclusivo, fin exclusivo */
+  from: Date;
+  to: Date;
+}
+
+interface PeriodSpec {
+  from: Date;
+  to: Date;
+  cols: PeriodCol[];
+  colLabels: ColLabel[];
+  periodLabel: string;
+  periodSubLabel: string;
+  anchorIso: string;
+  prevAnchorIso: string;
+  nextAnchorIso: string | null;
+}
+
+function computePeriodSpec(
+  granularity: AnalysisGranularity,
+  anchor: Date,
+  now: number,
+): PeriodSpec {
+  switch (granularity) {
     case "day-hours":
-      return buildDayHours(anchorDate, params.metric, now);
+      return spec_dayHours(anchor, now);
     case "week-days":
-      return buildWeekDays(anchorDate, params.metric, now);
+      return spec_weekDays(anchor, now);
     case "month-days":
-      return buildMonthDays(anchorDate, params.metric, now);
+      return spec_monthDays(anchor, now);
     case "year-weeks":
-      return buildYearWeeks(anchorDate, params.metric, now);
+      return spec_yearWeeks(anchor, now);
     case "year-months":
-      return buildYearMonths(anchorDate, params.metric, now);
+      return spec_yearMonths(anchor, now);
+  }
+}
+
+function spec_dayHours(anchor: Date, now: number): PeriodSpec {
+  const from = anchor;
+  const to = new Date(anchor.getTime() + MS_DAY);
+  const todayHour = sameDayAr(anchor.getTime(), now)
+    ? new Date(now - AR_OFFSET_MS).getUTCHours()
+    : -1;
+  const cols: PeriodCol[] = [];
+  for (let h = 0; h < 24; h++) {
+    cols.push({
+      idx: h,
+      shortLabel: `${String(h).padStart(2, "0")}h`,
+      fullLabel: `${formatDayLong(anchor)} · ${String(h).padStart(2, "0")}:00–${String(h).padStart(2, "0")}:59`,
+      isToday: h === todayHour,
+      isWeekend: false,
+      drillDate: null,
+      from: new Date(anchor.getTime() + h * 60 * 60 * 1000),
+      to: new Date(anchor.getTime() + (h + 1) * 60 * 60 * 1000),
+    });
+  }
+  const colLabels: ColLabel[] = [
+    { col: 0, label: "00h" },
+    { col: 6, label: "06h" },
+    { col: 12, label: "12h" },
+    { col: 18, label: "18h" },
+  ];
+  return {
+    from, to, cols, colLabels,
+    periodLabel: formatDayLong(anchor),
+    periodSubLabel: ymdAr(anchor.getTime()),
+    anchorIso: ymdAr(anchor.getTime()),
+    prevAnchorIso: ymdAr(anchor.getTime() - MS_DAY),
+    nextAnchorIso:
+      anchor.getTime() < arLocalMidnightUtc(now).getTime()
+        ? ymdAr(anchor.getTime() + MS_DAY)
+        : null,
+  };
+}
+
+function spec_weekDays(anchor: Date, now: number): PeriodSpec {
+  const monday = arLocalMondayUtc(anchor.getTime());
+  const from = monday;
+  const to = new Date(monday.getTime() + 7 * MS_DAY);
+  const todayIso = ymdAr(now);
+  const todayMidnight = arLocalMidnightUtc(now);
+  const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  const cols: PeriodCol[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dayUtc = new Date(monday.getTime() + i * MS_DAY);
+    const iso = ymdAr(dayUtc.getTime());
+    cols.push({
+      idx: i,
+      shortLabel: DAY_LABELS[i]!,
+      fullLabel: formatDayLong(dayUtc),
+      isToday: iso === todayIso,
+      isWeekend: i >= 5,
+      drillDate: dayUtc.getTime() <= todayMidnight.getTime() ? iso : null,
+      from: dayUtc,
+      to: new Date(dayUtc.getTime() + MS_DAY),
+    });
+  }
+  const colLabels: ColLabel[] = DAY_LABELS.map((label, i) => ({
+    col: i,
+    label,
+    isWeekend: i >= 5,
+    isToday: cols[i]!.isToday,
+  }));
+  const fmtShort = (d: Date) => {
+    const local = new Date(d.getTime() - AR_OFFSET_MS);
+    return `${String(local.getUTCDate()).padStart(2, "0")}/${String(local.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+  return {
+    from, to, cols, colLabels,
+    periodLabel: `Semana del ${fmtShort(monday)} al ${fmtShort(new Date(to.getTime() - MS_DAY))}`,
+    periodSubLabel: `${ymdAr(monday.getTime())} → ${ymdAr(to.getTime() - 1)}`,
+    anchorIso: ymdAr(monday.getTime()),
+    prevAnchorIso: ymdAr(monday.getTime() - 7 * MS_DAY),
+    nextAnchorIso:
+      monday.getTime() + 7 * MS_DAY <= todayMidnight.getTime()
+        ? ymdAr(monday.getTime() + 7 * MS_DAY)
+        : null,
+  };
+}
+
+function spec_monthDays(anchor: Date, now: number): PeriodSpec {
+  const local = new Date(anchor.getTime() - AR_OFFSET_MS);
+  const monthStart = new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1) + AR_OFFSET_MS,
+  );
+  const monthEnd = new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 1) + AR_OFFSET_MS,
+  );
+  const days = Math.round((monthEnd.getTime() - monthStart.getTime()) / MS_DAY);
+  const todayIso = ymdAr(now);
+  const todayMidnight = arLocalMidnightUtc(now);
+  const cols: PeriodCol[] = [];
+  for (let i = 0; i < days; i++) {
+    const dayUtc = new Date(monthStart.getTime() + i * MS_DAY);
+    const iso = ymdAr(dayUtc.getTime());
+    const dow = arLocalDow(dayUtc.getTime());
+    cols.push({
+      idx: i,
+      shortLabel: String(i + 1),
+      fullLabel: formatDayLong(dayUtc),
+      isToday: iso === todayIso,
+      isWeekend: dow >= 5,
+      drillDate: dayUtc.getTime() <= todayMidnight.getTime() ? iso : null,
+      from: dayUtc,
+      to: new Date(dayUtc.getTime() + MS_DAY),
+    });
+  }
+  const colLabels: ColLabel[] = [];
+  for (let i = 0; i < days; i += 5) {
+    colLabels.push({ col: i, label: String(i + 1) });
+  }
+  const prevMonthStart = new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth() - 1, 1) + AR_OFFSET_MS,
+  );
+  return {
+    from: monthStart,
+    to: monthEnd,
+    cols,
+    colLabels,
+    periodLabel: formatMonthLong(monthStart),
+    periodSubLabel: `${days} días`,
+    anchorIso: ymdAr(monthStart.getTime()),
+    prevAnchorIso: ymdAr(prevMonthStart.getTime()),
+    nextAnchorIso:
+      monthEnd.getTime() <= todayMidnight.getTime() + MS_DAY
+        ? ymdAr(monthEnd.getTime())
+        : null,
+  };
+}
+
+function spec_yearWeeks(_anchor: Date, now: number): PeriodSpec {
+  // Un año termina hoy y arranca 52 semanas atrás (53 semanas total)
+  const monday = arLocalMondayUtc(now);
+  const startMonday = new Date(monday.getTime() - 52 * 7 * MS_DAY);
+  const from = startMonday;
+  const to = new Date(monday.getTime() + 7 * MS_DAY);
+  const todayIso = ymdAr(now);
+  const cols: PeriodCol[] = [];
+  for (let w = 0; w < 53; w++) {
+    const wkStart = new Date(startMonday.getTime() + w * 7 * MS_DAY);
+    const wkEnd = new Date(wkStart.getTime() + 7 * MS_DAY);
+    const wkIso = ymdAr(wkStart.getTime());
+    const containsToday =
+      wkStart.getTime() <= new Date(todayIso + "T00:00:00Z").getTime() &&
+      wkEnd.getTime() > new Date(todayIso + "T00:00:00Z").getTime();
+    const local = new Date(wkStart.getTime() - AR_OFFSET_MS);
+    cols.push({
+      idx: w,
+      shortLabel: "",
+      fullLabel: `Semana del ${String(local.getUTCDate()).padStart(2, "0")}/${String(local.getUTCMonth() + 1).padStart(2, "0")}/${local.getUTCFullYear()}`,
+      isToday: containsToday,
+      isWeekend: false,
+      drillDate: wkIso,
+      from: wkStart,
+      to: wkEnd,
+    });
+  }
+  // Col labels = primer mes que aparece en cada cambio
+  const colLabels: ColLabel[] = [];
+  let lastMonth = -1;
+  for (let w = 0; w < 53; w++) {
+    const wkStart = new Date(startMonday.getTime() + w * 7 * MS_DAY);
+    const local = new Date(wkStart.getTime() - AR_OFFSET_MS);
+    const m = local.getUTCMonth();
+    if (m !== lastMonth) {
+      lastMonth = m;
+      colLabels.push({ col: w, label: MONTH_SHORT[m]! });
+    }
+  }
+  const lastDayLocal = new Date(to.getTime() - MS_DAY - AR_OFFSET_MS);
+  const startLocal = new Date(startMonday.getTime() - AR_OFFSET_MS);
+  return {
+    from, to, cols, colLabels,
+    periodLabel: "Últimos 12 meses",
+    periodSubLabel: `${MONTH_SHORT[startLocal.getUTCMonth()]} ${startLocal.getUTCFullYear()} → ${MONTH_SHORT[lastDayLocal.getUTCMonth()]} ${lastDayLocal.getUTCFullYear()}`,
+    anchorIso: ymdAr(now),
+    prevAnchorIso: ymdAr(now - 365 * MS_DAY),
+    nextAnchorIso: null,
+  };
+}
+
+function spec_yearMonths(anchor: Date, now: number): PeriodSpec {
+  const local = new Date(anchor.getTime() - AR_OFFSET_MS);
+  const year = local.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(year, 0, 1) + AR_OFFSET_MS);
+  const yearEnd = new Date(Date.UTC(year + 1, 0, 1) + AR_OFFSET_MS);
+  const todayLocal = new Date(now - AR_OFFSET_MS);
+  const todayMonth = todayLocal.getUTCMonth();
+  const todayYear = todayLocal.getUTCFullYear();
+  const cols: PeriodCol[] = [];
+  for (let m = 0; m < 12; m++) {
+    const monthStart = new Date(Date.UTC(year, m, 1) + AR_OFFSET_MS);
+    const monthEnd = new Date(Date.UTC(year, m + 1, 1) + AR_OFFSET_MS);
+    const isFuture = monthStart.getTime() > arLocalMidnightUtc(now).getTime();
+    cols.push({
+      idx: m,
+      shortLabel: MONTH_SHORT[m]!,
+      fullLabel: `${MONTH_LONG[m]!} ${year}`,
+      isToday: !isFuture && year === todayYear && m === todayMonth,
+      isWeekend: false,
+      drillDate: isFuture
+        ? null
+        : `${year}-${String(m + 1).padStart(2, "0")}-01`,
+      from: monthStart,
+      to: monthEnd,
+    });
+  }
+  const colLabels: ColLabel[] = MONTH_SHORT.map((label, i) => ({
+    col: i,
+    label,
+    isToday: cols[i]!.isToday,
+  }));
+  return {
+    from: yearStart,
+    to: yearEnd,
+    cols,
+    colLabels,
+    periodLabel: `Año ${year}`,
+    periodSubLabel: "Por meses",
+    anchorIso: `${year}-01-01`,
+    prevAnchorIso: `${year - 1}-01-01`,
+    nextAnchorIso: year < todayYear ? `${year + 1}-01-01` : null,
+  };
+}
+
+function drillTargetFor(g: AnalysisGranularity): AnalysisGranularity | null {
+  switch (g) {
+    case "day-hours":
+      return null;
+    case "week-days":
+      return "day-hours";
+    case "month-days":
+      return "day-hours";
+    case "year-weeks":
+      return "week-days";
+    case "year-months":
+      return "month-days";
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Day · 24 horas (Trip + Event grain dinámico)
+//  Loaders
 // ═══════════════════════════════════════════════════════════════
 
-async function buildDayHours(
-  anchor: Date,
-  metric: ActivityMetric,
-  now: number,
-): Promise<AnalysisData> {
-  // Período: 24h AR-local del día anchor
-  const periodFrom = anchor;
-  const periodTo = new Date(anchor.getTime() + MS_DAY);
+async function loadAssets(scope: ScopeFilters): Promise<any[]> {
+  const where: any = { mobilityType: "MOBILE" };
+  if (scope.groupIds && scope.groupIds.length > 0) {
+    where.groupId = { in: scope.groupIds };
+  }
+  if (scope.vehicleTypes && scope.vehicleTypes.length > 0) {
+    where.vehicleType = { in: scope.vehicleTypes };
+  }
+  if (scope.search && scope.search.trim().length > 0) {
+    const q = scope.search.trim();
+    where.OR = [
+      { name: { contains: q } },
+      { plate: { contains: q } },
+    ];
+  }
+  return db.asset.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      plate: true,
+      vehicleType: true,
+      group: { select: { name: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+}
 
-  // Hour bins
-  const hourValues = new Array(24).fill(0) as number[];
+interface CellLoadParams {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  period: PeriodSpec;
+  assetIds: string[];
+  personIds?: string[];
+  now: number;
+}
 
+async function loadCellValues(
+  p: CellLoadParams,
+): Promise<Map<string, number>> {
+  // Returns map: "assetId|colIdx" → value
+  const out = new Map<string, number>();
+  if (p.assetIds.length === 0) return out;
+
+  if (p.granularity === "day-hours") {
+    return loadHourly(p);
+  }
+  return loadDaily(p);
+}
+
+async function loadHourly(p: CellLoadParams): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const { period, metric, assetIds, personIds } = p;
   if (
     metric === "distanceKm" ||
     metric === "activeMin" ||
@@ -177,8 +651,15 @@ async function buildDayHours(
     metric === "maxSpeedKmh"
   ) {
     const trips = await db.trip.findMany({
-      where: { startedAt: { gte: periodFrom, lt: periodTo } },
+      where: {
+        assetId: { in: assetIds },
+        startedAt: { gte: period.from, lt: period.to },
+        ...(personIds && personIds.length > 0
+          ? { personId: { in: personIds } }
+          : {}),
+      },
       select: {
+        assetId: true,
         startedAt: true,
         endedAt: true,
         distanceKm: true,
@@ -186,28 +667,37 @@ async function buildDayHours(
       },
     });
     for (const t of trips as any[]) {
-      const hour = arLocalHour(t.startedAt.getTime());
-      if (metric === "distanceKm") hourValues[hour]! += t.distanceKm;
-      else if (metric === "tripCount") hourValues[hour]! += 1;
-      else if (metric === "activeMin") {
-        const mins = (t.endedAt.getTime() - t.startedAt.getTime()) / 60_000;
-        hourValues[hour]! += mins;
-      } else if (metric === "fuelLiters") {
-        const mins = (t.endedAt.getTime() - t.startedAt.getTime()) / 60_000;
-        hourValues[hour]! += mins * 0.12;
-      } else if (metric === "maxSpeedKmh") {
-        if (t.maxSpeedKmh > hourValues[hour]!)
-          hourValues[hour] = t.maxSpeedKmh;
+      const h = arLocalHour(t.startedAt.getTime());
+      const key = `${t.assetId}|${h}`;
+      const cur = out.get(key) ?? 0;
+      let v = 0;
+      if (metric === "distanceKm") v = t.distanceKm;
+      else if (metric === "tripCount") v = 1;
+      else if (metric === "activeMin")
+        v = (t.endedAt.getTime() - t.startedAt.getTime()) / 60_000;
+      else if (metric === "fuelLiters")
+        v = ((t.endedAt.getTime() - t.startedAt.getTime()) / 60_000) * 0.12;
+      if (metric === "maxSpeedKmh") {
+        if (t.maxSpeedKmh > cur) out.set(key, t.maxSpeedKmh);
+      } else {
+        out.set(key, cur + v);
       }
     }
-  } else if (
-    metric === "eventCount" ||
-    metric === "highEventCount" ||
-    metric === "speedingCount"
-  ) {
+  } else {
     const events = await db.event.findMany({
-      where: { occurredAt: { gte: periodFrom, lt: periodTo } },
-      select: { occurredAt: true, type: true, severity: true },
+      where: {
+        assetId: { in: assetIds },
+        occurredAt: { gte: period.from, lt: period.to },
+        ...(personIds && personIds.length > 0
+          ? { personId: { in: personIds } }
+          : {}),
+      },
+      select: {
+        assetId: true,
+        occurredAt: true,
+        type: true,
+        severity: true,
+      },
     });
     for (const ev of events as any[]) {
       if (metric === "highEventCount") {
@@ -215,516 +705,18 @@ async function buildDayHours(
       } else if (metric === "speedingCount") {
         if (!isSpeedingType(String(ev.type))) continue;
       }
-      const hour = arLocalHour(ev.occurredAt.getTime());
-      hourValues[hour]! += 1;
+      const h = arLocalHour(ev.occurredAt.getTime());
+      const key = `${ev.assetId}|${h}`;
+      out.set(key, (out.get(key) ?? 0) + 1);
     }
   }
-
-  const total = hourValues.reduce((a, b) => a + b, 0);
-  const maxCell = Math.max(0, ...hourValues);
-  const todayHour =
-    sameArLocalDay(anchor.getTime(), now) ? arLocalHour(now) : -1;
-
-  const cells: AnalysisCell[] = hourValues.map((v, h) => ({
-    key: `h-${h}`,
-    shortLabel: `${String(h).padStart(2, "0")}h`,
-    fullLabel: `${formatDayLong(anchor)} · ${String(h).padStart(2, "0")}:00–${String(h).padStart(2, "0")}:59`,
-    value: v,
-    row: 0,
-    col: h,
-    hasData: true,
-    isToday: h === todayHour,
-    isWeekend: false,
-    drillDate: null,
-    drillTo: null,
-  }));
-
-  const trend: TrendPoint[] = hourValues.map((v, h) => ({
-    label: `${String(h).padStart(2, "0")}h`,
-    value: v,
-    iso: ymdAr(anchor.getTime()),
-  }));
-
-  const topAssets = await topAssetsForRange(periodFrom, periodTo, metric);
-  const previousTotal = await totalForRange(
-    new Date(periodFrom.getTime() - MS_DAY),
-    periodFrom,
-    metric,
-  );
-
-  return {
-    granularity: "day-hours",
-    metric,
-    metricLabel: METRIC_LABELS[metric],
-    periodFrom,
-    periodTo,
-    periodLabel: formatDayLong(anchor),
-    periodSubLabel: ymdAr(anchor.getTime()),
-    total,
-    previousTotal,
-    deltaPct: pct(total, previousTotal),
-    rows: 1,
-    cols: 24,
-    rowLabels: [],
-    colLabels: [
-      { label: "00h", col: 0 },
-      { label: "06h", col: 6 },
-      { label: "12h", col: 12 },
-      { label: "18h", col: 18 },
-    ],
-    cells,
-    maxCellValue: maxCell,
-    trend,
-    topAssets,
-    anchorIso: ymdAr(anchor.getTime()),
-    prevAnchorIso: ymdAr(anchor.getTime() - MS_DAY),
-    nextAnchorIso:
-      anchor.getTime() + MS_DAY <= arLocalMidnightUtc(now).getTime() + MS_DAY
-        ? ymdAr(anchor.getTime() + MS_DAY)
-        : null,
-  };
+  return out;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Week · 7 días (AssetDriverDay)
-// ═══════════════════════════════════════════════════════════════
-
-async function buildWeekDays(
-  anchor: Date,
-  metric: ActivityMetric,
-  now: number,
-): Promise<AnalysisData> {
-  // anchor = lunes de la semana
-  const monday = arLocalMondayUtc(anchor.getTime());
-  const periodFrom = monday;
-  const periodTo = new Date(monday.getTime() + 7 * MS_DAY);
-
-  const dayValues = await metricByDay(periodFrom, periodTo, metric);
-  const total = sumValues(dayValues, metric);
-  const maxCell = Math.max(0, ...dayValues.map((d) => d.value));
-  const todayIso = ymdAr(now);
-
-  const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-  const cells: AnalysisCell[] = dayValues.map((d, i) => ({
-    key: `d-${d.iso}`,
-    shortLabel: DAY_LABELS[i] ?? "",
-    fullLabel: formatDayLong(parseArIso(d.iso)),
-    value: d.value,
-    row: 0,
-    col: i,
-    hasData: true,
-    isToday: d.iso === todayIso,
-    isWeekend: i >= 5,
-    drillDate: d.iso,
-    drillTo: "day-hours",
-  }));
-
-  const trend: TrendPoint[] = dayValues.map((d, i) => ({
-    label: DAY_LABELS[i] ?? "",
-    value: d.value,
-    iso: d.iso,
-  }));
-
-  const topAssets = await topAssetsForRange(periodFrom, periodTo, metric);
-  const previousTotal = await totalForRange(
-    new Date(monday.getTime() - 7 * MS_DAY),
-    monday,
-    metric,
-  );
-
-  const fmtDay = (d: Date) => {
-    const local = new Date(d.getTime() - AR_OFFSET_MS);
-    return `${String(local.getUTCDate()).padStart(2, "0")}/${String(local.getUTCMonth() + 1).padStart(2, "0")}`;
-  };
-  const lastDay = new Date(periodTo.getTime() - 1);
-  const isFutureWeek = monday.getTime() + 7 * MS_DAY > arLocalMidnightUtc(now).getTime();
-
-  return {
-    granularity: "week-days",
-    metric,
-    metricLabel: METRIC_LABELS[metric],
-    periodFrom,
-    periodTo,
-    periodLabel: `Semana del ${fmtDay(monday)} al ${fmtDay(lastDay)}`,
-    periodSubLabel: `${ymdAr(monday.getTime())} → ${ymdAr(lastDay.getTime())}`,
-    total,
-    previousTotal,
-    deltaPct: pct(total, previousTotal),
-    rows: 1,
-    cols: 7,
-    rowLabels: [],
-    colLabels: [],
-    cells,
-    maxCellValue: maxCell,
-    trend,
-    topAssets,
-    anchorIso: ymdAr(monday.getTime()),
-    prevAnchorIso: ymdAr(monday.getTime() - 7 * MS_DAY),
-    nextAnchorIso: isFutureWeek ? null : ymdAr(monday.getTime() + 7 * MS_DAY),
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Month · grid calendario (AssetDriverDay)
-// ═══════════════════════════════════════════════════════════════
-
-async function buildMonthDays(
-  anchor: Date,
-  metric: ActivityMetric,
-  now: number,
-): Promise<AnalysisData> {
-  // First day of the month AR-local
-  const firstLocal = new Date(anchor.getTime() - AR_OFFSET_MS);
-  const monthStart = new Date(
-    Date.UTC(firstLocal.getUTCFullYear(), firstLocal.getUTCMonth(), 1) +
-      AR_OFFSET_MS,
-  );
-  const monthEnd = new Date(
-    Date.UTC(firstLocal.getUTCFullYear(), firstLocal.getUTCMonth() + 1, 1) +
-      AR_OFFSET_MS,
-  );
-  const daysInMonth = Math.round(
-    (monthEnd.getTime() - monthStart.getTime()) / MS_DAY,
-  );
-
-  const dayValues = await metricByDay(monthStart, monthEnd, metric);
-  const total = sumValues(dayValues, metric);
-  const maxCell = Math.max(0, ...dayValues.map((d) => d.value));
-  const todayIso = ymdAr(now);
-
-  // Calendar grid: rows = weeks (5-6), cols = Mon-Sun
-  // Determine the day of week of the 1st (AR-local · Mon=0..Sun=6)
-  const firstDow = arLocalDow(monthStart.getTime());
-  const totalCells = Math.ceil((firstDow + daysInMonth) / 7) * 7;
-  const rows = totalCells / 7;
-
-  const valueByIso = new Map(dayValues.map((d) => [d.iso, d.value]));
-  const cells: AnalysisCell[] = [];
-  for (let i = 0; i < totalCells; i++) {
-    const dayOfMonth = i - firstDow + 1;
-    const row = Math.floor(i / 7);
-    const col = i % 7;
-    if (dayOfMonth < 1 || dayOfMonth > daysInMonth) {
-      cells.push({
-        key: `pad-${i}`,
-        shortLabel: "",
-        fullLabel: "",
-        value: 0,
-        row,
-        col,
-        hasData: false,
-        isToday: false,
-        isWeekend: col >= 5,
-        drillDate: null,
-        drillTo: null,
-      });
-    } else {
-      const dayUtc = new Date(monthStart.getTime() + (dayOfMonth - 1) * MS_DAY);
-      const iso = ymdAr(dayUtc.getTime());
-      cells.push({
-        key: `d-${iso}`,
-        shortLabel: String(dayOfMonth),
-        fullLabel: formatDayLong(dayUtc),
-        value: valueByIso.get(iso) ?? 0,
-        row,
-        col,
-        hasData: true,
-        isToday: iso === todayIso,
-        isWeekend: col >= 5,
-        drillDate: iso,
-        drillTo: "day-hours",
-      });
-    }
-  }
-
-  const trend: TrendPoint[] = dayValues.map((d) => {
-    const local = new Date(parseArIso(d.iso).getTime() - AR_OFFSET_MS);
-    return {
-      label: String(local.getUTCDate()),
-      value: d.value,
-      iso: d.iso,
-    };
-  });
-
-  const topAssets = await topAssetsForRange(monthStart, monthEnd, metric);
-  const prevMonthStart = new Date(
-    Date.UTC(firstLocal.getUTCFullYear(), firstLocal.getUTCMonth() - 1, 1) +
-      AR_OFFSET_MS,
-  );
-  const previousTotal = await totalForRange(prevMonthStart, monthStart, metric);
-
-  const isFutureMonth = monthStart.getTime() > arLocalMidnightUtc(now).getTime();
-  const nextMonthStart = monthEnd;
-
-  return {
-    granularity: "month-days",
-    metric,
-    metricLabel: METRIC_LABELS[metric],
-    periodFrom: monthStart,
-    periodTo: monthEnd,
-    periodLabel: formatMonthLong(monthStart),
-    periodSubLabel: `${daysInMonth} días`,
-    total,
-    previousTotal,
-    deltaPct: pct(total, previousTotal),
-    rows,
-    cols: 7,
-    rowLabels: [],
-    colLabels: [],
-    cells,
-    maxCellValue: maxCell,
-    trend,
-    topAssets,
-    anchorIso: ymdAr(monthStart.getTime()),
-    prevAnchorIso: ymdAr(prevMonthStart.getTime()),
-    nextAnchorIso:
-      nextMonthStart.getTime() > arLocalMidnightUtc(now).getTime() + MS_DAY
-        ? null
-        : ymdAr(nextMonthStart.getTime()),
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Year · 53 semanas (estilo GitHub) · 7 filas DOW × 53 cols
-// ═══════════════════════════════════════════════════════════════
-
-async function buildYearWeeks(
-  anchor: Date,
-  metric: ActivityMetric,
-  now: number,
-): Promise<AnalysisData> {
-  // El año termina hoy y arranca 364 días atrás (53 semanas inclusive)
-  const todayMidnight = arLocalMidnightUtc(now);
-  // El final de la grilla es el domingo de la semana actual
-  const monday = arLocalMondayUtc(now);
-  const sundayEnd = new Date(monday.getTime() + 7 * MS_DAY);
-  // Inicio: 52 semanas atrás, ajustado al lunes
-  const startMonday = new Date(monday.getTime() - 52 * 7 * MS_DAY);
-  const periodFrom = startMonday;
-  const periodTo = sundayEnd;
-
-  const dayValues = await metricByDay(periodFrom, periodTo, metric);
-  const valueByIso = new Map(dayValues.map((d) => [d.iso, d.value]));
-  const todayIso = ymdAr(now);
-
-  const cells: AnalysisCell[] = [];
-  const colLabels: { label: string; col: number }[] = [];
-  let currentMonth = -1;
-  for (let week = 0; week < 53; week++) {
-    for (let dow = 0; dow < 7; dow++) {
-      const dayUtc = new Date(
-        startMonday.getTime() + (week * 7 + dow) * MS_DAY,
-      );
-      const iso = ymdAr(dayUtc.getTime());
-      const isFuture = dayUtc.getTime() >= todayMidnight.getTime() + MS_DAY;
-      cells.push({
-        key: `d-${iso}`,
-        shortLabel: "",
-        fullLabel: isFuture ? "" : formatDayLong(dayUtc),
-        value: isFuture ? 0 : valueByIso.get(iso) ?? 0,
-        row: dow,
-        col: week,
-        hasData: !isFuture,
-        isToday: iso === todayIso,
-        isWeekend: dow >= 5,
-        drillDate: isFuture ? null : iso,
-        drillTo: isFuture ? null : "day-hours",
-      });
-    }
-    // Track month label · use the first of the week
-    const weekStart = new Date(startMonday.getTime() + week * 7 * MS_DAY);
-    const localMonth = new Date(weekStart.getTime() - AR_OFFSET_MS).getUTCMonth();
-    if (localMonth !== currentMonth) {
-      currentMonth = localMonth;
-      colLabels.push({ label: MONTH_SHORT[localMonth]!, col: week });
-    }
-  }
-
-  const total = sumValues(dayValues, metric);
-  const maxCell = Math.max(
-    0,
-    ...cells.filter((c) => c.hasData).map((c) => c.value),
-  );
-
-  // Trend · una línea con 53 puntos (suma de la semana)
-  const trend: TrendPoint[] = [];
-  for (let week = 0; week < 53; week++) {
-    const wkStart = new Date(startMonday.getTime() + week * 7 * MS_DAY);
-    let sum = 0;
-    let max = 0;
-    for (let dow = 0; dow < 7; dow++) {
-      const dUtc = new Date(wkStart.getTime() + dow * MS_DAY);
-      if (dUtc.getTime() >= todayMidnight.getTime() + MS_DAY) break;
-      const v = valueByIso.get(ymdAr(dUtc.getTime())) ?? 0;
-      sum += v;
-      if (v > max) max = v;
-    }
-    const localM = new Date(wkStart.getTime() - AR_OFFSET_MS);
-    trend.push({
-      label: `${String(localM.getUTCDate()).padStart(2, "0")}/${String(localM.getUTCMonth() + 1).padStart(2, "0")}`,
-      value: metric === "maxSpeedKmh" ? max : sum,
-      iso: ymdAr(wkStart.getTime()),
-    });
-  }
-
-  const topAssets = await topAssetsForRange(periodFrom, periodTo, metric);
-  // Previo · año anterior (mismas 53 semanas hacia atrás)
-  const prevTotal = await totalForRange(
-    new Date(periodFrom.getTime() - 365 * MS_DAY),
-    periodFrom,
-    metric,
-  );
-
-  return {
-    granularity: "year-weeks",
-    metric,
-    metricLabel: METRIC_LABELS[metric],
-    periodFrom,
-    periodTo,
-    periodLabel: "Últimos 12 meses · vista por días",
-    periodSubLabel: `${formatMonthLong(periodFrom)} → ${formatMonthLong(new Date(periodTo.getTime() - MS_DAY))}`,
-    total,
-    previousTotal: prevTotal,
-    deltaPct: pct(total, prevTotal),
-    rows: 7,
-    cols: 53,
-    rowLabels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-    colLabels,
-    cells,
-    maxCellValue: maxCell,
-    trend,
-    topAssets,
-    anchorIso: ymdAr(now),
-    prevAnchorIso: ymdAr(now - 365 * MS_DAY),
-    nextAnchorIso: null,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Year · 12 meses (AssetWeeklyStats agregado a mes)
-// ═══════════════════════════════════════════════════════════════
-
-async function buildYearMonths(
-  anchor: Date,
-  metric: ActivityMetric,
-  now: number,
-): Promise<AnalysisData> {
-  // Año = año del anchor
-  const localAnchor = new Date(anchor.getTime() - AR_OFFSET_MS);
-  const year = localAnchor.getUTCFullYear();
-  const yearStart = new Date(Date.UTC(year, 0, 1) + AR_OFFSET_MS);
-  const yearEnd = new Date(Date.UTC(year + 1, 0, 1) + AR_OFFSET_MS);
-
-  // Get values per month (12 buckets)
-  const monthValues = new Array(12).fill(0) as number[];
-
-  if (
-    metric === "distanceKm" ||
-    metric === "activeMin" ||
-    metric === "tripCount" ||
-    metric === "fuelLiters" ||
-    metric === "speedingCount" ||
-    metric === "eventCount" ||
-    metric === "highEventCount" ||
-    metric === "maxSpeedKmh"
-  ) {
-    // Read AssetDriverDay for activeMin, distanceKm, tripCount
-    // For other metrics fall back to AssetWeeklyStats month-bucketing
-    const dayValues = await metricByDay(yearStart, yearEnd, metric);
-    for (const d of dayValues) {
-      const local = new Date(parseArIso(d.iso).getTime() - AR_OFFSET_MS);
-      const m = local.getUTCMonth();
-      if (metric === "maxSpeedKmh") {
-        if (d.value > monthValues[m]!) monthValues[m] = d.value;
-      } else {
-        monthValues[m]! += d.value;
-      }
-    }
-  }
-
-  const total = metric === "maxSpeedKmh"
-    ? Math.max(0, ...monthValues)
-    : monthValues.reduce((a, b) => a + b, 0);
-  const maxCell = Math.max(0, ...monthValues);
-  const todayMonth = new Date(now - AR_OFFSET_MS).getUTCMonth();
-  const todayYear = new Date(now - AR_OFFSET_MS).getUTCFullYear();
-
-  const cells: AnalysisCell[] = monthValues.map((v, m) => {
-    const monthStartLocal = Date.UTC(year, m, 1);
-    const isFuture = monthStartLocal > now - AR_OFFSET_MS;
-    return {
-      key: `m-${m}`,
-      shortLabel: MONTH_SHORT[m]!,
-      fullLabel: `${MONTH_LONG[m]!} ${year}`,
-      value: isFuture ? 0 : v,
-      row: 0,
-      col: m,
-      hasData: !isFuture,
-      isToday: year === todayYear && m === todayMonth,
-      isWeekend: false,
-      drillDate: ymdAr(new Date(monthStartLocal + AR_OFFSET_MS).getTime()),
-      drillTo: isFuture ? null : "month-days",
-    };
-  });
-
-  const trend: TrendPoint[] = monthValues.map((v, m) => ({
-    label: MONTH_SHORT[m]!,
-    value: v,
-    iso: `${year}-${String(m + 1).padStart(2, "0")}-01`,
-  }));
-
-  const topAssets = await topAssetsForRange(yearStart, yearEnd, metric);
-  const prevYearStart = new Date(Date.UTC(year - 1, 0, 1) + AR_OFFSET_MS);
-  const previousTotal = await totalForRange(prevYearStart, yearStart, metric);
-
-  return {
-    granularity: "year-months",
-    metric,
-    metricLabel: METRIC_LABELS[metric],
-    periodFrom: yearStart,
-    periodTo: yearEnd,
-    periodLabel: `Año ${year}`,
-    periodSubLabel: "Vista por meses",
-    total,
-    previousTotal,
-    deltaPct: pct(total, previousTotal),
-    rows: 1,
-    cols: 12,
-    rowLabels: [],
-    colLabels: [],
-    cells,
-    maxCellValue: maxCell,
-    trend,
-    topAssets,
-    anchorIso: `${year}-01-01`,
-    prevAnchorIso: `${year - 1}-01-01`,
-    nextAnchorIso: year < todayYear ? `${year + 1}-01-01` : null,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Helpers de queries
-// ═══════════════════════════════════════════════════════════════
-
-interface DayBucket {
-  iso: string;
-  value: number;
-}
-
-/** Suma una métrica por día AR-local en un rango */
-async function metricByDay(
-  from: Date,
-  to: Date,
-  metric: ActivityMetric,
-): Promise<DayBucket[]> {
-  // Build all day keys
-  const period: ActivityPeriod = {
-    from,
-    to,
-    dayCount: Math.round((to.getTime() - from.getTime()) / MS_DAY),
-  };
-  const keys = Array.from(iterDays(period));
-  const map = new Map<string, number>(keys.map((k) => [k, 0]));
+async function loadDaily(p: CellLoadParams): Promise<Map<string, number>> {
+  const { granularity, period, metric, assetIds, personIds } = p;
+  // 1 · cargar día×asset values
+  const daily = new Map<string, number>(); // key "assetId|YYYY-MM-DD" → value
 
   if (
     metric === "distanceKm" ||
@@ -733,27 +725,63 @@ async function metricByDay(
     metric === "fuelLiters"
   ) {
     const rows = await db.assetDriverDay.findMany({
-      where: { day: { gte: from, lt: to } },
-      select: { day: true, distanceKm: true, activeMin: true, tripCount: true },
+      where: {
+        assetId: { in: assetIds },
+        day: { gte: period.from, lt: period.to },
+        ...(personIds && personIds.length > 0
+          ? { personId: { in: personIds } }
+          : {}),
+      },
+      select: {
+        assetId: true,
+        day: true,
+        distanceKm: true,
+        activeMin: true,
+        tripCount: true,
+      },
     });
     for (const r of rows as any[]) {
       const iso = ymdAr(r.day.getTime());
-      if (!map.has(iso)) continue;
+      const key = `${r.assetId}|${iso}`;
       let v = 0;
       if (metric === "distanceKm") v = r.distanceKm;
       else if (metric === "activeMin") v = r.activeMin;
       else if (metric === "tripCount") v = r.tripCount;
       else if (metric === "fuelLiters") v = r.activeMin * 0.12;
-      map.set(iso, (map.get(iso) ?? 0) + v);
+      daily.set(key, (daily.get(key) ?? 0) + v);
     }
-  } else if (
-    metric === "eventCount" ||
-    metric === "highEventCount" ||
-    metric === "speedingCount"
-  ) {
+  } else if (metric === "maxSpeedKmh") {
+    const rows = await db.trip.findMany({
+      where: {
+        assetId: { in: assetIds },
+        startedAt: { gte: period.from, lt: period.to },
+        ...(personIds && personIds.length > 0
+          ? { personId: { in: personIds } }
+          : {}),
+      },
+      select: { assetId: true, startedAt: true, maxSpeedKmh: true },
+    });
+    for (const r of rows as any[]) {
+      const iso = ymdAr(r.startedAt.getTime());
+      const key = `${r.assetId}|${iso}`;
+      const cur = daily.get(key) ?? 0;
+      if (r.maxSpeedKmh > cur) daily.set(key, r.maxSpeedKmh);
+    }
+  } else {
     const rows = await db.event.findMany({
-      where: { occurredAt: { gte: from, lt: to } },
-      select: { occurredAt: true, type: true, severity: true },
+      where: {
+        assetId: { in: assetIds },
+        occurredAt: { gte: period.from, lt: period.to },
+        ...(personIds && personIds.length > 0
+          ? { personId: { in: personIds } }
+          : {}),
+      },
+      select: {
+        assetId: true,
+        occurredAt: true,
+        type: true,
+        severity: true,
+      },
     });
     for (const r of rows as any[]) {
       if (metric === "highEventCount") {
@@ -762,172 +790,139 @@ async function metricByDay(
         if (!isSpeedingType(String(r.type))) continue;
       }
       const iso = ymdAr(r.occurredAt.getTime());
-      if (!map.has(iso)) continue;
-      map.set(iso, (map.get(iso) ?? 0) + 1);
-    }
-  } else if (metric === "maxSpeedKmh") {
-    const rows = await db.trip.findMany({
-      where: { startedAt: { gte: from, lt: to } },
-      select: { startedAt: true, maxSpeedKmh: true },
-    });
-    for (const r of rows as any[]) {
-      const iso = ymdAr(r.startedAt.getTime());
-      if (!map.has(iso)) continue;
-      const cur = map.get(iso) ?? 0;
-      if (r.maxSpeedKmh > cur) map.set(iso, r.maxSpeedKmh);
+      const key = `${r.assetId}|${iso}`;
+      daily.set(key, (daily.get(key) ?? 0) + 1);
     }
   }
 
-  return keys.map((iso) => ({ iso, value: map.get(iso) ?? 0 }));
-}
-
-async function totalForRange(
-  from: Date,
-  to: Date,
-  metric: ActivityMetric,
-): Promise<number> {
-  const days = await metricByDay(from, to, metric);
-  return sumValues(days, metric);
-}
-
-function sumValues(days: DayBucket[], metric: ActivityMetric): number {
-  if (metric === "maxSpeedKmh") {
-    return Math.max(0, ...days.map((d) => d.value));
-  }
-  return days.reduce((a, b) => a + b.value, 0);
-}
-
-async function topAssetsForRange(
-  from: Date,
-  to: Date,
-  metric: ActivityMetric,
-): Promise<TopAssetRow[]> {
-  // Para distanceKm/activeMin/tripCount usamos AssetDriverDay agg por asset
-  // Para events usamos Event count por asset
-  // Para maxSpeed usamos Trip max por asset
-  // Para fuel · activeMin × 0.12
-
-  if (
-    metric === "distanceKm" ||
-    metric === "activeMin" ||
-    metric === "tripCount" ||
-    metric === "fuelLiters"
-  ) {
-    const rows = await db.assetDriverDay.findMany({
-      where: { day: { gte: from, lt: to } },
-      select: {
-        assetId: true,
-        distanceKm: true,
-        activeMin: true,
-        tripCount: true,
-        asset: {
-          select: {
-            name: true,
-            plate: true,
-            group: { select: { name: true } },
-          },
-        },
-      },
-    });
-    const agg = new Map<string, TopAssetRow>();
-    for (const r of rows as any[]) {
-      const cur = agg.get(r.assetId);
-      let inc = 0;
-      if (metric === "distanceKm") inc = r.distanceKm;
-      else if (metric === "activeMin") inc = r.activeMin;
-      else if (metric === "tripCount") inc = r.tripCount;
-      else if (metric === "fuelLiters") inc = r.activeMin * 0.12;
-      if (cur) cur.value += inc;
-      else
-        agg.set(r.assetId, {
-          assetId: r.assetId,
-          assetName: r.asset.name,
-          assetPlate: r.asset.plate,
-          groupName: r.asset.group?.name ?? null,
-          value: inc,
-        });
-    }
-    return Array.from(agg.values())
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }
-
-  if (
-    metric === "eventCount" ||
-    metric === "highEventCount" ||
-    metric === "speedingCount"
-  ) {
-    const rows = await db.event.findMany({
-      where: { occurredAt: { gte: from, lt: to } },
-      select: {
-        assetId: true,
-        type: true,
-        severity: true,
-        asset: {
-          select: {
-            name: true,
-            plate: true,
-            group: { select: { name: true } },
-          },
-        },
-      },
-    });
-    const agg = new Map<string, TopAssetRow>();
-    for (const r of rows as any[]) {
-      if (metric === "highEventCount") {
-        if (r.severity !== "HIGH" && r.severity !== "CRITICAL") continue;
-      } else if (metric === "speedingCount") {
-        if (!isSpeedingType(String(r.type))) continue;
+  // 2 · agregar daily values en columnas según granularidad
+  const out = new Map<string, number>();
+  for (const col of period.cols) {
+    // columnas tienen rango from..to en UTC
+    // recorremos los días dentro del rango de la columna
+    const dayCount = Math.round(
+      (col.to.getTime() - col.from.getTime()) / MS_DAY,
+    );
+    for (let d = 0; d < dayCount; d++) {
+      const dayUtc = new Date(col.from.getTime() + d * MS_DAY);
+      const iso = ymdAr(dayUtc.getTime());
+      for (const aid of assetIds) {
+        const v = daily.get(`${aid}|${iso}`);
+        if (!v) continue;
+        const k = `${aid}|${col.idx}`;
+        if (metric === "maxSpeedKmh") {
+          const cur = out.get(k) ?? 0;
+          if (v > cur) out.set(k, v);
+        } else {
+          out.set(k, (out.get(k) ?? 0) + v);
+        }
       }
-      const cur = agg.get(r.assetId);
-      if (cur) cur.value += 1;
-      else
-        agg.set(r.assetId, {
-          assetId: r.assetId,
-          assetName: r.asset.name,
-          assetPlate: r.asset.plate,
-          groupName: r.asset.group?.name ?? null,
-          value: 1,
-        });
     }
-    return Array.from(agg.values())
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
   }
+  return out;
+}
 
-  // maxSpeedKmh
-  const rows = await db.trip.findMany({
-    where: { startedAt: { gte: from, lt: to } },
-    select: {
-      assetId: true,
-      maxSpeedKmh: true,
-      asset: {
-        select: {
-          name: true,
-          plate: true,
-          group: { select: { name: true } },
-        },
+async function calcPreviousTotal(p: {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  anchor: Date;
+  now: number;
+  assetIds: string[];
+  personIds?: string[];
+}): Promise<number | null> {
+  if (p.assetIds.length === 0) return null;
+  // Compute previous period range based on granularity
+  const cur = computePeriodSpec(p.granularity, p.anchor, p.now);
+  const len = cur.to.getTime() - cur.from.getTime();
+  const prevFrom = new Date(cur.from.getTime() - len);
+  const prevTo = cur.from;
+
+  // Reuse loadCellValues but with a fake period spec of single col
+  const fakeSpec: PeriodSpec = {
+    from: prevFrom,
+    to: prevTo,
+    cols: [
+      {
+        idx: 0,
+        shortLabel: "",
+        fullLabel: "",
+        isToday: false,
+        isWeekend: false,
+        drillDate: null,
+        from: prevFrom,
+        to: prevTo,
       },
-    },
+    ],
+    colLabels: [],
+    periodLabel: "",
+    periodSubLabel: "",
+    anchorIso: "",
+    prevAnchorIso: "",
+    nextAnchorIso: null,
+  };
+  const cells = await loadCellValues({
+    granularity: p.granularity === "day-hours" ? "week-days" : p.granularity,
+    // For prev period we don't care about granularity layout, just the total
+    // → use a granularity that triggers loadDaily for daily metrics
+    metric: p.metric,
+    period: fakeSpec,
+    assetIds: p.assetIds,
+    personIds: p.personIds,
+    now: p.now,
   });
-  const agg = new Map<string, TopAssetRow>();
-  for (const r of rows as any[]) {
-    const cur = agg.get(r.assetId);
-    if (cur) {
-      if (r.maxSpeedKmh > cur.value) cur.value = r.maxSpeedKmh;
-    } else {
-      agg.set(r.assetId, {
-        assetId: r.assetId,
-        assetName: r.asset.name,
-        assetPlate: r.asset.plate,
-        groupName: r.asset.group?.name ?? null,
-        value: r.maxSpeedKmh,
-      });
-    }
+
+  let sum = 0;
+  let max = 0;
+  for (const v of cells.values()) {
+    sum += v;
+    if (v > max) max = v;
   }
-  return Array.from(agg.values())
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
+  return p.metric === "maxSpeedKmh" ? max : sum;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers · constants
+// ═══════════════════════════════════════════════════════════════
+
+const VEHICLE_TYPES: { value: string; label: string }[] = [
+  { value: "CAR", label: "Auto" },
+  { value: "MOTORCYCLE", label: "Moto" },
+  { value: "TRUCK", label: "Camión" },
+  { value: "HEAVY_MACHINERY", label: "Maquinaria" },
+  { value: "TRAILER", label: "Tráiler" },
+  { value: "GENERIC", label: "Genérico" },
+];
+
+const MONTH_SHORT = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
+const MONTH_LONG = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+function computeAverage(
+  g: AnalysisGranularity,
+  total: number,
+  spec: PeriodSpec,
+  metric: ActivityMetric,
+): { label: string; value: number } {
+  if (metric === "maxSpeedKmh") return { label: "Pico", value: total };
+  switch (g) {
+    case "day-hours":
+      return { label: "Promedio por hora", value: total / 24 };
+    case "week-days":
+      return { label: "Promedio diario", value: total / 7 };
+    case "month-days": {
+      const days = spec.cols.length;
+      return { label: "Promedio diario", value: total / days };
+    }
+    case "year-weeks":
+      return { label: "Promedio semanal", value: total / 52 };
+    case "year-months":
+      return { label: "Promedio mensual", value: total / 12 };
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -949,15 +944,23 @@ function ymdAr(ts: number): string {
 }
 
 function arLocalHour(ts: number): number {
-  const local = new Date(ts - AR_OFFSET_MS);
-  return local.getUTCHours();
+  return new Date(ts - AR_OFFSET_MS).getUTCHours();
 }
 
-/** Day-of-week AR-local · 0=Mon, 6=Sun */
 function arLocalDow(ts: number): number {
-  const local = new Date(ts - AR_OFFSET_MS);
-  const dow = local.getUTCDay(); // 0=Sun..6=Sat
+  const dow = new Date(ts - AR_OFFSET_MS).getUTCDay();
   return dow === 0 ? 6 : dow - 1;
+}
+
+function arLocalMidnightUtc(ts: number): Date {
+  const local = new Date(ts - AR_OFFSET_MS);
+  return new Date(
+    Date.UTC(
+      local.getUTCFullYear(),
+      local.getUTCMonth(),
+      local.getUTCDate(),
+    ) + AR_OFFSET_MS,
+  );
 }
 
 function arLocalMondayUtc(ts: number): Date {
@@ -973,7 +976,7 @@ function arLocalMondayUtc(ts: number): Date {
   return new Date(mondayLocalMs + AR_OFFSET_MS);
 }
 
-function sameArLocalDay(a: number, b: number): boolean {
+function sameDayAr(a: number, b: number): boolean {
   return ymdAr(a) === ymdAr(b);
 }
 
@@ -990,16 +993,6 @@ function isSpeedingType(t: string): boolean {
     t.includes("SPEED")
   );
 }
-
-const MONTH_SHORT = [
-  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
-];
-
-const MONTH_LONG = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
 
 function formatMonthLong(d: Date): string {
   const local = new Date(d.getTime() - AR_OFFSET_MS);

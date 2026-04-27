@@ -1,26 +1,28 @@
 import {
-  getAnalysisData,
+  getFleetAnalysis,
   type AnalysisGranularity,
   type ActivityMetric,
+  type ScopeFilters,
 } from "@/lib/queries";
 import { AnalisisClient } from "./AnalisisClient";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  Seguimiento · Análisis
+//  Análisis · matriz vehículos × tiempo · GitHub-style
 //  ─────────────────────────────────────────────────────────────
-//  Navegador temporal estilo GitHub contributions.
-//  5 granularidades · drill-down de mayor a menor zoom.
-//
 //  URL params:
 //    · g  · day-hours | week-days | month-days | year-weeks | year-months
-//    · d  · YYYY-MM-DD · ancla del período (default: hoy)
-//    · m  · métrica (default: distanceKm)
+//    · d  · YYYY-MM-DD anchor (default hoy)
+//    · m  · métrica
+//    · grp · group ids (csv)
+//    · type · vehicle types (csv)
+//    · driver · person ids (csv)
+//    · q · search libre
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
 
-const VALID_GRANULARITIES: AnalysisGranularity[] = [
+const VALID_G: AnalysisGranularity[] = [
   "day-hours",
   "week-days",
   "month-days",
@@ -28,7 +30,7 @@ const VALID_GRANULARITIES: AnalysisGranularity[] = [
   "year-months",
 ];
 
-const VALID_METRICS: ActivityMetric[] = [
+const VALID_M: ActivityMetric[] = [
   "distanceKm",
   "activeMin",
   "idleMin",
@@ -51,16 +53,21 @@ export default async function AnalisisPage({ searchParams }: PageProps) {
     if (Array.isArray(v)) return v[0] ?? null;
     return typeof v === "string" && v.length > 0 ? v : null;
   };
+  const csv = (k: string): string[] | undefined => {
+    const v = get(k);
+    if (!v) return undefined;
+    return v.split(",").filter(Boolean);
+  };
 
   const gRaw = get("g");
   const granularity: AnalysisGranularity =
-    gRaw && (VALID_GRANULARITIES as string[]).includes(gRaw)
+    gRaw && (VALID_G as string[]).includes(gRaw)
       ? (gRaw as AnalysisGranularity)
       : "year-weeks";
 
   const mRaw = get("m");
   const metric: ActivityMetric =
-    mRaw && (VALID_METRICS as string[]).includes(mRaw)
+    mRaw && (VALID_M as string[]).includes(mRaw)
       ? (mRaw as ActivityMetric)
       : "distanceKm";
 
@@ -69,7 +76,19 @@ export default async function AnalisisPage({ searchParams }: PageProps) {
   const todayIso = `${todayLocal.getUTCFullYear()}-${String(todayLocal.getUTCMonth() + 1).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
   const anchor = get("d") ?? todayIso;
 
-  const data = await getAnalysisData({ granularity, anchor, metric });
+  const scope: ScopeFilters = {
+    groupIds: csv("grp"),
+    vehicleTypes: csv("type"),
+    personIds: csv("driver"),
+    search: get("q") ?? undefined,
+  };
+
+  const data = await getFleetAnalysis({
+    granularity,
+    anchor,
+    metric,
+    scope,
+  });
 
   return (
     <div className={styles.page}>
