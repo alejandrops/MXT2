@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { TripRow } from "@/lib/queries/trips";
 import { formatDuration } from "@/lib/format";
-import { buildHistoricosHref } from "@/lib/url-historicos";
+import {
+  arLocalTimeHHMM,
+  buildHistoricosHref,
+} from "@/lib/url-historicos";
 import {
   buildTripsHref,
   type SortKey,
@@ -34,33 +37,16 @@ interface TripsTableProps {
   /** Current URL state · used to preserve filters when sorting */
   sortParams: TripsParams;
   /**
-   * Optional host mode for sort URLs. When set, clicking a
-   * sortable column header pushes to a URL built FROM THIS DATA
-   * instead of the default `/seguimiento/viajes?…`.
-   *
-   * Use this when embedding TripsTable inline in another page
-   * (e.g. /gestion/vehiculos/[id]?tab=historico) so the sort
-   * action stays on the host page instead of yanking the user
-   * to /seguimiento/viajes.
-   *
-   * Why data instead of a callback: this prop has to cross the
-   * Server → Client component boundary and Next.js App Router
-   * cannot serialize functions through that boundary. Passing
-   * plain data lets TripsTable (which is already a Client
-   * Component) construct the URL itself.
+   * Optional override for sort header href construction. Defaults to
+   * `buildTripsHref` which targets `/seguimiento/viajes`. Pass a custom
+   * builder when embedding this table elsewhere (e.g. the Histórico
+   * tab inside a vehicle's 360 view) so sort clicks stay on the
+   * current surface.
    */
-  sortHostMode?: {
-    /** Base path with no query string · e.g. "/gestion/vehiculos/abc123" */
-    basePath: string;
-    /**
-     * Query params to preserve on every sort URL · e.g.
-     * `{ tab: "historico" }`. Only the sort/dir keys are added
-     * on top; other current filter params (from/to/assets/etc)
-     * are deliberately dropped because the host page implies
-     * its own filter context.
-     */
-    preserveParams?: Record<string, string>;
-  };
+  buildSortHref?: (
+    current: TripsParams,
+    override: Partial<TripsParams>,
+  ) => string;
 }
 
 interface SortableColumn {
@@ -89,7 +75,7 @@ export function TripsTable({
   highlightedTripId,
   onHoverTrip,
   sortParams,
-  sortHostMode,
+  buildSortHref = buildTripsHref,
 }: TripsTableProps) {
   const router = useRouter();
 
@@ -130,19 +116,7 @@ export function TripsTable({
       // New column · use its default direction
       nextDir = col.defaultDir;
     }
-    if (sortHostMode) {
-      // Build the URL from plain data (this prop crossed the
-      // server/client boundary as JSON · see TripsTableProps).
-      const params = new URLSearchParams(sortHostMode.preserveParams);
-      if (col.key !== "startedAt") params.set("sort", col.key);
-      if (nextDir !== "desc") params.set("dir", nextDir);
-      const qs = params.toString();
-      router.push(`${sortHostMode.basePath}${qs ? `?${qs}` : ""}`);
-    } else {
-      router.push(
-        buildTripsHref(sortParams, { sort: col.key, sortDir: nextDir }),
-      );
-    }
+    router.push(buildSortHref(sortParams, { sort: col.key, sortDir: nextDir }));
   }
 
   if (trips.length === 0) {
@@ -196,9 +170,19 @@ export function TripsTable({
         <tbody>
           {sortedTrips.map((t) => {
             const date = ymd(t.startedAt);
+            // F2: pass the trip's start/end as HH:MM so the historial
+            // page lands clipped exactly to this trip. The user can
+            // widen the range from the time inputs if needed.
+            const fromTime = arLocalTimeHHMM(t.startedAt);
+            const toTime = arLocalTimeHHMM(t.endedAt);
             const href = buildHistoricosHref(
-              { assetId: null, date: null },
-              { assetId: t.assetId, date },
+              { assetId: null, date: null, fromTime: null, toTime: null },
+              {
+                assetId: t.assetId,
+                date,
+                fromTime,
+                toTime: fromTime < toTime ? toTime : null,
+              },
             );
             const isHi = highlightedTripId === t.id;
             return (

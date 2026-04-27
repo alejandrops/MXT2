@@ -1,0 +1,415 @@
+/* ═══════════════════════════════════════════════════════════════
+   Heatmap · 5 variantes
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Default cell sizing (sobreescrito por variante) ─────── */
+
+.wrap {
+  --cell-w: 12px;
+  --cell-h: 12px;
+}
+
+.varYearWeeks {
+  --cell-w: 12px;
+  --cell-h: 12px;
+}
+
+.varYearMonths {
+  --cell-w: 90px;
+  --cell-h: 88px;
+}
+
+.varMonthDays {
+  --cell-w: 60px;
+  --cell-h: 56px;
+}
+
+.varWeekDays {
+  --cell-w: 130px;
+  --cell-h: 100px;
+}
+
+.varDayHours {
+  --cell-w: 38px;
+  --cell-h: 56px;
+}
+
+/* ── Headers ─────────────────────────────────────────────── */
+
+.colLabelRow {
+  position: relative;
+  height: 14px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.rowLabelSpacer {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.colLabels {
+  position: relative;
+  flex: 1;
+  height: 14px;
+}
+
+.colLabel {
+  position: absolute;
+  font-family: var(--f);
+  font-size: 9.5px;
+  color: var(--t3);
+  font-weight: 500;
+}
+
+.weekHeader,
+.monthHeader {
+  display: grid;
+  grid-template-columns: repeat(7, var(--cell-w));
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.weekHeaderLabel,
+.monthHeaderLabel {
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t3);
+  text-align: center;
+}
+
+.weekHeaderWeekend,
+.monthHeaderWeekend {
+  color: var(--ora);
+}
+
+.dayAxis {
+  position: relative;
+  height: 14px;
+  margin-bottom: 6px;
+}
+
+.dayAxisLabel {
+  position: absolute;
+  font-family: var(--f);
+  font-size: 10px;
+  color: var(--t3);
+  font-weight: 500;
+}
+
+/* ── Grid + scroll ────────────────────────────────────────── */
+
+.gridScroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.gridWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.rowLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 24px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.rowLabel {
+  height: var(--cell-h);
+  display: flex;
+  align-items: center;
+  font-family: var(--f);
+  font-size: 9.5px;
+  color: var(--t3);
+}
+
+.grid {
+  display: grid;
+  gap: 2px;
+}
+
+/* For larger variants · use bigger gap */
+.varYearMonths .grid,
+.varMonthDays .grid,
+.varWeekDays .grid,
+.varDayHours .grid {
+  gap: 4px;
+}
+
+/* ── Cell base ────────────────────────────────────────────── */
+
+.cell {
+  width: var(--cell-w);
+  height: var(--cell-h);
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--tx);
+  transition: transform 0.06s, outline 0.06s;
+}
+
+.varYearMonths .cell,
+.varMonthDays .cell,
+.varWeekDays .cell,
+.varDayHours .cell {
+  border-radius: 4px;
+  border: 1px solid var(--brd);
+}
+
+.cellEmpty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.cellWeekend {
+  /* weekend background tint subtle */
+}
+
+.cellToday {
+  outline: 2px solid var(--blu);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.cellInteractive {
+  cursor: pointer;
+}
+
+.cellInteractive:hover {
+  transform: scale(1.05);
+  outline: 2px solid var(--tx);
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+.cellLabel {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.varYearWeeks .cellLabel {
+  display: none;
+}
+
+.varYearMonths .cellLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  margin-bottom: 4px;
+}
+
+.varMonthDays .cellLabel {
+  font-size: 13px;
+  font-weight: 600;
+  position: absolute;
+  top: 4px;
+  left: 6px;
+}
+
+.varWeekDays .cellLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: absolute;
+  top: 6px;
+  left: 8px;
+}
+
+.varDayHours .cellLabel {
+  font-size: 9.5px;
+  color: var(--t3);
+  font-weight: 500;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+}
+
+.cellSubValue {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.varWeekDays .cellSubValue {
+  margin-top: 16px;
+}
+
+.varMonthDays .cellSubValue {
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.cellSubMicro {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+/* ── Intensity buckets · azul gradiente ───────────────────── */
+
+.cell[data-intensity="0"] {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.cell[data-intensity="1"] {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.cell[data-intensity="2"] {
+  background: rgba(37, 99, 235, 0.40);
+}
+
+.cell[data-intensity="3"] {
+  background: rgba(37, 99, 235, 0.65);
+  color: #fff;
+}
+
+.cell[data-intensity="4"] {
+  background: rgba(37, 99, 235, 0.92);
+  color: #fff;
+}
+
+/* For larger variants · keep readable text */
+
+.varYearMonths .cell[data-intensity="3"],
+.varYearMonths .cell[data-intensity="4"],
+.varMonthDays .cell[data-intensity="3"],
+.varMonthDays .cell[data-intensity="4"],
+.varWeekDays .cell[data-intensity="3"],
+.varWeekDays .cell[data-intensity="4"],
+.varDayHours .cell[data-intensity="3"],
+.varDayHours .cell[data-intensity="4"] {
+  color: #fff;
+}
+
+.varYearMonths .cell[data-intensity="3"] .cellLabel,
+.varYearMonths .cell[data-intensity="4"] .cellLabel,
+.varMonthDays .cell[data-intensity="3"] .cellLabel,
+.varMonthDays .cell[data-intensity="4"] .cellLabel,
+.varWeekDays .cell[data-intensity="3"] .cellLabel,
+.varWeekDays .cell[data-intensity="4"] .cellLabel,
+.varDayHours .cell[data-intensity="3"] .cellLabel,
+.varDayHours .cell[data-intensity="4"] .cellLabel {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.varYearMonths .cell[data-intensity="3"] .cellSubValue,
+.varYearMonths .cell[data-intensity="4"] .cellSubValue,
+.varMonthDays .cell[data-intensity="3"] .cellSubValue,
+.varMonthDays .cell[data-intensity="4"] .cellSubValue,
+.varWeekDays .cell[data-intensity="3"] .cellSubValue,
+.varWeekDays .cell[data-intensity="4"] .cellSubValue,
+.varDayHours .cell[data-intensity="3"] .cellSubMicro,
+.varDayHours .cell[data-intensity="4"] .cellSubMicro {
+  color: #fff;
+}
+
+/* Weekend tint for year-weeks · ligero overlay naranja */
+.varYearWeeks .cellWeekend[data-intensity="0"] {
+  background: rgba(255, 142, 38, 0.10);
+}
+
+/* ── Legend ───────────────────────────────────────────────── */
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+.legendLabel {
+  margin: 0 4px;
+}
+
+.legendCell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legendCell[data-intensity="0"] {
+  background: rgba(0, 0, 0, 0.04);
+}
+.legendCell[data-intensity="1"] {
+  background: rgba(37, 99, 235, 0.18);
+}
+.legendCell[data-intensity="2"] {
+  background: rgba(37, 99, 235, 0.40);
+}
+.legendCell[data-intensity="3"] {
+  background: rgba(37, 99, 235, 0.65);
+}
+.legendCell[data-intensity="4"] {
+  background: rgba(37, 99, 235, 0.92);
+}
+
+.legendNote {
+  margin-left: 8px;
+}
+
+/* ── Tooltip ──────────────────────────────────────────────── */
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #1f2937;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  max-width: 260px;
+}
+
+.tooltipName {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tooltipValue {
+  font-family: var(--m);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipHint {
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+  font-style: italic;
+}

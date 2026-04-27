@@ -3,12 +3,12 @@ import {
   ActivityHeatmap,
   AlarmCard,
   DriverAlarmFilterBar,
+  DriverAssetsPanel,
   DriverEventFilterBar,
   EventRow,
   KpiTile,
   Pagination,
   PersonHeader,
-  SectionHeader,
   Tabs,
   type TabDef,
 } from "@/components/maxtracker";
@@ -27,27 +27,28 @@ import {
   parseDriverAlarmsParams,
 } from "@/lib/url-driver-alarms";
 import { formatNumber } from "@/lib/format";
-import type { PersonDetail } from "@/types/domain";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  Libro del Conductor (Sub-lote 3.3 · Patrón B)
+//  Libro del Conductor (F7 · refactor)
 //  ─────────────────────────────────────────────────────────────
 //  /gestion/conductores/[id]
 //
-//  Mirrors structure of Libro del Asset:
-//    PersonHeader → KPI strip → Tabs → tab content
-//
 //  Tabs:
-//    Overview  · Sparkline + recent events + driven assets
-//    Eventos   · Paginated event list with filters
-//    Alarmas   · Paginated alarm list with filters
-//    Documentos· Disabled (Lote 4+)
+//    · Vehículos · espejo del E5-A · tabla + heatmap por asset
+//    · Actividad · heatmap del conductor
+//    · Eventos   · paginado con filtros
+//    · Alarmas   · paginado con filtros
+//    · Documentos· disabled
+//
+//  Cambio respecto del original: el tab "Overview" se elimina
+//  (el sparkline + recent events + driven assets quedaba flojo).
+//  En su lugar entra "Vehículos manejados" como tab principal.
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
 
-type TabKey = "overview" | "actividad" | "eventos" | "alarmas";
+type TabKey = "vehiculos" | "actividad" | "eventos" | "alarmas";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -75,10 +76,10 @@ export default async function LibroConductorPage({
         ? "eventos"
         : tabParam === "alarmas"
           ? "alarmas"
-          : "overview";
+          : "vehiculos";
 
   const tabs: TabDef[] = [
-    { key: "overview", label: "Overview" },
+    { key: "vehiculos", label: "Vehículos" },
     { key: "actividad", label: "Actividad" },
     { key: "eventos", label: "Eventos", count: person.stats.eventCount30d },
     { key: "alarmas", label: "Alarmas", count: person.stats.openAlarms },
@@ -137,8 +138,8 @@ export default async function LibroConductorPage({
 
       {/* ── Tab content ────────────────────────────────────── */}
       <div className={styles.tabContent}>
-        {activeTab === "overview" ? (
-          <OverviewTab personId={id} person={person} />
+        {activeTab === "vehiculos" ? (
+          <DriverAssetsPanel personId={id} />
         ) : activeTab === "actividad" ? (
           <ActivityHeatmap
             data={activityHeatmap}
@@ -151,76 +152,6 @@ export default async function LibroConductorPage({
           <AlarmasTab personId={id} sp={sp} />
         )}
       </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Overview tab
-// ═══════════════════════════════════════════════════════════════
-
-async function OverviewTab({
-  personId,
-  person,
-}: {
-  personId: string;
-  person: PersonDetail;
-}) {
-  // Get recent events for this driver — reuse listEventsByPerson
-  // with page=1 and small page size.
-  const recent = await listEventsByPerson({
-    personId,
-    page: 1,
-    pageSize: 8,
-  });
-
-  return (
-    <div className={styles.overview}>
-      {/* Left: sparkline + recent events */}
-      <section className={styles.leftCol}>
-        <SectionHeader title="Actividad · últimos 30 días" />
-        <Sparkline data={person.eventHistogram} />
-
-        <SectionHeader title="Eventos recientes" />
-        {recent.rows.length === 0 ? (
-          <div className={styles.empty}>Sin eventos registrados.</div>
-        ) : (
-          <div className={styles.list}>
-            {recent.rows.map((e) => (
-              <EventRow key={e.id} event={e} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Right: driven assets */}
-      <section className={styles.rightCol}>
-        <SectionHeader
-          title="Assets que maneja"
-          count={person.drivenAssets.length}
-        />
-        {person.drivenAssets.length === 0 ? (
-          <div className={styles.empty}>Sin asignación.</div>
-        ) : (
-          <div className={styles.assetList}>
-            {person.drivenAssets.map((a) => (
-              <a
-                key={a.id}
-                href={`/gestion/vehiculos/${a.id}`}
-                className={styles.assetCard}
-              >
-                <div className={styles.assetName}>{a.name}</div>
-                {a.plate && (
-                  <div className={styles.assetMeta}>
-                    {a.plate}
-                    {a.make && a.model && ` · ${a.make} ${a.model}`}
-                  </div>
-                )}
-              </a>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
@@ -341,106 +272,3 @@ async function AlarmasTab({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Sparkline · inline SVG (Decisión 3 · Sub-lote 3.3)
-//  ─────────────────────────────────────────────────────────────
-//  Tiny bar-chart SVG, no library. 30 daily buckets across the
-//  width. Bars tinted red if count is at the peak, grey otherwise.
-//  This is the only chart in the app for now — when we need more,
-//  we'll evaluate Recharts (Lote 4+).
-// ═══════════════════════════════════════════════════════════════
-
-function Sparkline({
-  data,
-}: {
-  data: { date: string; count: number }[];
-}) {
-  if (data.length === 0) {
-    return <div className={styles.empty}>Sin datos.</div>;
-  }
-
-  const max = Math.max(1, ...data.map((d) => d.count));
-  const total = data.reduce((acc, d) => acc + d.count, 0);
-  const peak = data.reduce(
-    (best, d) => (d.count > best.count ? d : best),
-    data[0]!,
-  );
-
-  const W = 600;
-  const H = 80;
-  const PAD_BOTTOM = 14;
-  const PAD_TOP = 6;
-  const innerH = H - PAD_BOTTOM - PAD_TOP;
-  const barW = W / data.length;
-  const gap = 2;
-
-  return (
-    <div className={styles.sparklineWrap}>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className={styles.sparkline}
-        preserveAspectRatio="none"
-      >
-        {data.map((d, i) => {
-          const h = (d.count / max) * innerH;
-          const x = i * barW + gap / 2;
-          const y = PAD_TOP + (innerH - h);
-          const w = barW - gap;
-          const isPeak = d.count === max && max > 0;
-          return (
-            <rect
-              key={d.date}
-              x={x}
-              y={y}
-              width={w}
-              height={Math.max(1, h)}
-              className={
-                d.count === 0
-                  ? styles.sparkBarEmpty
-                  : isPeak
-                    ? styles.sparkBarPeak
-                    : styles.sparkBar
-              }
-            />
-          );
-        })}
-
-        {/* x-axis labels: leftmost (-30d) and rightmost (today) */}
-        <text
-          x={4}
-          y={H - 2}
-          className={styles.sparkAxis}
-          textAnchor="start"
-        >
-          {data[0]!.date.slice(5)}
-        </text>
-        <text
-          x={W - 4}
-          y={H - 2}
-          className={styles.sparkAxis}
-          textAnchor="end"
-        >
-          hoy
-        </text>
-      </svg>
-
-      <div className={styles.sparkSummary}>
-        <strong>{total}</strong>{" "}
-        {total === 1 ? "evento en 30 días" : "eventos en 30 días"}
-        {peak.count > 0 && (
-          <>
-            {" · "}peak el{" "}
-            <strong>{formatPeakDate(peak.date)}</strong> con{" "}
-            <strong>{peak.count}</strong>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function formatPeakDate(iso: string): string {
-  // iso = "YYYY-MM-DD"
-  const [, mm, dd] = iso.split("-");
-  return `${dd}/${mm}`;
-}

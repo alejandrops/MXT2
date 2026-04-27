@@ -10,7 +10,7 @@
 
 import type { AssetStatus, MobilityType } from "@/types/domain";
 
-export type SortField = "name" | "status" | "safetyScore";
+export type SortField = "name" | "status" | "speedKmh";
 export type SortDir = "asc" | "desc";
 
 export interface AssetsSearchParams {
@@ -32,7 +32,7 @@ const VALID_STATUS: AssetStatus[] = [
   "MAINTENANCE",
 ];
 const VALID_MOBILITY: MobilityType[] = ["MOBILE", "FIXED"];
-const VALID_SORT: SortField[] = ["name", "status", "safetyScore"];
+const VALID_SORT: SortField[] = ["name", "status", "speedKmh"];
 
 /**
  * Parse a Next.js searchParams object into a typed, validated

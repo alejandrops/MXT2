@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════════
+   PositionsTable · sábana de posiciones (F2b)
+   ═══════════════════════════════════════════════════════════════ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--brd);
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.count {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--dark);
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.08s;
+}
+
+.exportBtn:hover {
+  background: var(--dark2);
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+
+.tableWrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-family: var(--f);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--t2);
+  padding: 6px 10px;
+  background: var(--sf2);
+  border-bottom: 1px solid var(--brd);
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.row {
+  cursor: pointer;
+  transition: background 0.04s;
+  border-bottom: 1px solid var(--brd);
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.rowActive {
+  background: var(--blu-bg) !important;
+}
+
+.rowActive:hover {
+  background: var(--blu-bg) !important;
+}
+
+.td {
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.row:last-child .td {
+  border-bottom: 0;
+}
+
+/* ── Cell content variants ──────────────────────────────── */
+
+.mono {
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--tx);
+}
+
+.monoSm {
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--tx);
+}
+
+.dim {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.speedAmb {
+  color: var(--ora);
+  font-weight: 600;
+}
+
+.speedRed {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.ignOn {
+  display: inline-flex;
+  padding: 1px 6px;
+  font-family: var(--m);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--grn-t);
+  background: var(--grn-bg);
+  border: 1px solid var(--grn-brd);
+  border-radius: var(--r-pill);
+}
+
+.ignOff {
+  display: inline-flex;
+  padding: 1px 6px;
+  font-family: var(--m);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--t3);
+  background: var(--sf2);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-pill);
+}
+
+.eventList {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.eventChip {
+  display: inline-flex;
+  padding: 1px 6px;
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--t2);
+  background: var(--sf2);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+
+.eventHigh {
+  color: var(--ora-t);
+  background: var(--ora-bg);
+  border-color: var(--yel-brd);
+}
+
+.eventCritical {
+  color: var(--red-t);
+  background: var(--red-bg);
+  border-color: var(--red-b);
+}
+
+/* ── States ────────────────────────────────────────────── */
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  font-style: italic;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+.truncatedHint {
+  padding: 8px 12px;
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  background: var(--sf2);
+  border-top: 1px solid var(--brd);
+  text-align: center;
+}

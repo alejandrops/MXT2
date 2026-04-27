@@ -25,7 +25,7 @@ export interface AssetListParams {
   groupId?: string | null;
   page?: number;
   pageSize?: number;
-  sortBy?: "name" | "status" | "safetyScore";
+  sortBy?: "name" | "status" | "speedKmh";
   sortDir?: "asc" | "desc";
 }
 
@@ -67,17 +67,20 @@ export async function listAssets(
       : {}),
   };
 
-  // Sort by safetyScore actually sorts on the related driver.
-  // Assets without a driver bubble to the bottom (asc) or top
-  // (desc). That's acceptable for now and documented inline.
+  // Sort:
+  //  · "name" / "status"  · plain Asset columns
+  //  · "speedKmh"         · sort on related LivePosition (E6-A).
+  //                          Assets without LivePosition fall to
+  //                          the bottom (asc) or top (desc) ·
+  //                          documented & acceptable for the demo.
   const orderBy: Prisma.AssetOrderByWithRelationInput =
     sortBy === "name"
       ? { name: sortDir }
       : sortBy === "status"
         ? { status: sortDir }
         : {
-            currentDriver: {
-              safetyScore: sortDir,
+            livePosition: {
+              speedKmh: sortDir,
             },
           };
 
@@ -98,14 +101,16 @@ export async function listAssets(
             safetyScore: true,
           },
         },
-        positions: {
-          orderBy: { recordedAt: "desc" },
-          take: 1,
+        // E6-A: Read live position from the precalculated table
+        // instead of subquerying Position. No more Position access
+        // from the UI for the asset list.
+        livePosition: {
           select: {
             lat: true,
             lng: true,
             speedKmh: true,
             recordedAt: true,
+            ignition: true,
           },
         },
       },
@@ -114,7 +119,15 @@ export async function listAssets(
 
   const rows: AssetListRow[] = items.map((a) => ({
     ...a,
-    lastPosition: a.positions[0] ?? null,
+    lastPosition: a.livePosition
+      ? {
+          lat: a.livePosition.lat,
+          lng: a.livePosition.lng,
+          speedKmh: a.livePosition.speedKmh,
+          recordedAt: a.livePosition.recordedAt,
+          ignition: a.livePosition.ignition,
+        }
+      : null,
   }));
 
   return {

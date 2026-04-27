@@ -1,0 +1,345 @@
+/* ═══════════════════════════════════════════════════════════════
+   AssetDriversHeatmap
+   ───────────────────────────────────────────────────────────────
+   Grid: driver column (fixed width) + cells row (flex 1, 53 weeks)
+   Layout strategy:
+     · driverColSpacer reserves the same width as .driverLabel so
+       month axis + legend align with the cells column.
+     · cells row uses `display: grid` with auto-fill columns so we
+       don't have to compute widths · the cells just shrink to fit.
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 16px;
+  font-size: 12px;
+  position: relative;
+  overflow-x: auto;
+}
+
+/* ── Row layout ─────────────────────────────────────────── */
+
+.axisRow,
+.row,
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row {
+  min-height: 18px;
+}
+
+.driverColSpacer,
+.driverLabel {
+  width: 200px;
+  flex: 0 0 200px;
+  font-size: 12px;
+}
+
+.driverLabel {
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+.driverNameBtn {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  margin-left: -4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--tx);
+  border-radius: var(--r-sm);
+  width: 100%;
+  text-align: left;
+}
+
+.driverNameBtn:hover {
+  background: var(--bg);
+}
+
+.swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  flex: 0 0 8px;
+}
+
+.driverName {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.currentPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--blu-t);
+  background: var(--blu-bg);
+  border: 1px solid var(--blu-brd);
+  border-radius: var(--r-pill);
+  flex: 0 0 auto;
+}
+
+/* ── Cells grid ─────────────────────────────────────────── */
+
+.cellsRow {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(53, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 530px; /* 10px min cell × 53 */
+}
+
+.cell {
+  height: 14px;
+  background: var(--sf2);
+  border-radius: 2px;
+  cursor: default;
+  transition: outline 0.08s;
+}
+
+.cell[data-intensity="1"],
+.cell[data-intensity="2"],
+.cell[data-intensity="3"],
+.cell[data-intensity="4"] {
+  cursor: pointer;
+}
+
+.cell.monthStart {
+  border-left: 1px solid var(--brd);
+  margin-left: -1px;
+  padding-left: 1px;
+}
+
+.cell:hover[data-intensity="1"],
+.cell:hover[data-intensity="2"],
+.cell:hover[data-intensity="3"],
+.cell:hover[data-intensity="4"] {
+  outline: 1px solid var(--tx);
+  outline-offset: 1px;
+}
+
+/* ── Color palette · 6 hues × 4 intensities ─────────────── */
+
+.cell[data-slot="0"][data-intensity="1"] {
+  background: #d6e7fc;
+}
+.cell[data-slot="0"][data-intensity="2"] {
+  background: #9cc4f5;
+}
+.cell[data-slot="0"][data-intensity="3"] {
+  background: #5a96e3;
+}
+.cell[data-slot="0"][data-intensity="4"] {
+  background: var(--blu);
+}
+
+.cell[data-slot="1"][data-intensity="1"] {
+  background: #d4f1e3;
+}
+.cell[data-slot="1"][data-intensity="2"] {
+  background: #94d8b4;
+}
+.cell[data-slot="1"][data-intensity="3"] {
+  background: #4eb886;
+}
+.cell[data-slot="1"][data-intensity="4"] {
+  background: var(--grn);
+}
+
+.cell[data-slot="2"][data-intensity="1"] {
+  background: #fde6c8;
+}
+.cell[data-slot="2"][data-intensity="2"] {
+  background: #fac989;
+}
+.cell[data-slot="2"][data-intensity="3"] {
+  background: #f6a948;
+}
+.cell[data-slot="2"][data-intensity="4"] {
+  background: var(--ora);
+}
+
+.cell[data-slot="3"][data-intensity="1"] {
+  background: #e3d6f6;
+}
+.cell[data-slot="3"][data-intensity="2"] {
+  background: #c3a6ec;
+}
+.cell[data-slot="3"][data-intensity="3"] {
+  background: #9b6fdc;
+}
+.cell[data-slot="3"][data-intensity="4"] {
+  background: var(--pur);
+}
+
+.cell[data-slot="4"][data-intensity="1"] {
+  background: #cef0f4;
+}
+.cell[data-slot="4"][data-intensity="2"] {
+  background: #84d8e2;
+}
+.cell[data-slot="4"][data-intensity="3"] {
+  background: #2eb1c4;
+}
+.cell[data-slot="4"][data-intensity="4"] {
+  background: var(--tel);
+}
+
+.cell[data-slot="5"][data-intensity="1"] {
+  background: #fad6d4;
+}
+.cell[data-slot="5"][data-intensity="2"] {
+  background: #f29f9b;
+}
+.cell[data-slot="5"][data-intensity="3"] {
+  background: #ea655e;
+}
+.cell[data-slot="5"][data-intensity="4"] {
+  background: var(--red);
+}
+
+/* Driver name swatch · uses same palette */
+.swatch[data-slot="0"] {
+  background: var(--blu);
+}
+.swatch[data-slot="1"] {
+  background: var(--grn);
+}
+.swatch[data-slot="2"] {
+  background: var(--ora);
+}
+.swatch[data-slot="3"] {
+  background: var(--pur);
+}
+.swatch[data-slot="4"] {
+  background: var(--tel);
+}
+.swatch[data-slot="5"] {
+  background: var(--red);
+}
+
+/* ── Axis (month labels) ────────────────────────────────── */
+
+.axisCell {
+  position: relative;
+  height: 14px;
+}
+
+.axisLabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 10px;
+  color: var(--t2);
+  font-family: var(--m);
+  white-space: nowrap;
+}
+
+/* ── Legend ─────────────────────────────────────────────── */
+
+.legendRow {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--brd);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--t2);
+}
+
+.legendLabel {
+  font-size: 10px;
+}
+
+.legendCell {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.legendCell[data-slot="legend"][data-intensity="1"] {
+  background: #d6d8de;
+}
+.legendCell[data-slot="legend"][data-intensity="2"] {
+  background: #a8acb6;
+}
+.legendCell[data-slot="legend"][data-intensity="3"] {
+  background: #6c727d;
+}
+.legendCell[data-slot="legend"][data-intensity="4"] {
+  background: var(--tx);
+}
+
+.legendNote {
+  margin-left: 12px;
+  font-size: 10px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Tooltip ────────────────────────────────────────────── */
+
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: var(--dark);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  max-width: 220px;
+}
+
+.tooltipName {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tooltipMeta {
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--m);
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.tooltipStats {
+  font-family: var(--m);
+  font-size: 11px;
+  color: #fff;
+}
+
+/* ── F7 · plate inline en el label del heatmap ──────────── */
+
+.plate {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--t3);
+}

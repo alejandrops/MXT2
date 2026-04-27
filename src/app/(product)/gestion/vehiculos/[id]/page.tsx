@@ -2,27 +2,25 @@ import { notFound } from "next/navigation";
 import {
   ActivityHeatmap,
   AlarmCard,
+  AssetDayRouteCard,
+  AssetDriversPanel,
   AssetHeader,
   AssetLiveStatus,
   AssetMapTab,
-  AssetRouteMap,
-  DriverAssetHistoryPanel,
   EventFilterBar,
   EventRow,
   KpiTile,
-  LeafletMap,
   Pagination,
   SectionHeader,
   Tabs,
-  TripsTable,
   type TabDef,
 } from "@/components/maxtracker";
+import { TripsTable } from "@/components/maxtracker/TripsTable";
 import {
   getAlarmsByAsset,
   getAssetActivityHeatmap,
   getAssetDayMap,
   getAssetDetail,
-  getDriverAssetHistory,
   getRecentEventsByAsset,
   listEventsByAsset,
   listTrips,
@@ -32,34 +30,23 @@ import {
   parseAssetEventsParams,
 } from "@/lib/url-asset-events";
 import {
-  parseTripsParams,
-  type TripsParams,
-} from "@/lib/url-trips";
+  buildAssetHistoricoHref,
+  parseAssetHistoricoSort,
+} from "@/lib/url-asset-historico";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
 //  Seguridad / Asset Detail (Libro B) — Patrón B
 //  ─────────────────────────────────────────────────────────────
+//  Sub-lote 1.5: full implementation.
+//
 //  Anatomy:
 //    · AssetHeader (back link, title, status, meta)
-//    · AssetLiveStatus (live alarm + state + asset data)
-//    · KPI strip (km/active/trips · 30d · safety score)
-//    · Tabs: Overview · Actividad · Mapa · Histórico · Alarmas
-//            · Eventos · Conductor · Devices
-//    · Tab content (each tab has its own async loader)
+//    · KPI strip (eventos 30d / alarmas 30d / abiertas / score)
+//    · Tabs: Overview · Histórico · Alarmas · Eventos · Persona · Devices
+//    · Tab content (Overview or Alarmas in this lote)
 //
 //  Tab state lives in `?tab=...`. Default (no param) = Overview.
-//
-//  Lote E5 (this commit):
-//    · Overview now embeds a mini RouteMap of the last day
-//      instead of a single-pin map (item E)
-//    · Histórico is now inline (TripsTable filtered by this
-//      asset, sort header stays on this page) instead of an
-//      external link to /seguimiento/historial (item D)
-//    · Conductor is now inline (DriverAssetHistoryPanel with
-//      all drivers who passed through this vehicle, with
-//      stats and per-driver heatmap) instead of an external
-//      link to the current driver's 360 (item C)
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -68,10 +55,10 @@ type TabKey =
   | "overview"
   | "actividad"
   | "mapa"
-  | "historico"
   | "alarmas"
   | "eventos"
-  | "persona"
+  | "historico"
+  | "conductor"
   | "devices";
 
 interface PageProps {
@@ -97,14 +84,14 @@ export default async function AssetDetailPage({
       ? "actividad"
       : tabParam === "mapa"
         ? "mapa"
-        : tabParam === "historico"
-          ? "historico"
-          : tabParam === "alarmas"
-            ? "alarmas"
-            : tabParam === "eventos"
-              ? "eventos"
-              : tabParam === "persona"
-                ? "persona"
+        : tabParam === "alarmas"
+          ? "alarmas"
+          : tabParam === "eventos"
+            ? "eventos"
+            : tabParam === "historico"
+              ? "historico"
+              : tabParam === "conductor"
+                ? "conductor"
                 : tabParam === "devices"
                   ? "devices"
                   : "overview";
@@ -113,7 +100,10 @@ export default async function AssetDetailPage({
     { key: "overview", label: "Overview" },
     { key: "actividad", label: "Actividad" },
     { key: "mapa", label: "Mapa" },
-    { key: "historico", label: "Histórico" },
+    {
+      key: "historico",
+      label: "Histórico",
+    },
     {
       key: "alarmas",
       label: "Alarmas",
@@ -124,7 +114,10 @@ export default async function AssetDetailPage({
       label: "Eventos",
       count: asset.stats.eventCount30d,
     },
-    { key: "persona", label: "Conductor" },
+    {
+      key: "conductor",
+      label: "Conductor",
+    },
     {
       key: "devices",
       label: "Devices",
@@ -204,16 +197,16 @@ export default async function AssetDetailPage({
           />
         ) : activeTab === "mapa" ? (
           <MapaTab assetId={id} />
-        ) : activeTab === "historico" ? (
-          <HistoricoTab assetId={id} sp={sp} />
         ) : activeTab === "alarmas" ? (
           <AlarmasTab assetId={id} />
-        ) : activeTab === "eventos" ? (
-          <EventosTab assetId={id} sp={sp} />
-        ) : activeTab === "persona" ? (
-          <PersonaTab assetId={id} />
-        ) : (
+        ) : activeTab === "historico" ? (
+          <HistoricoTab assetId={id} sp={sp} />
+        ) : activeTab === "conductor" ? (
+          <AssetDriversPanel assetId={id} />
+        ) : activeTab === "devices" ? (
           <DevicesTab asset={asset} />
+        ) : (
+          <EventosTab assetId={id} sp={sp} />
         )}
       </div>
     </div>
@@ -241,126 +234,15 @@ async function OverviewTab({
     getAssetDayMap(assetId),
   ]);
 
-  // Pre-compute display strings for the day-map header so the
-  // section title carries useful context ("Hoy" vs the actual
-  // last day with telemetry · same logic as MapaTab).
-  const dayLabel = dayMap
-    ? dayMap.isToday
-      ? "Recorrido de hoy"
-      : `Último día con datos · ${formatDayHeader(dayMap.dateISO)}`
-    : "Última posición";
-
-  const hasRoute = !!dayMap && dayMap.points.length > 0;
-
   return (
     <div className={styles.overview}>
-      {/* Left col: route map + position metadata */}
+      {/* Left col: day route map + day stats (E5-C) */}
       <section className={styles.mapColumn}>
-        <SectionHeader title={dayLabel} />
-        {hasRoute ? (
-          <>
-            <div className={styles.routeMapWrap}>
-              <AssetRouteMap
-                points={dayMap.points}
-                fallbackCenter={
-                  dayMap.lastPosition
-                    ? {
-                        lat: dayMap.lastPosition.lat,
-                        lng: dayMap.lastPosition.lng,
-                      }
-                    : undefined
-                }
-                lastHeading={dayMap.lastPosition?.heading ?? 0}
-              />
-            </div>
-            <div className={styles.posMeta}>
-              <PosMeta
-                label="Distancia · día"
-                value={`${dayMap.stats.distanceKm.toFixed(1)} km`}
-                mono
-              />
-              <PosMeta
-                label="Tiempo activo · día"
-                value={formatHours(dayMap.stats.activeMinutes)}
-              />
-              <PosMeta
-                label="Vel. máxima · día"
-                value={`${Math.round(dayMap.stats.maxSpeedKmh)} km/h`}
-                mono
-              />
-              <PosMeta
-                label="Viajes · día"
-                value={String(dayMap.stats.tripCount)}
-              />
-              {asset.lastPosition && (
-                <>
-                  <PosMeta
-                    label="Última posición"
-                    value={`${asset.lastPosition.lat.toFixed(5)}, ${asset.lastPosition.lng.toFixed(5)}`}
-                    mono
-                  />
-                  <PosMeta
-                    label="Reportada"
-                    value={asset.lastPosition.recordedAt
-                      .toISOString()
-                      .slice(0, 16)
-                      .replace("T", " ")}
-                    mono
-                  />
-                </>
-              )}
-            </div>
-          </>
-        ) : asset.lastPosition ? (
-          // No route data for any day, but we have at least a
-          // single last position · keep the previous fallback so
-          // fixed assets and recently-installed devices still
-          // get a useful Overview map.
-          <>
-            <LeafletMap
-              lat={asset.lastPosition.lat}
-              lng={asset.lastPosition.lng}
-              zoom={asset.mobilityType === "FIXED" ? 16 : 13}
-              popupContent={
-                <div>
-                  <strong>{asset.name}</strong>
-                  <br />
-                  {asset.plate && (
-                    <span style={{ fontFamily: "var(--m)", fontSize: 10 }}>
-                      {asset.plate}
-                    </span>
-                  )}
-                </div>
-              }
-            />
-            <div className={styles.posMeta}>
-              <PosMeta
-                label="Coordenadas"
-                value={`${asset.lastPosition.lat.toFixed(5)}, ${asset.lastPosition.lng.toFixed(5)}`}
-                mono
-              />
-              <PosMeta
-                label="Velocidad"
-                value={`${Math.round(asset.lastPosition.speedKmh)} km/h`}
-                mono
-              />
-              <PosMeta
-                label="Encendido"
-                value={asset.lastPosition.ignition ? "Sí" : "No"}
-              />
-              <PosMeta
-                label="Reportada"
-                value={asset.lastPosition.recordedAt
-                  .toISOString()
-                  .slice(0, 16)
-                  .replace("T", " ")}
-                mono
-              />
-            </div>
-          </>
+        {dayMap ? (
+          <AssetDayRouteCard assetId={assetId} dayMap={dayMap} />
         ) : (
           <div className={styles.empty}>
-            Sin posiciones registradas para este asset.
+            No fue posible cargar el mapa de este vehículo.
           </div>
         )}
       </section>
@@ -530,25 +412,6 @@ async function EventosTab({
 //  Helpers
 // ═══════════════════════════════════════════════════════════════
 
-function PosMeta({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className={styles.posMetaItem}>
-      <span className={styles.posMetaLabel}>{label}</span>
-      <span className={`${styles.posMetaValue} ${mono ? styles.mono : ""}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════
 //  Devices tab · list of trackers installed on this vehicle
 //  ─────────────────────────────────────────────────────────────
@@ -674,17 +537,21 @@ async function MapaTab({ assetId }: { assetId: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Histórico tab · trip listing for this asset (Lote E5 · D)
+//  Histórico tab (E5-B) · listado de viajes del vehículo
 //  ─────────────────────────────────────────────────────────────
-//  Replaces the previous behavior where Histórico was a tab href
-//  pointing to /seguimiento/historial. The user now stays on the
-//  asset 360 and sees the trip listing inline. Clicking a trip
-//  row still navigates to the day-replay (TripsTable's row Link
-//  goes to /seguimiento/historial?assetId=X&date=Y).
+//  Usa la TripsTable global filtrada por assetId. Sin filter bar
+//  ni KPI strip propia (la 360 ya tiene KPI strip en 30d arriba).
+//  Rango fijo a últimos 30 días · selector de fechas se agrega en
+//  un lote propio si el usuario lo necesita.
 //
-//  We override TripsTable's sortHrefBuilder so clicking a sort
-//  header keeps the user on this page (?tab=historico&sort=...)
-//  instead of yanking them to /seguimiento/viajes.
+//  Sort URL-driven: ?tab=historico&sort=...&dir=...
+//  El TripsTable acepta un buildSortHref custom para que los
+//  clicks en headers de sort se queden en esta página y no
+//  rebote a /seguimiento/viajes.
+//
+//  Nota: listTrips() actualmente itera Position desde la UI ·
+//  deuda preexistente conocida (refactor → Trip persistido en
+//  un lote dedicado). Reuso como está, no agrego violación nueva.
 // ═══════════════════════════════════════════════════════════════
 
 async function HistoricoTab({
@@ -694,109 +561,53 @@ async function HistoricoTab({
   assetId: string;
   sp: Record<string, string | string[] | undefined>;
 }) {
-  // Reuse the same URL parser as /seguimiento/viajes so the user
-  // can override range/sort via query params from outside.
-  const baseParams = parseTripsParams(sp);
+  // Default range · últimos 30 días anclados al "hoy" demo
+  // (consistente con la KPI strip de la 360 que también usa 30d).
+  const today = new Date("2026-04-26T12:00:00.000Z");
+  const fromDate = ymd(new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000));
+  const toDate = ymd(today);
 
-  // Force the asset filter to this asset · the page-level URL
-  // param `assets=...` is ignored for the inline use to avoid
-  // confusion (we are inside this asset's 360, full-stop).
-  const filters: TripsParams = {
-    ...baseParams,
+  const sortBits = parseAssetHistoricoSort(sp);
+  const sortParams = {
+    fromDate,
+    toDate,
     assetIds: [assetId],
     groupIds: [],
     personIds: [],
+    sort: sortBits.sort,
+    sortDir: sortBits.sortDir,
   };
 
   const trips = await listTrips({
-    fromDate: filters.fromDate,
-    toDate: filters.toDate,
-    assetIds: filters.assetIds,
+    fromDate,
+    toDate,
+    assetIds: [assetId],
   });
+
+  if (trips.length === 0) {
+    return (
+      <div className={styles.empty}>
+        Este vehículo no registra viajes en los últimos 30 días.
+      </div>
+    );
+  }
 
   return (
     <div className={styles.historicoTab}>
-      <div className={styles.historicoMeta}>
-        <span className={styles.historicoMetaLabel}>Rango</span>
-        <span className={styles.historicoMetaValue}>
-          {formatDayHeader(filters.fromDate)} → {formatDayHeader(filters.toDate)}
-        </span>
-        <span className={styles.historicoMetaSep}>·</span>
-        <span className={styles.historicoMetaCount}>
-          {trips.length} {trips.length === 1 ? "viaje" : "viajes"}
-        </span>
-      </div>
       <TripsTable
         trips={trips}
-        sortParams={filters}
-        sortHostMode={{
-          basePath: `/gestion/vehiculos/${assetId}`,
-          preserveParams: { tab: "historico" },
-        }}
+        sortParams={sortParams}
+        buildSortHref={(current, override) =>
+          buildAssetHistoricoHref(assetId, current, override)
+        }
       />
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Persona tab · driver history panel (Lote E5 · C)
-//  ─────────────────────────────────────────────────────────────
-//  Replaces the previous behavior where Conductor was a tab href
-//  pointing to /gestion/conductores/{currentDriverId}. The new
-//  panel shows ALL drivers with recent history on this vehicle,
-//  not just the current one, with km/time/days stats and a
-//  GitHub-style mini heatmap per driver. Each row links to the
-//  driver's 360.
-// ═══════════════════════════════════════════════════════════════
-
-async function PersonaTab({ assetId }: { assetId: string }) {
-  const rows = await getDriverAssetHistory(assetId);
-  return (
-    <div className={styles.personaTab}>
-      <SectionHeader
-        title="Conductores que pasaron por este vehículo"
-        count={rows.length}
-      />
-      <DriverAssetHistoryPanel rows={rows} />
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Helpers · day header formatting
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Format a YYYY-MM-DD string as "26 abr 2026" for the day header
- * in the Overview's route map and the Histórico's range strip.
- */
-function formatDayHeader(ymd: string): string {
-  const [yStr, mStr, dStr] = ymd.split("-");
-  const y = Number(yStr);
-  const m = Number(mStr);
-  const d = Number(dStr);
-  const MONTHS = [
-    "ene",
-    "feb",
-    "mar",
-    "abr",
-    "may",
-    "jun",
-    "jul",
-    "ago",
-    "sep",
-    "oct",
-    "nov",
-    "dic",
-  ];
-  if (
-    Number.isNaN(y) ||
-    Number.isNaN(m) ||
-    Number.isNaN(d) ||
-    m < 1 ||
-    m > 12
-  ) {
-    return ymd;
-  }
-  return `${d} ${MONTHS[m - 1]} ${y}`;
+function ymd(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const da = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${da}`;
 }

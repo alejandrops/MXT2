@@ -154,6 +154,8 @@ export interface DailyTrajectory {
 export async function getDailyTrajectory(
   assetId: string,
   dateISO: string, // YYYY-MM-DD · interpreted as Argentina local day
+  fromTime?: string | null, // HH:MM · optional · clip start
+  toTime?: string | null, // HH:MM · optional · clip end
 ): Promise<DailyTrajectory | null> {
   // Compute Argentina local day boundaries (UTC-3) and translate
   // to UTC for the query. A "day" for fleet operators is the local
@@ -166,6 +168,28 @@ export async function getDailyTrajectory(
   if (Number.isNaN(localMidnight.getTime())) return null;
   const dayStart = new Date(localMidnight.getTime() + AR_OFFSET_MS);
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+  // Apply optional HH:MM clipping (F2). If both times come, narrow
+  // [dayStart, dayEnd] to [dayStart+from, dayStart+to]. Otherwise
+  // we keep the full-day window.
+  let windowStart = dayStart;
+  let windowEnd = dayEnd;
+  if (fromTime && toTime) {
+    const parseHHMM = (t: string): number | null => {
+      const m = /^(\d{2}):(\d{2})$/.exec(t);
+      if (!m) return null;
+      const hh = parseInt(m[1]!, 10);
+      const mm = parseInt(m[2]!, 10);
+      if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+      return hh * 60 + mm;
+    };
+    const fromMin = parseHHMM(fromTime);
+    const toMin = parseHHMM(toTime);
+    if (fromMin !== null && toMin !== null && fromMin < toMin) {
+      windowStart = new Date(dayStart.getTime() + fromMin * 60_000);
+      windowEnd = new Date(dayStart.getTime() + toMin * 60_000);
+    }
+  }
 
   const asset = await db.asset.findUnique({
     where: { id: assetId },
@@ -192,7 +216,7 @@ export async function getDailyTrajectory(
     db.position.findMany({
       where: {
         assetId,
-        recordedAt: { gte: dayStart, lt: dayEnd },
+        recordedAt: { gte: windowStart, lt: windowEnd },
       },
       orderBy: { recordedAt: "asc" },
       select: {
@@ -207,7 +231,7 @@ export async function getDailyTrajectory(
     db.event.findMany({
       where: {
         assetId,
-        occurredAt: { gte: dayStart, lt: dayEnd },
+        occurredAt: { gte: windowStart, lt: windowEnd },
       },
       orderBy: { occurredAt: "asc" },
       select: {

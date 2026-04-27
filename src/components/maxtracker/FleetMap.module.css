@@ -71,3 +71,31 @@
       drop-shadow(0 0 22px rgba(37, 99, 235, 0.95));
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   F5 · SCADA · pulse halo for alarm markers
+   ─────────────────────────────────────────────────────────────
+   CSS Modules requires every selector to contain at least one
+   local class. We scope the global pulse rule under .map so the
+   "pure selectors" check passes; the keyframes themselves are
+   global by definition.
+   ═══════════════════════════════════════════════════════════════ */
+
+.map :global(.mx-pulse-halo) {
+  animation: mx-halo-pulse 1.6s ease-out infinite;
+}
+
+@keyframes mx-halo-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.95;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0.0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0.0;
+  }
+}

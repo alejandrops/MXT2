@@ -36,7 +36,7 @@ interface FleetMapProps {
   /** Optional polyline (last N positions of the selected asset). */
   trailPoints?: Array<{ lat: number; lng: number }>;
   /** Basemap variant */
-  layer?: "STANDARD" | "BW" | "SATELLITE";
+  layer?: "STANDARD" | "BW" | "SATELLITE" | "SCADA";
 }
 
 export default function FleetMap({
@@ -72,6 +72,7 @@ export default function FleetMap({
         heading: number;
         plate: string | null;
         groupId: string | null;
+        hasOpenAlarm: boolean;
       }
     >
   >(new Map());
@@ -244,7 +245,9 @@ export default function FleetMap({
 
       // Recompute structural keys: when these change vs the
       // last render, we need to setIcon() on every marker.
-      const structuralKey = `${cluster ? 1 : 0}-${showTypeIcon ? 1 : 0}-${showPlate ? 1 : 0}-${colorMode}`;
+      // Includes `layer` so switching between SCADA / non-SCADA
+      // refreshes the pulse halo state on every alarm marker.
+      const structuralKey = `${cluster ? 1 : 0}-${showTypeIcon ? 1 : 0}-${showPlate ? 1 : 0}-${colorMode}-${layer}`;
       const structuralChanged = lastStructuralKeyRef.current !== structuralKey;
       lastStructuralKeyRef.current = structuralKey;
 
@@ -275,6 +278,8 @@ export default function FleetMap({
             colorMode,
             showTypeIcon,
             vehicleType: a.vehicleType as any,
+            hasAlarm: a.hasOpenAlarm,
+            pulseAlarm: a.hasOpenAlarm && layer === "SCADA",
           });
           const icon = L.divIcon({
             className: "fleet-marker",
@@ -291,8 +296,8 @@ export default function FleetMap({
           marker.setLatLng([a.lat, a.lng]);
 
           // Detect state-relevant changes since last render:
-          // motor / comm / heading / plate / color drive the
-          // icon HTML. We rebuild it cheaply (it's a string).
+          // motor / comm / heading / plate / color / alarm flag drive
+          // the icon HTML. We rebuild it cheaply (it's a string).
           const prev = lastAssetSnapshotRef.current.get(a.id);
           const changed =
             !prev ||
@@ -303,6 +308,7 @@ export default function FleetMap({
             Math.round(prev.heading / 5) !== Math.round(a.heading / 5) ||
             prev.plate !== a.plate ||
             prev.groupId !== a.groupId ||
+            prev.hasOpenAlarm !== a.hasOpenAlarm ||
             needsIconRefresh;
 
           if (changed) {
@@ -316,6 +322,8 @@ export default function FleetMap({
               colorMode,
               showTypeIcon,
               vehicleType: a.vehicleType as any,
+              hasAlarm: a.hasOpenAlarm,
+              pulseAlarm: a.hasOpenAlarm && layer === "SCADA",
             });
             const icon = L.divIcon({
               className: "fleet-marker",
@@ -334,6 +342,7 @@ export default function FleetMap({
           heading: a.heading,
           plate: a.plate,
           groupId: a.groupId,
+          hasOpenAlarm: a.hasOpenAlarm,
         });
         assetsByIdRef.current.set(a.id, a);
       }

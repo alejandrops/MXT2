@@ -66,7 +66,7 @@ export function HistoricosLastSeenSync({
       ) {
         router.replace(
           buildHistoricosHref(
-            { assetId: null, date: null },
+            { assetId: null, date: null, fromTime: null, toTime: null },
             { assetId: lastSeen },
           ),
         );

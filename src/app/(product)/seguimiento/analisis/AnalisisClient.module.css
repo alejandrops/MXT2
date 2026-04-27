@@ -1,0 +1,360 @@
+/* ═══════════════════════════════════════════════════════════════
+   Análisis · navegador temporal
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Toolbar superior (granularity + metric) ────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+  flex-shrink: 0;
+}
+
+.granularityTabs {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 2px;
+  gap: 1px;
+}
+
+.granTab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 14px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  cursor: pointer;
+  color: var(--t2);
+  line-height: 1.1;
+}
+
+.granTab:hover {
+  color: var(--tx);
+}
+
+.granTabActive {
+  background: var(--sf);
+  color: var(--tx);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.granLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.granHint {
+  font-size: 9.5px;
+  color: var(--t3);
+  margin-top: 1px;
+}
+
+.granTabActive .granHint {
+  color: var(--t2);
+}
+
+.toolbarSpacer {
+  flex: 1;
+}
+
+.metricWrap {
+  display: flex;
+}
+
+/* ── Period header ──────────────────────────────────────── */
+
+.periodHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+  flex-shrink: 0;
+}
+
+.periodNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 2px;
+}
+
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--tx);
+  cursor: pointer;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--sf);
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.todayBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+}
+
+.todayBtn:hover {
+  background: var(--sf);
+}
+
+.periodLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.periodTitle {
+  font-family: var(--f);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tx);
+  line-height: 1.1;
+}
+
+.periodSub {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t3);
+}
+
+.periodTotal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.totalLabel {
+  font-family: var(--f);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+}
+
+.totalValue {
+  font-family: var(--m);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* ── Delta widget ───────────────────────────────────────── */
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--m);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.deltaPct {
+  font-weight: 600;
+}
+
+.deltaPrev {
+  color: var(--t3);
+  font-weight: 400;
+}
+
+.deltaUp {
+  color: #1e40af;
+}
+.deltaDown {
+  color: #b45309;
+}
+.deltaFlat {
+  color: var(--t3);
+}
+.deltaGood {
+  color: #16a34a;
+}
+.deltaBad {
+  color: var(--red);
+}
+
+/* ── Heatmap section ────────────────────────────────────── */
+
+.heatmapSection {
+  padding: 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+}
+
+/* ── Bottom · Trend + Top ───────────────────────────────── */
+
+.bottom {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 1100px) {
+  .bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bottomCard {
+  padding: 16px 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+}
+
+.trendCard {
+  border-right: 1px solid var(--brd);
+}
+
+@media (max-width: 1100px) {
+  .trendCard {
+    border-right: 0;
+  }
+}
+
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cardTitle {
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tx);
+  margin: 0;
+}
+
+.cardSub {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+}
+
+/* ── Top table ──────────────────────────────────────────── */
+
+.topTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--f);
+  font-size: 12px;
+}
+
+.topRow {
+  border-top: 1px solid var(--brd);
+}
+
+.topRow:first-child {
+  border-top: 0;
+}
+
+.topRow:hover {
+  background: var(--bg);
+}
+
+.topRank {
+  padding: 8px 6px;
+  font-family: var(--m);
+  font-weight: 600;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  width: 30px;
+}
+
+.topName {
+  padding: 8px;
+  font-weight: 500;
+}
+
+.assetLink {
+  color: var(--tx);
+  text-decoration: none;
+}
+
+.assetLink:hover {
+  text-decoration: underline;
+  color: var(--blu);
+}
+
+.topPlate {
+  margin-left: 6px;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t2);
+}
+
+.topGroup {
+  padding: 8px;
+  font-size: 11px;
+  color: var(--t2);
+}
+
+.topValue {
+  padding: 8px 4px 8px 8px;
+  text-align: right;
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  width: 90px;
+}
+
+.dim {
+  color: var(--t3);
+}
+
+.empty {
+  padding: 20px 12px;
+  background: var(--bg);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t3);
+  text-align: center;
+}

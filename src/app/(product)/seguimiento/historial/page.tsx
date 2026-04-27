@@ -62,13 +62,23 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
   }
 
   const trajectory = effectiveAssetId
-    ? await getDailyTrajectory(effectiveAssetId, effectiveDate)
+    ? await getDailyTrajectory(
+        effectiveAssetId,
+        effectiveDate,
+        params.fromTime,
+        params.toTime,
+      )
     : null;
 
   return (
     <div className={styles.page}>
       <HistoricosFilterBar
-        current={{ assetId: effectiveAssetId, date: effectiveDate }}
+        current={{
+          assetId: effectiveAssetId,
+          date: effectiveDate,
+          fromTime: params.fromTime,
+          toTime: params.toTime,
+        }}
         assets={assets}
       />
 

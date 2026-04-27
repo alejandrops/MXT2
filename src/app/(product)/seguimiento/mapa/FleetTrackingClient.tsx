@@ -20,9 +20,12 @@ import {
   MapViewToggle,
   gridSlotCount,
   type GridLayout,
+  type ViewMode,
 } from "@/components/maxtracker/MapViewToggle";
 import { MultiMapGrid, type SelectionMode } from "@/components/maxtracker/MultiMapGrid";
 import { VehicleSelectorModal } from "@/components/maxtracker/VehicleSelectorModal";
+import { AeropuertoView } from "@/components/maxtracker/views/AeropuertoView";
+import { KanbanView } from "@/components/maxtracker/views/KanbanView";
 import {
   ViewOptionsPopover,
   DEFAULT_VIEW_OPTIONS,
@@ -93,14 +96,41 @@ export function FleetTrackingClient({
     window.localStorage.setItem("maxtracker:mapLayer", mapLayer);
   }, [mapLayer]);
 
-  // Grid layout (1 = single, 2x2..4x4 = multi-map mode)
-  const [gridLayout, setGridLayout] = useState<GridLayout>(() => {
-    if (typeof window === "undefined") return "1";
-    const saved = window.localStorage.getItem("maxtracker:gridLayout");
-    if (saved && ["1", "2x2", "2x3", "3x3", "3x4", "4x4"].includes(saved)) {
-      return saved as GridLayout;
+  // ── ViewMode (5 modes) + sub-grid layout for mosaico ────────
+  // ViewMode persists in localStorage. Migration: old key
+  // "maxtracker:gridLayout" used "1"|"2x2"|... · new keys are
+  // "maxtracker:viewMode" and "maxtracker:gridLayout" (mosaic-only).
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "mapa";
+    const saved = window.localStorage.getItem("maxtracker:viewMode");
+    if (
+      saved === "mapa" ||
+      saved === "mosaico" ||
+      saved === "scada" ||
+      saved === "aeropuerto" ||
+      saved === "kanban"
+    ) {
+      return saved;
     }
-    return "1";
+    // Migrate from old key
+    const old = window.localStorage.getItem("maxtracker:gridLayout");
+    if (old && old !== "1") return "mosaico";
+    return "mapa";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("maxtracker:viewMode", viewMode);
+  }, [viewMode]);
+
+  const [gridLayout, setGridLayout] = useState<GridLayout>(() => {
+    if (typeof window === "undefined") return "2x2";
+    const saved = window.localStorage.getItem("maxtracker:gridLayout");
+    if (saved === "2x2" || saved === "2x3" || saved === "3x3" ||
+        saved === "3x4" || saved === "4x4") {
+      return saved;
+    }
+    return "2x2";
   });
 
   useEffect(() => {
@@ -255,7 +285,12 @@ export function FleetTrackingClient({
           en vivo
         </span>
         <div className={styles.kpiSep} />
-        <MapViewToggle value={gridLayout} onChange={setGridLayout} />
+        <MapViewToggle
+          mode={viewMode}
+          onModeChange={setViewMode}
+          gridLayout={gridLayout}
+          onGridLayoutChange={setGridLayout}
+        />
         <ViewOptionsPopover value={viewOpts} onChange={setViewOpts} />
       </div>
 
@@ -269,7 +304,16 @@ export function FleetTrackingClient({
 
       <div className={styles.body}>
         <div className={styles.mapColumn}>
-          {gridLayout === "1" ? (
+          {/* ── Render por viewMode ────────────────────────────
+              · mapa       · single-pane FleetMap (claras)
+              · scada      · single-pane FleetMap (dark · F5 lo
+                             implementará realmente; hoy reusa
+                             la layer "BW" hasta que llegue F5)
+              · mosaico    · MultiMapGrid según gridLayout
+              · aeropuerto · tabla densa, sin mapa
+              · kanban     · 5 columnas por estado, sin mapa
+              ────────────────────────────────────────────── */}
+          {viewMode === "mapa" || viewMode === "scada" ? (
             <div className={styles.mapWrap}>
               <FleetMap
                 assets={visibleAssets}
@@ -282,13 +326,15 @@ export function FleetTrackingClient({
                 flyTarget={flyTarget}
                 groupColorById={groupColorById}
                 trailPoints={trailPoints}
-                layer={mapLayer}
+                layer={viewMode === "scada" ? "SCADA" : mapLayer}
               />
               <div className={styles.mapControls}>
-                <MapLayerToggle value={mapLayer} onChange={setMapLayer} />
+                {viewMode !== "scada" && (
+                  <MapLayerToggle value={mapLayer} onChange={setMapLayer} />
+                )}
               </div>
             </div>
-          ) : (
+          ) : viewMode === "mosaico" ? (
             <div className={styles.mapWrap}>
               <MultiMapGrid
                 layout={gridLayout}
@@ -307,6 +353,11 @@ export function FleetTrackingClient({
                 <MapLayerToggle value={mapLayer} onChange={setMapLayer} />
               </div>
             </div>
+          ) : viewMode === "aeropuerto" ? (
+            <AeropuertoView assets={visibleAssets} />
+          ) : (
+            // viewMode === "kanban"
+            <KanbanView assets={visibleAssets} />
           )}
         </div>
         <div className={styles.sideColumn}>
@@ -391,6 +442,8 @@ function deriveLiveFromReplay(
       motorState: "OFF",
       commState: "NO_COMM",
       msSinceLastSeen: 1e10,
+      hasOpenAlarm: a.hasOpenAlarm,
+      openAlarmCount: a.openAlarmCount,
       driver: a.driver,
     };
   }
@@ -442,6 +495,8 @@ function deriveLiveFromReplay(
     motorState,
     commState: classifyComm(0),
     msSinceLastSeen: 0,
+    hasOpenAlarm: a.hasOpenAlarm,
+    openAlarmCount: a.openAlarmCount,
     driver: a.driver,
   };
 }
@@ -473,6 +528,8 @@ function finalize(
     motorState: forceMotor,
     commState: classifyComm(msSinceSample),
     msSinceLastSeen: msSinceSample,
+    hasOpenAlarm: a.hasOpenAlarm,
+    openAlarmCount: a.openAlarmCount,
     driver: a.driver,
   };
 }

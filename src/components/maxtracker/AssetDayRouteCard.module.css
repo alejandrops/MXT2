@@ -1,0 +1,219 @@
+/* ════════════════════════════════════════════════════════════
+   AssetDayRouteCard · variante compacta para Overview
+   Layout vertical · 1 columna · mapa arriba, KPIs abajo.
+   ════════════════════════════════════════════════════════════ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+/* ── Map ─────────────────────────────────────────────────── */
+
+.mapBox {
+  height: 280px;
+  border-bottom: 1px solid var(--brd);
+  display: flex;
+}
+
+.mapLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Day header ──────────────────────────────────────────── */
+
+.dayHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--bg);
+}
+
+.dayLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dayDate {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── KPI grid · 4 columnas ───────────────────────────────── */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--brd);
+  border-bottom: 1px solid var(--brd);
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 12px;
+  background: var(--sf);
+  min-width: 0;
+}
+
+.kpiLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpiValue {
+  font-family: var(--m);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpiAccentWarn {
+  color: var(--ora);
+}
+
+.kpiAccentCritical {
+  color: var(--red);
+}
+
+/* ── Times ───────────────────────────────────────────────── */
+
+.timesRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--brd);
+  border-bottom: 1px solid var(--brd);
+}
+
+.time {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 12px;
+  background: var(--sf);
+}
+
+.timeLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.timeValue {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeDim {
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--t3);
+}
+
+/* ── Last position ───────────────────────────────────────── */
+
+.lastPos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.lastPosLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.lastPosValue {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.lastPosMeta {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.empty {
+  padding: 20px 16px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  font-style: italic;
+  border-bottom: 1px solid var(--brd);
+}
+
+/* ── Replay button (footer) ──────────────────────────────── */
+
+.replayBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 14px;
+  background: var(--dark);
+  color: #fff;
+  text-decoration: none;
+  font-family: var(--m);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background 0.1s;
+}
+
+.replayBtn:hover {
+  background: var(--dark2);
+}

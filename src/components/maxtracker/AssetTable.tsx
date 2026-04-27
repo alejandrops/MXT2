@@ -47,8 +47,8 @@ export function AssetTable({ rows, current }: AssetTableProps) {
             <SortHeader field={null} label="Conductor" current={current} />
             <SortHeader field="status" label="Estado" current={current} />
             <SortHeader
-              field="safetyScore"
-              label="Score"
+              field="speedKmh"
+              label="Velocidad"
               current={current}
               align="right"
             />
@@ -113,23 +113,9 @@ function AssetRow({ row }: { row: AssetListRow }) {
         <StatusPill status={row.status} />
       </Cell>
 
-      {/* Score */}
+      {/* Velocidad instantánea (E6-A) */}
       <Cell href={href} align="right">
-        {driver ? (
-          <span
-            className={`${styles.score} ${
-              driver.safetyScore < 60
-                ? styles.scoreRed
-                : driver.safetyScore < 80
-                  ? styles.scoreAmb
-                  : styles.scoreGrn
-            }`}
-          >
-            {driver.safetyScore}
-          </span>
-        ) : (
-          <span className={styles.dim}>—</span>
-        )}
+        <SpeedCell lastPosition={row.lastPosition} />
       </Cell>
 
       {/* Chevron action cell */}
@@ -138,6 +124,40 @@ function AssetRow({ row }: { row: AssetListRow }) {
       </Cell>
     </tr>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SpeedCell · velocidad instantánea con accent por umbral
+//  ─────────────────────────────────────────────────────────────
+//  Reglas:
+//    · Sin lastPosition → "—" (asset nunca reportó)
+//    · ignition=false   → "—" (motor apagado · no hay velocidad
+//                              instantánea relevante)
+//    · 0 km/h           → "0 km/h" en color dim (detenido con
+//                              motor encendido)
+//    · ≥130 km/h        → rojo
+//    · ≥110 km/h        → ámbar
+//    · resto            → normal
+// ═══════════════════════════════════════════════════════════════
+
+function SpeedCell({
+  lastPosition,
+}: {
+  lastPosition: AssetListRow["lastPosition"];
+}) {
+  if (!lastPosition || !lastPosition.ignition) {
+    return <span className={styles.dim}>—</span>;
+  }
+  const v = Math.round(lastPosition.speedKmh);
+  const cls =
+    v >= 130
+      ? styles.scoreRed
+      : v >= 110
+        ? styles.scoreAmb
+        : v === 0
+          ? styles.dim
+          : styles.scoreGrn;
+  return <span className={`${styles.score} ${cls}`}>{v} km/h</span>;
 }
 
 // ═══════════════════════════════════════════════════════════════

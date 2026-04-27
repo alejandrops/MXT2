@@ -63,10 +63,25 @@ export function TripsClient({ trips, routes, sortParams }: TripsClientProps) {
     const trip = trips.find((t) => t.id === route.tripId);
     if (!trip) return;
     const date = ymd(trip.startedAt);
+    // F2: pasar HH:MM del viaje · misma lógica que TripsTable.
+    const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
+    const hhmm = (d: Date) => {
+      const local = new Date(d.getTime() - AR_OFFSET_MS);
+      return `${String(local.getUTCHours()).padStart(2, "0")}:${String(
+        local.getUTCMinutes(),
+      ).padStart(2, "0")}`;
+    };
+    const fromTime = hhmm(trip.startedAt);
+    const toTime = hhmm(trip.endedAt);
     router.push(
       buildHistoricosHref(
-        { assetId: null, date: null },
-        { assetId: trip.assetId, date },
+        { assetId: null, date: null, fromTime: null, toTime: null },
+        {
+          assetId: trip.assetId,
+          date,
+          fromTime,
+          toTime: fromTime < toTime ? toTime : null,
+        },
       ),
     );
   }

@@ -45,7 +45,10 @@ export type {
 export interface AssetListRow extends Asset {
   group: Pick<Group, "id" | "name"> | null;
   currentDriver: Pick<Person, "id" | "firstName" | "lastName" | "safetyScore"> | null;
-  lastPosition: Pick<Position, "lat" | "lng" | "speedKmh" | "recordedAt"> | null;
+  lastPosition: Pick<
+    Position,
+    "lat" | "lng" | "speedKmh" | "recordedAt" | "ignition"
+  > | null;
 }
 
 // ── Asset detail (Pantalla 3 · Libro B) ────────────────────────

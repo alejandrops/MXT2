@@ -269,113 +269,95 @@ function emitTripIfValid(
  * real Postgres setup we'd push this into a stored function or
  * materialized view of "trip_starts" / "trip_ends".
  */
+/**
+ * Returns all trips matching the filters. Cross-fleet · sorted by
+ * start time descending (newest first).
+ *
+ * F1: now reads from the persisted Trip table. The detection logic
+ * above (`detectTripsFromPositions`) is still used at seed time to
+ * populate Trip · the UI never iterates Position again.
+ */
 export async function listTrips(filters: TripFilters): Promise<TripRow[]> {
   const { startUtc, endUtc } = dateRangeToUtc(filters.fromDate, filters.toDate);
-  const assetWhere: any = { mobilityType: "MOBILE" };
+
+  const where: any = {
+    startedAt: { gte: startUtc, lte: endUtc },
+  };
+
+  // Asset filter (direct + via group). We resolve groupIds to
+  // assetIds first so the Trip query stays narrow on assetId.
+  let assetFilter: string[] | null = null;
   if (filters.assetIds && filters.assetIds.length > 0) {
-    assetWhere.id = { in: filters.assetIds };
+    assetFilter = filters.assetIds.slice();
   }
   if (filters.groupIds && filters.groupIds.length > 0) {
-    assetWhere.groupId = { in: filters.groupIds };
+    const inGroups = await db.asset.findMany({
+      where: { groupId: { in: filters.groupIds } },
+      select: { id: true },
+    });
+    const ids = inGroups.map((a: { id: string }) => a.id);
+    assetFilter = assetFilter
+      ? assetFilter.filter((id) => ids.includes(id))
+      : ids;
   }
+  if (assetFilter !== null) {
+    if (assetFilter.length === 0) return [];
+    where.assetId = { in: assetFilter };
+  }
+
   if (filters.personIds && filters.personIds.length > 0) {
-    assetWhere.currentDriverId = { in: filters.personIds };
+    where.personId = { in: filters.personIds };
   }
-  const assets = await db.asset.findMany({
-    where: assetWhere,
-    select: {
-      id: true,
-      name: true,
-      plate: true,
-      make: true,
-      model: true,
-      currentDriver: { select: { firstName: true, lastName: true } },
+
+  // Always restrict to MOBILE assets (FIXED never have trips, but
+  // a defensive filter keeps the contract clean).
+  const trips = await db.trip.findMany({
+    where,
+    orderBy: { startedAt: "desc" },
+    include: {
+      asset: {
+        select: {
+          id: true,
+          name: true,
+          plate: true,
+          make: true,
+          model: true,
+          mobilityType: true,
+        },
+      },
+      person: {
+        select: { firstName: true, lastName: true },
+      },
     },
-    orderBy: { name: "asc" },
   });
 
-  const out: TripRow[] = [];
-  for (const a of assets) {
-    const positions = await db.position.findMany({
-      where: {
-        assetId: a.id,
-        recordedAt: { gte: startUtc, lte: endUtc },
-      },
-      select: {
-        recordedAt: true,
-        lat: true,
-        lng: true,
-        speedKmh: true,
-        ignition: true,
-      },
-      orderBy: { recordedAt: "asc" },
-    });
-    if (positions.length < 2) continue;
-
-    const detected = detectTripsFromPositions(positions);
-
-    // Optional: count events that fall inside each trip window
-    // We pull all events for this asset in the window once · O(N)
-    const eventsInWindow = await db.event.findMany({
-      where: {
-        assetId: a.id,
-        occurredAt: { gte: startUtc, lte: endUtc },
-      },
-      select: { occurredAt: true, severity: true },
-      orderBy: { occurredAt: "asc" },
-    });
-
-    for (const t of detected) {
-      const startP = positions[t.startIdx]!;
-      const endP = positions[t.endIdx]!;
-      const durationMs = t.endedAt.getTime() - t.startedAt.getTime();
-      const positionCount = t.endIdx - t.startIdx + 1;
-
-      const tripEvents = eventsInWindow.filter(
-        (e: { occurredAt: Date; severity: string }) =>
-          e.occurredAt.getTime() >= t.startedAt.getTime() &&
-          e.occurredAt.getTime() <= t.endedAt.getTime(),
-      );
-      const highSeverity = tripEvents.filter(
-        (e: { severity: string }) =>
-          e.severity === "HIGH" || e.severity === "CRITICAL",
-      ).length;
-
-      const movingMs = Math.max(0, durationMs - t.idleMs);
-      const avgSpeedKmh =
-        movingMs > 0 ? t.distanceKm / (movingMs / 3_600_000) : 0;
-
-      out.push({
-        id: `${a.id}:${t.startedAt.getTime()}`,
-        assetId: a.id,
-        assetName: a.name,
-        assetPlate: a.plate,
-        assetMake: a.make,
-        assetModel: a.model,
-        driverName: a.currentDriver
-          ? `${a.currentDriver.firstName} ${a.currentDriver.lastName}`
-          : null,
-        startedAt: t.startedAt,
-        endedAt: t.endedAt,
-        durationMs,
-        distanceKm: t.distanceKm,
-        avgSpeedKmh,
-        maxSpeedKmh: t.maxSpeedKmh,
-        idleMs: t.idleMs,
-        startLat: startP.lat,
-        startLng: startP.lng,
-        endLat: endP.lat,
-        endLng: endP.lng,
-        eventCount: tripEvents.length,
-        highSeverityEventCount: highSeverity,
-        positionCount,
-      });
-    }
-  }
-
-  // Sort by start time DESC (newest first)
-  out.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
-  return out;
+  return trips
+    .filter((t: any) => t.asset.mobilityType === "MOBILE")
+    .map((t: any): TripRow => ({
+      id: t.id,
+      assetId: t.assetId,
+      assetName: t.asset.name,
+      assetPlate: t.asset.plate,
+      assetMake: t.asset.make,
+      assetModel: t.asset.model,
+      driverName: t.person
+        ? `${t.person.firstName} ${t.person.lastName}`
+        : null,
+      startedAt: t.startedAt,
+      endedAt: t.endedAt,
+      durationMs: t.durationMs,
+      distanceKm: t.distanceKm,
+      avgSpeedKmh: t.avgSpeedKmh,
+      maxSpeedKmh: t.maxSpeedKmh,
+      idleMs: t.idleMs,
+      startLat: t.startLat,
+      startLng: t.startLng,
+      endLat: t.endLat,
+      endLng: t.endLng,
+      eventCount: t.eventCount,
+      highSeverityEventCount: t.highSeverityEventCount,
+      positionCount: t.positionCount,
+    }));
 }
 
 /**
@@ -438,72 +420,47 @@ export interface TripRoute {
   points: { lat: number; lng: number }[];
 }
 
-const TARGET_POINTS_PER_TRIP = 80;
-
 export async function getTripRoutes(
-  filters: TripFilters,
+  _filters: TripFilters,
   trips: TripRow[],
 ): Promise<TripRoute[]> {
   if (trips.length === 0) return [];
-  const { startUtc, endUtc } = dateRangeToUtc(filters.fromDate, filters.toDate);
 
-  // Group trips by asset for efficient querying
-  const tripsByAsset = new Map<string, TripRow[]>();
-  for (const t of trips) {
-    if (!tripsByAsset.has(t.assetId)) tripsByAsset.set(t.assetId, []);
-    tripsByAsset.get(t.assetId)!.push(t);
+  // F1: polylines come straight out of Trip.polylineJson · zero
+  // Position queries here. The trips array already filtered by the
+  // caller's window, so we just look them up by id.
+  const tripRows = await db.trip.findMany({
+    where: { id: { in: trips.map((t) => t.id) } },
+    select: { id: true, assetId: true, polylineJson: true },
+  });
+
+  const polylineById = new Map<string, string>();
+  for (const r of tripRows) {
+    polylineById.set(r.id, r.polylineJson);
   }
+  const assetNameById = new Map<string, string>();
+  for (const t of trips) assetNameById.set(t.assetId, t.assetName);
 
   const routes: TripRoute[] = [];
-
-  for (const [assetId, assetTrips] of tripsByAsset.entries()) {
-    const positions = await db.position.findMany({
-      where: {
-        assetId,
-        recordedAt: { gte: startUtc, lte: endUtc },
-      },
-      select: { recordedAt: true, lat: true, lng: true },
-      orderBy: { recordedAt: "asc" },
-    });
-
-    for (const t of assetTrips) {
-      // Slice positions for this trip
-      const startMs = t.startedAt.getTime();
-      const endMs = t.endedAt.getTime();
-      const tripPositions = positions.filter(
-        (p: { recordedAt: Date; lat: number; lng: number }) => {
-          const ms = p.recordedAt.getTime();
-          return ms >= startMs && ms <= endMs;
-        },
-      );
-      if (tripPositions.length === 0) continue;
-
-      // Simplify: take every Nth point so we end up with ~TARGET points
-      const stride = Math.max(
-        1,
-        Math.floor(tripPositions.length / TARGET_POINTS_PER_TRIP),
-      );
-      const points: { lat: number; lng: number }[] = [];
-      for (let i = 0; i < tripPositions.length; i += stride) {
-        points.push({
-          lat: tripPositions[i]!.lat,
-          lng: tripPositions[i]!.lng,
-        });
-      }
-      // Always include the very last point
-      const last = tripPositions[tripPositions.length - 1]!;
-      const tail = points[points.length - 1];
-      if (!tail || tail.lat !== last.lat || tail.lng !== last.lng) {
-        points.push({ lat: last.lat, lng: last.lng });
-      }
-
-      routes.push({
-        tripId: t.id,
-        assetId: t.assetId,
-        assetName: t.assetName,
-        points,
-      });
+  for (const t of trips) {
+    const json = polylineById.get(t.id);
+    if (!json) continue;
+    let raw: number[][];
+    try {
+      raw = JSON.parse(json) as number[][];
+    } catch {
+      continue;
     }
+    const points = raw
+      .filter((p): p is [number, number] => Array.isArray(p) && p.length >= 2)
+      .map(([lat, lng]) => ({ lat, lng }));
+    if (points.length === 0) continue;
+    routes.push({
+      tripId: t.id,
+      assetId: t.assetId,
+      assetName: t.assetName,
+      points,
+    });
   }
   return routes;
 }

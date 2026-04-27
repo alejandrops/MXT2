@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════════════════════════
+   AssetDriversPanel
+   ═══════════════════════════════════════════════════════════════ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.empty,
+.emptyHeatmap {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 24px;
+  text-align: center;
+  color: var(--t2);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Tabla de choferes ───────────────────────────────────── */
+
+.tableWrap {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--t2);
+  padding: 8px 12px;
+  background: var(--sf2);
+  border-bottom: 1px solid var(--brd);
+  white-space: nowrap;
+}
+
+.thAction {
+  width: 32px;
+  background: var(--sf2);
+  border-bottom: 1px solid var(--brd);
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.row {
+  transition: background 0.08s;
+  border-bottom: 1px solid var(--brd);
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.row:hover .chev {
+  color: var(--tx);
+  transform: translateX(2px);
+}
+
+.td {
+  padding: 0;
+  border-bottom: 1px solid var(--brd);
+  vertical-align: middle;
+}
+
+.row:last-child .td {
+  border-bottom: none;
+}
+
+.cellLink {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: var(--tx);
+  height: 100%;
+  min-height: 38px;
+}
+
+.alignRight .cellLink {
+  justify-content: flex-end;
+}
+
+/* ── Cell content ────────────────────────────────────────── */
+
+.driverCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.driverName {
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.currentPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-family: var(--f);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--blu-t);
+  background: var(--blu-bg);
+  border: 1px solid var(--blu-brd);
+  border-radius: var(--r-pill);
+}
+
+.mono {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--tx);
+}
+
+.dim {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t2);
+}
+
+.score {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scoreGrn {
+  color: var(--grn);
+}
+
+.scoreAmb {
+  color: var(--ora);
+}
+
+.scoreRed {
+  color: var(--red);
+}
+
+.chev {
+  color: var(--t3);
+  transition:
+    color 0.08s,
+    transform 0.08s;
+}

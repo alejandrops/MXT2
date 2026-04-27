@@ -36,7 +36,10 @@ const PAGE_LABELS: Record<string, string> = {
   historial: "Historial",
   mapa: "Mapa",
   viajes: "Viajes",
+  "torre-de-control": "Torre de control",
   reporte: "Reporte",
+  analisis: "Análisis",
+  reportes: "Reportes",
 };
 
 export function Topbar() {

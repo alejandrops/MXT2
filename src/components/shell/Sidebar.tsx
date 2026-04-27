@@ -81,6 +81,12 @@ const MODULES: ModuleDef[] = [
       { label: "Mapa", href: "/seguimiento/mapa" },
       { label: "Viajes", href: "/seguimiento/viajes" },
       { label: "Historial", href: "/seguimiento/historial" },
+      {
+        label: "Torre de control",
+        href: "/seguimiento/torre-de-control",
+      },
+      { label: "Análisis", href: "/seguimiento/analisis" },
+      { label: "Reportes", href: "/seguimiento/reportes" },
     ],
   },
   {

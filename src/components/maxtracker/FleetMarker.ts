@@ -49,6 +49,10 @@ export interface FleetMarkerOpts {
   /** When true, swap the motor-state shape for a vehicle-type icon */
   showTypeIcon: boolean;
   vehicleType?: VehicleTypeIcon;
+  /** F3 · asset has at least one OPEN alarm · render red halo */
+  hasAlarm?: boolean;
+  /** F5 · animated halo (CSS keyframes pulse) · usado en SCADA */
+  pulseAlarm?: boolean;
 }
 
 const STATUS_BG: Record<MotorState, string> = {
@@ -119,10 +123,22 @@ export function buildFleetMarkerHtml(opts: FleetMarkerOpts): string {
       justify-content: center;
       border: 2px solid ${OUTLINE};
       box-shadow:
-        0 0 0 1px rgba(0,0,0,0.18),
+        ${opts.hasAlarm && !opts.pulseAlarm ? "0 0 0 4px rgba(232,53,42,0.85), 0 0 0 6px rgba(232,53,42,0.30), " : ""}0 0 0 1px rgba(0,0,0,0.18),
         0 1px 3px rgba(0,0,0,0.25);
       opacity: ${ringOpacity};
     ">
+      ${
+        opts.hasAlarm && opts.pulseAlarm
+          ? `<span class="mx-pulse-halo" style="
+              position: absolute;
+              top: -10px; left: -10px;
+              width: ${SIZE + 20}px; height: ${SIZE + 20}px;
+              border-radius: 50%;
+              border: 2px solid rgba(232, 53, 42, 0.85);
+              pointer-events: none;
+            "></span>`
+          : ""
+      }
       ${inner}
       <span style="
         position: absolute;

@@ -68,6 +68,10 @@ export interface FleetAssetLive {
   motorState: MotorState;
   commState: CommState;
   msSinceLastSeen: number;
+  /** Asset has at least one OPEN alarm (any domain) · F3 */
+  hasOpenAlarm: boolean;
+  /** Total OPEN alarms count (any domain). 0 when hasOpenAlarm is false. */
+  openAlarmCount: number;
   // Currently assigned driver (optional, may be null)
   driver: {
     id: string;
@@ -146,6 +150,20 @@ export async function getFleetLive(now: Date = new Date()): Promise<{
     orderBy: { name: "asc" },
   });
 
+  // F3 + openAlarmCount: collect counts of OPEN alarms per asset
+  const openAlarmGroups = await db.alarm.groupBy({
+    by: ["assetId"],
+    where: { status: "OPEN" },
+    _count: { _all: true },
+  });
+  const openAlarmCountByAsset = new Map<string, number>();
+  for (const g of openAlarmGroups as Array<{
+    assetId: string;
+    _count: { _all: number };
+  }>) {
+    openAlarmCountByAsset.set(g.assetId, g._count._all);
+  }
+
   // Latest position per asset (one query each · 80 round-trips
   // is fine for the scale we're at; if this grows we'd batch)
   const enriched = await Promise.all(
@@ -182,6 +200,8 @@ export async function getFleetLive(now: Date = new Date()): Promise<{
         motorState: classifyMotor(last.speedKmh, last.ignition),
         commState: classifyComm(msSinceLastSeen),
         msSinceLastSeen,
+        hasOpenAlarm: (openAlarmCountByAsset.get(a.id) ?? 0) > 0,
+        openAlarmCount: openAlarmCountByAsset.get(a.id) ?? 0,
         driver: a.currentDriver
           ? {
               id: a.currentDriver.id,
@@ -272,6 +292,10 @@ export interface ReplayAsset {
    *   replayTime = realNow + offsetMs
    */
   offsetMs: number;
+  /** Asset has at least one OPEN alarm (any domain) · F3 */
+  hasOpenAlarm: boolean;
+  /** Total OPEN alarms count (any domain). 0 when hasOpenAlarm is false. */
+  openAlarmCount: number;
   /** Currently assigned driver (optional, may be null) */
   driver: {
     id: string;
@@ -332,6 +356,20 @@ export async function getFleetReplay(
     orderBy: { name: "asc" },
   });
 
+  // F3 + openAlarmCount: counts of OPEN alarms per asset
+  const openAlarmGroups = await db.alarm.groupBy({
+    by: ["assetId"],
+    where: { status: "OPEN" },
+    _count: { _all: true },
+  });
+  const openAlarmCountByAsset = new Map<string, number>();
+  for (const g of openAlarmGroups as Array<{
+    assetId: string;
+    _count: { _all: number };
+  }>) {
+    openAlarmCountByAsset.set(g.assetId, g._count._all);
+  }
+
   // For each asset: find the latest position, then load all
   // positions of that local-AR day.
   const todayMidnight = localArMidnight(now.getTime());
@@ -377,6 +415,8 @@ export async function getFleetReplay(
         groupName: a.group?.name ?? null,
         points,
         offsetMs: replayDayMidnight - todayMidnight,
+        hasOpenAlarm: (openAlarmCountByAsset.get(a.id) ?? 0) > 0,
+        openAlarmCount: openAlarmCountByAsset.get(a.id) ?? 0,
         driver: a.currentDriver
           ? {
               id: a.currentDriver.id,

@@ -2,12 +2,14 @@
 
 import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
+import { Map as MapIcon, Table as TableIcon, Columns } from "lucide-react";
 import { TimelineScrubber } from "@/components/maxtracker/TimelineScrubber";
 import { SegmentTimeline } from "@/components/maxtracker/SegmentTimeline";
 import { MetricChart } from "@/components/maxtracker/MetricChart";
 import { TripContextHeader } from "@/components/maxtracker/TripContextHeader";
 import { TripDetailPanel } from "@/components/maxtracker/TripDetailPanel";
 import { TelemetryPanel } from "@/components/maxtracker/TelemetryPanel";
+import { PositionsTable } from "@/components/maxtracker/PositionsTable";
 import {
   MapLayerToggle,
   type MapLayer,
@@ -72,6 +74,23 @@ export function RoutePlayback({ trajectory }: RoutePlaybackProps) {
     }
   }
 
+  // View mode · "map" / "table" / "split" (F2b)
+  type ViewMode = "map" | "table" | "split";
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "map";
+    const saved = window.localStorage.getItem("historial-view-mode");
+    if (saved === "map" || saved === "table" || saved === "split") {
+      return saved;
+    }
+    return "map";
+  });
+  function handleViewModeChange(next: ViewMode) {
+    setViewMode(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("historial-view-mode", next);
+    }
+  }
+
   // Highlight state · trip and stop (mutually exclusive)
   const [selectedTrip, setSelectedTrip] = useState<{
     startIdx: number;
@@ -113,6 +132,38 @@ export function RoutePlayback({ trajectory }: RoutePlaybackProps) {
   };
   const startDate = startAt ? new Date(startAt) : null;
   const endDate = endAt ? new Date(endAt) : null;
+
+  // Click on a row in the positions table (F2b):
+  //   1. Compute the row's fraction in [0,1] of the current window
+  //   2. Move the cursor (which the map will follow)
+  //   3. Pan the map to the clicked position
+  const handleSeekToTime = useCallback(
+    (t: Date) => {
+      if (!startDate || !endDate) return;
+      const totalMs = endDate.getTime() - startDate.getTime();
+      if (totalMs <= 0) return;
+      const frac = Math.max(
+        0,
+        Math.min(1, (t.getTime() - startDate.getTime()) / totalMs),
+      );
+      setCursor(frac);
+      // Find the closest position to pan to
+      const ts = t.getTime();
+      let best: TrajectoryPoint | null = null;
+      let bestDelta = Infinity;
+      for (const p of hydratedPoints) {
+        const d = Math.abs(p.recordedAt.getTime() - ts);
+        if (d < bestDelta) {
+          bestDelta = d;
+          best = p;
+        }
+      }
+      if (best) {
+        setPanTarget({ lat: best.lat, lng: best.lng, nonce: Date.now() });
+      }
+    },
+    [startDate, endDate, hydratedPoints],
+  );
 
   // Click on an event in the side panel:
   //   1. Compute its fraction in [0,1] of the day's timeline
@@ -237,44 +288,84 @@ export function RoutePlayback({ trajectory }: RoutePlaybackProps) {
   return (
     <div className={styles.layout}>
       <div className={styles.mapColumn}>
-        <div className={styles.mapWrap}>
-          <RouteMap
-            points={hydratedPoints}
-            events={hydratedEvents}
-            cursorTime={cursorTime}
-            panTarget={panTarget}
-            layer={mapLayer}
-            selectedTrip={selectedTrip}
-            selectedStop={selectedStop}
+        {/* ── View mode toggle (F2b) ────────────────────── */}
+        <div className={styles.viewModeBar}>
+          <ViewModeButton
+            active={viewMode === "map"}
+            onClick={() => handleViewModeChange("map")}
+            label="Mapa"
+            Icon={MapIcon}
           />
-          <div className={styles.mapControls}>
-            <MapLayerToggle
-              value={mapLayer}
-              onChange={handleLayerChange}
+          <ViewModeButton
+            active={viewMode === "split"}
+            onClick={() => handleViewModeChange("split")}
+            label="Mapa + Sábana"
+            Icon={Columns}
+          />
+          <ViewModeButton
+            active={viewMode === "table"}
+            onClick={() => handleViewModeChange("table")}
+            label="Sábana"
+            Icon={TableIcon}
+          />
+        </div>
+
+        {viewMode !== "table" && (
+          <div className={styles.mapBlock}>
+            <div className={styles.mapWrap}>
+              <RouteMap
+                points={hydratedPoints}
+                events={hydratedEvents}
+                cursorTime={cursorTime}
+                panTarget={panTarget}
+                layer={mapLayer}
+                selectedTrip={selectedTrip}
+                selectedStop={selectedStop}
+              />
+              <div className={styles.mapControls}>
+                <MapLayerToggle
+                  value={mapLayer}
+                  onChange={handleLayerChange}
+                />
+              </div>
+            </div>
+            <MetricChart
+              points={hydratedPoints}
+              startAt={startDate}
+              endAt={endDate}
+              cursor={cursor}
+              onSeek={setCursor}
+            />
+            <SegmentTimeline
+              segments={hydratedSegments}
+              startAt={startDate}
+              endAt={endDate}
+              cursor={cursor}
+              onSegmentClick={handleSeekToSegment}
+            />
+            <TimelineScrubber
+              startAt={startDate}
+              endAt={endDate}
+              cursor={cursor}
+              onCursorChange={setCursor}
+              eventMarkers={eventMarkers}
             />
           </div>
-        </div>
-        <MetricChart
-          points={hydratedPoints}
-          startAt={startDate}
-          endAt={endDate}
-          cursor={cursor}
-          onSeek={setCursor}
-        />
-        <SegmentTimeline
-          segments={hydratedSegments}
-          startAt={startDate}
-          endAt={endDate}
-          cursor={cursor}
-          onSegmentClick={handleSeekToSegment}
-        />
-        <TimelineScrubber
-          startAt={startDate}
-          endAt={endDate}
-          cursor={cursor}
-          onCursorChange={setCursor}
-          eventMarkers={eventMarkers}
-        />
+        )}
+
+        {viewMode !== "map" && (
+          <div className={styles.tableBlock}>
+            <PositionsTable
+              points={hydratedPoints}
+              events={hydratedEvents}
+              dateISO={trajectory.dateISO}
+              assetName={hydratedTrajectory.asset.name}
+              assetPlate={hydratedTrajectory.asset.plate}
+              cursorTime={cursorTime}
+              onSeek={handleSeekToTime}
+            />
+          </div>
+        )}
       </div>
       <div className={styles.detailColumn}>
         <TripContextHeader trajectory={hydratedTrajectory} />
@@ -353,4 +444,29 @@ function findClosestIdx(points: TrajectoryPoint[], target: Date): number {
     else hi = mid;
   }
   return lo;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ViewModeButton (F2b)
+// ═══════════════════════════════════════════════════════════════
+
+interface ViewModeButtonProps {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  Icon: React.ComponentType<{ size?: number }>;
+}
+
+function ViewModeButton({ active, onClick, label, Icon }: ViewModeButtonProps) {
+  return (
+    <button
+      type="button"
+      className={`${styles.viewModeBtn} ${active ? styles.viewModeBtnActive : ""}`}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      <Icon size={13} />
+      <span>{label}</span>
+    </button>
+  );
 }

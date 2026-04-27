@@ -1,28 +1,41 @@
 "use client";
 
-import { ChevronDown, LayoutGrid, Square } from "lucide-react";
+import {
+  ChevronDown,
+  Grid3x3,
+  LayoutGrid,
+  Radar,
+  Rows3,
+  Square,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import styles from "./MapViewToggle.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  MapViewToggle · "Vista única" vs "Mosaico"
+//  MapViewToggle · selector de modo de vista del Mapa
 //  ─────────────────────────────────────────────────────────────
-//  Replaces the old GridLayoutToggle that confused users with a
-//  flat list (Única, 2×2, 2×3, ...). Now has two clear modes:
+//  Cinco modos:
+//    · mapa        · single-pane Leaflet con tiles claras
+//    · mosaico     · grid de N mapas (cada uno fijado a un asset)
+//    · scada       · single-pane oscuro + trails 5min + halos pulsantes
+//    · aeropuerto  · tabla densa flight-board, cero mapa
+//    · kanban      · 5 columnas de cards/chips por estado
 //
-//    · Vista única   · single-pane FleetMap (the live map)
-//    · Mosaico       · grid of N maps (each pinned to one vehicle)
+//  Cuando el modo es "mosaico", aparece un sub-selector de layout
+//  (2×2 / 2×3 / 3×3 / 3×4 / 4×4) al costado.
+//  En los demás modos el sub-selector NO aparece (decisión de UX:
+//  desaparece del DOM, no se desactiva).
 //
-//  When mosaico is active, a small layout selector (2×2 / 2×3 / ...)
-//  appears next to it.
-//
-//  See docs/design-system/shared-blocks.md for rationale.
+//  Nota tipos:
+//    · ViewMode  · qué pantalla se muestra (5-way enum)
+//    · GridLayout · cómo se subdivide cuando ViewMode === "mosaico"
 // ═══════════════════════════════════════════════════════════════
 
-export type GridLayout = "1" | "2x2" | "2x3" | "3x3" | "3x4" | "4x4";
+export type ViewMode = "mapa" | "mosaico" | "scada" | "aeropuerto" | "kanban";
+
+export type GridLayout = "2x2" | "2x3" | "3x3" | "3x4" | "4x4";
 
 export const GRID_SIZES: Record<GridLayout, { rows: number; cols: number }> = {
-  "1": { rows: 1, cols: 1 },
   "2x2": { rows: 2, cols: 2 },
   "2x3": { rows: 2, cols: 3 },
   "3x3": { rows: 3, cols: 3 },
@@ -35,10 +48,9 @@ export function gridSlotCount(layout: GridLayout): number {
   return rows * cols;
 }
 
-const MOSAIC_OPTIONS: GridLayout[] = ["2x2", "2x3", "3x3", "3x4", "4x4"];
+const GRID_OPTIONS: GridLayout[] = ["2x2", "2x3", "3x3", "3x4", "4x4"];
 
-const MOSAIC_LABELS: Record<GridLayout, string> = {
-  "1": "Única",
+const GRID_LABELS: Record<GridLayout, string> = {
   "2x2": "2×2",
   "2x3": "2×3",
   "3x3": "3×3",
@@ -46,23 +58,61 @@ const MOSAIC_LABELS: Record<GridLayout, string> = {
   "4x4": "4×4",
 };
 
-interface MapViewToggleProps {
-  value: GridLayout;
-  onChange: (next: GridLayout) => void;
+interface ModeOption {
+  key: ViewMode;
+  label: string;
+  Icon: React.ComponentType<{ size?: number }>;
 }
 
-export function MapViewToggle({ value, onChange }: MapViewToggleProps) {
-  const isSingle = value === "1";
-  const [layoutOpen, setLayoutOpen] = useState(false);
+const MODE_OPTIONS: ModeOption[] = [
+  { key: "mapa", label: "Mapa", Icon: Square },
+  { key: "mosaico", label: "Mosaico", Icon: LayoutGrid },
+  { key: "scada", label: "SCADA", Icon: Radar },
+  { key: "aeropuerto", label: "Aeropuerto", Icon: Rows3 },
+  { key: "kanban", label: "Kanban", Icon: Grid3x3 },
+];
+
+const MODE_BY_KEY: Record<ViewMode, ModeOption> = MODE_OPTIONS.reduce(
+  (acc, m) => {
+    acc[m.key] = m;
+    return acc;
+  },
+  {} as Record<ViewMode, ModeOption>,
+);
+
+interface MapViewToggleProps {
+  /** Modo actual */
+  mode: ViewMode;
+  onModeChange: (next: ViewMode) => void;
+  /** Sub-layout del mosaico · solo se usa cuando mode === "mosaico" */
+  gridLayout: GridLayout;
+  onGridLayoutChange: (next: GridLayout) => void;
+}
+
+export function MapViewToggle({
+  mode,
+  onModeChange,
+  gridLayout,
+  onGridLayoutChange,
+}: MapViewToggleProps) {
+  const [modeOpen, setModeOpen] = useState(false);
+  const [gridOpen, setGridOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
+  // Close popovers on outside click / Escape
   useEffect(() => {
-    if (!layoutOpen) return;
+    if (!modeOpen && !gridOpen) return;
     function onDoc(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setLayoutOpen(false);
+      if (!wrapRef.current?.contains(e.target as Node)) {
+        setModeOpen(false);
+        setGridOpen(false);
+      }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setLayoutOpen(false);
+      if (e.key === "Escape") {
+        setModeOpen(false);
+        setGridOpen(false);
+      }
     }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -70,75 +120,91 @@ export function MapViewToggle({ value, onChange }: MapViewToggleProps) {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [layoutOpen]);
+  }, [modeOpen, gridOpen]);
 
-  // When user goes from single to mosaic, default to 2×2
-  function activateMosaic() {
-    if (isSingle) onChange("2x2");
-  }
-  function activateSingle() {
-    if (!isSingle) onChange("1");
-  }
+  const ActiveIcon = MODE_BY_KEY[mode].Icon;
 
   return (
     <div className={styles.wrap} ref={wrapRef}>
-      <div className={styles.toggle} role="group" aria-label="Vista del mapa">
+      {/* ── Dropdown de modo ─────────────────────────────────── */}
+      <div className={styles.modeWrap}>
         <button
           type="button"
-          className={`${styles.toggleBtn} ${
-            isSingle ? styles.toggleBtnActive : ""
-          }`}
-          onClick={activateSingle}
-          aria-pressed={isSingle}
-          title="Vista única"
+          className={styles.modeTrigger}
+          onClick={() => {
+            setModeOpen((o) => !o);
+            setGridOpen(false);
+          }}
+          aria-expanded={modeOpen}
+          title={`Vista · ${MODE_BY_KEY[mode].label}`}
         >
-          <Square size={12} />
-          <span className={styles.toggleLabel}>Vista única</span>
+          <ActiveIcon size={12} />
+          <span className={styles.modeLabel}>{MODE_BY_KEY[mode].label}</span>
+          <ChevronDown size={11} className={styles.modeChev} />
         </button>
-        <button
-          type="button"
-          className={`${styles.toggleBtn} ${
-            !isSingle ? styles.toggleBtnActive : ""
-          }`}
-          onClick={activateMosaic}
-          aria-pressed={!isSingle}
-          title="Mosaico"
-        >
-          <LayoutGrid size={12} />
-          <span className={styles.toggleLabel}>Mosaico</span>
-        </button>
+        {modeOpen && (
+          <div className={styles.modeMenu} role="listbox">
+            {MODE_OPTIONS.map((opt) => {
+              const Icon = opt.Icon;
+              const isActive = opt.key === mode;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  role="option"
+                  aria-selected={isActive}
+                  className={`${styles.modeOption} ${
+                    isActive ? styles.modeOptionActive : ""
+                  }`}
+                  onClick={() => {
+                    onModeChange(opt.key);
+                    setModeOpen(false);
+                  }}
+                >
+                  <Icon size={13} />
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Layout picker · only shown when mosaico is active */}
-      {!isSingle && (
+      {/* ── Sub-selector de layout · sólo en mosaico ────────── */}
+      {mode === "mosaico" && (
         <div className={styles.layoutWrap}>
           <button
             type="button"
             className={styles.layoutTrigger}
-            onClick={() => setLayoutOpen((o) => !o)}
-            aria-expanded={layoutOpen}
-            title={`Layout · ${MOSAIC_LABELS[value]}`}
+            onClick={() => {
+              setGridOpen((o) => !o);
+              setModeOpen(false);
+            }}
+            aria-expanded={gridOpen}
+            title={`Layout · ${GRID_LABELS[gridLayout]}`}
           >
-            <span className={styles.layoutValue}>{MOSAIC_LABELS[value]}</span>
+            <span className={styles.layoutValue}>
+              {GRID_LABELS[gridLayout]}
+            </span>
             <ChevronDown size={11} className={styles.layoutChev} />
           </button>
-          {layoutOpen && (
+          {gridOpen && (
             <div className={styles.layoutMenu} role="listbox">
-              {MOSAIC_OPTIONS.map((opt) => (
+              {GRID_OPTIONS.map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   role="option"
-                  aria-selected={value === opt}
+                  aria-selected={gridLayout === opt}
                   className={`${styles.layoutOption} ${
-                    value === opt ? styles.layoutOptionActive : ""
+                    gridLayout === opt ? styles.layoutOptionActive : ""
                   }`}
                   onClick={() => {
-                    onChange(opt);
-                    setLayoutOpen(false);
+                    onGridLayoutChange(opt);
+                    setGridOpen(false);
                   }}
                 >
-                  {MOSAIC_LABELS[opt]}
+                  {GRID_LABELS[opt]}
                 </button>
               ))}
             </div>

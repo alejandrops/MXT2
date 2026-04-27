@@ -52,8 +52,70 @@
   gap: 8px;
   min-width: 0;
   min-height: 0;
-  /* The map itself has flex:1 (see RouteMap.module.css below);
-     its sibling chart/band/scrubber stay at their natural size. */
+}
+
+/* ── View mode toggle (F2b) ──────────────────────────────── */
+
+.viewModeBar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  align-self: flex-end;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.viewModeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--t2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.08s, color 0.08s;
+}
+
+.viewModeBtn:hover {
+  background: var(--bg);
+  color: var(--tx);
+}
+
+.viewModeBtnActive {
+  background: var(--tx);
+  color: #fff;
+}
+
+.viewModeBtnActive:hover {
+  background: var(--tx);
+  color: #fff;
+}
+
+/* ── Map block (mapWrap + chart + segment + scrubber) ───── */
+
+.mapBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+/* ── Table block (positions sábana) ─────────────────────── */
+
+.tableBlock {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
 
 .detailColumn {
@@ -110,10 +172,18 @@
   color: var(--t3);
 }
 
-/* Wrap so the layer toggle can sit absolute over the map */
+/* Wrap so the layer toggle can sit absolute over the map.
+   Must take all the vertical space left in mapColumn AND be
+   display:flex so .map's flex:1 actually fills it. Without the
+   display:flex here, .map's flex:1 has no flex context and
+   collapses to its min-height (280px) · which was the bug
+   reported in the screenshot: tiny map + huge empty area. */
 .mapWrap {
   position: relative;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 .mapControls {
