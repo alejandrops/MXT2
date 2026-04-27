@@ -1,0 +1,137 @@
+.card {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: var(--pad-card);
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s, border-color 0.1s;
+  position: relative;
+}
+
+.card:hover {
+  background: var(--bg);
+  border-color: var(--brd2);
+}
+
+.card:hover .chev {
+  color: var(--tx);
+  transform: translateX(2px);
+}
+
+/* ── Severity dot ─────────────────────────────────────────── */
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--t3);
+  align-self: start;
+  margin-top: 5px;
+}
+
+/* ── Body (3 lines) ──────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.line1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.type {
+  font-size: var(--fs-card-title);
+  font-weight: 500;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sevTag {
+  font-size: 10px;
+  font-family: var(--m);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.line2 {
+  font-size: var(--fs-card-body);
+  color: var(--t2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plate {
+  font-family: var(--m);
+  font-size: var(--fs-card-meta);
+  color: var(--t3);
+}
+
+.line3 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-card-meta);
+  color: var(--t3);
+  font-family: var(--m);
+}
+
+.line3 svg {
+  flex-shrink: 0;
+}
+
+.dotSep {
+  color: var(--brd2);
+  margin: 0 1px;
+}
+
+.unassigned {
+  font-style: italic;
+  color: var(--t3);
+}
+
+.time {
+  white-space: nowrap;
+}
+
+/* ── Chevron ─────────────────────────────────────────────── */
+
+.chev {
+  color: var(--t3);
+  transition: color 0.1s, transform 0.15s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Severity variants
+   Tint the dot, the left edge subtly, and the severity tag.
+   ═══════════════════════════════════════════════════════════ */
+
+.sev_LOW .dot       { background: var(--blu); }
+.sev_LOW .sevTag    { color: var(--blu-t); }
+
+.sev_MEDIUM .dot    { background: var(--ora); }
+.sev_MEDIUM .sevTag { color: var(--ora-t); }
+
+.sev_HIGH .dot      { background: var(--ora); box-shadow: 0 0 0 2px var(--ora-bg); }
+.sev_HIGH .sevTag   { color: var(--ora-t); }
+.sev_HIGH           { border-left: 2px solid var(--ora); padding-left: 9px; }
+
+.sev_CRITICAL .dot     { background: var(--red); box-shadow: 0 0 0 2px var(--red-bg); }
+.sev_CRITICAL .sevTag  { color: var(--red-dark); }
+.sev_CRITICAL          { border-left: 2px solid var(--red); padding-left: 9px; }

@@ -1,0 +1,56 @@
+/* ════════════════════════════════════════════════════════════
+   AdminTopbar
+   ════════════════════════════════════════════════════════════ */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+  background: #1A1F2E;
+  border-bottom: 1px solid #2D3748;
+  flex-shrink: 0;
+}
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #94A3B8;
+  font-family: var(--m);
+}
+
+.crumbModule {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+.crumbActive {
+  color: #E2E8F0;
+  font-weight: 500;
+}
+
+.sep {
+  color: #2D3748;
+  margin: 0 4px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.adminPill {
+  font-family: var(--m);
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366F1;
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--r-sm);
+}

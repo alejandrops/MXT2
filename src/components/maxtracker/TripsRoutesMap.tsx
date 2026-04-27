@@ -1,0 +1,246 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import type { TripRoute } from "@/lib/queries/trips";
+import type { MapLayer } from "./MapLayerToggle";
+import { TILE_SOURCES } from "./mapTileSources";
+import styles from "./TripsRoutesMap.module.css";
+
+// ═══════════════════════════════════════════════════════════════
+//  TripsRoutesMap · all trip routes overlaid on a single map
+//  ─────────────────────────────────────────────────────────────
+//  One map · many polylines · one color per asset (so the same
+//  vehicle on different days lights up the same color).
+//
+//  Hover on a polyline OR on a table row (via highlightedTripId)
+//  brings that route to the front in solid color while others
+//  fade.
+// ═══════════════════════════════════════════════════════════════
+
+interface TripsRoutesMapProps {
+  routes: TripRoute[];
+  highlightedTripId: string | null;
+  onHoverTrip: (id: string | null) => void;
+  onClickTrip: (route: TripRoute) => void;
+  /** Basemap layer · controlled by parent */
+  layer?: MapLayer;
+}
+
+// Stable color palette for assets · derived from a hash so the
+// same asset always gets the same color across page renders.
+const PALETTE = [
+  "#2563eb", // blue
+  "#dc2626", // red
+  "#16a34a", // green
+  "#ea580c", // orange
+  "#9333ea", // purple
+  "#0891b2", // cyan
+  "#ca8a04", // amber
+  "#db2777", // pink
+  "#15803d", // emerald
+  "#7c3aed", // violet
+  "#0d9488", // teal
+  "#a16207", // dark amber
+];
+
+function colorForAsset(assetId: string): string {
+  let h = 0;
+  for (let i = 0; i < assetId.length; i++) {
+    h = (h * 31 + assetId.charCodeAt(i)) & 0xffffffff;
+  }
+  return PALETTE[Math.abs(h) % PALETTE.length]!;
+}
+
+export function TripsRoutesMap({
+  routes,
+  highlightedTripId,
+  onHoverTrip,
+  onClickTrip,
+  layer = "BW",
+}: TripsRoutesMapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const LRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const polylinesByTripRef = useRef<Map<string, any>>(new Map());
+
+  // Latest callback refs so the polyline handlers don't stale
+  const onHoverRef = useRef(onHoverTrip);
+  const onClickRef = useRef(onClickTrip);
+  onHoverRef.current = onHoverTrip;
+  onClickRef.current = onClickTrip;
+
+  // ── Init map ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !containerRef.current) return;
+      LRef.current = L;
+      const map = L.map(containerRef.current, {
+        zoomControl: true,
+        attributionControl: false,
+        maxZoom: 19,
+      });
+      mapRef.current = map;
+      map.setView([-34.6, -58.4], 5);
+
+      // Tile layer · applied via the layer-effect below to avoid
+      // duplicating the tileLayer call.
+
+      // invalidateSize fix for flex containers
+      requestAnimationFrame(() => {
+        setTimeout(() => map.invalidateSize(true), 60);
+        setTimeout(() => map.invalidateSize(true), 350);
+      });
+      if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+        const ro = new ResizeObserver(() => map.invalidateSize(false));
+        ro.observe(containerRef.current);
+        resizeObserverRef.current = ro;
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // ── Switch tile layer when prop changes ────────────────────
+  useEffect(() => {
+    let attempts = 0;
+    let cancelled = false;
+    function apply() {
+      const L = LRef.current;
+      const map = mapRef.current;
+      if (!L || !map) {
+        if (cancelled || attempts > 100) return;
+        attempts++;
+        setTimeout(apply, 50);
+        return;
+      }
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current);
+        tileLayerRef.current = null;
+      }
+      const source = TILE_SOURCES[layer];
+      const newLayer = L.tileLayer(source.url, {
+        attribution: source.attribution,
+        maxZoom: source.maxZoom ?? 19,
+        subdomains: source.subdomains ?? "abc",
+      });
+      newLayer.addTo(map);
+      tileLayerRef.current = newLayer;
+    }
+    apply();
+    return () => {
+      cancelled = true;
+    };
+  }, [layer]);
+
+  // ── Render polylines · one per trip ───────────────────────
+  useEffect(() => {
+    let attempts = 0;
+    let cancelled = false;
+    function apply() {
+      const L = LRef.current;
+      const map = mapRef.current;
+      if (!L || !map) {
+        if (cancelled || attempts > 100) return;
+        attempts++;
+        setTimeout(apply, 50);
+        return;
+      }
+
+      // Remove old polylines
+      for (const pl of polylinesByTripRef.current.values()) {
+        map.removeLayer(pl);
+      }
+      polylinesByTripRef.current.clear();
+
+      if (routes.length === 0) return;
+
+      const allLatLngs: [number, number][] = [];
+      for (const route of routes) {
+        if (route.points.length < 2) continue;
+        const latlngs: [number, number][] = route.points.map((p) => [
+          p.lat,
+          p.lng,
+        ]);
+        allLatLngs.push(...latlngs);
+
+        const color = colorForAsset(route.assetId);
+        const polyline = L.polyline(latlngs, {
+          color,
+          weight: 3,
+          opacity: 0.65,
+          smoothFactor: 1.5,
+          lineCap: "round",
+          lineJoin: "round",
+        });
+
+        // Bind events · use stable refs so we don't stale
+        polyline.on("mouseover", () => {
+          onHoverRef.current(route.tripId);
+        });
+        polyline.on("mouseout", () => {
+          onHoverRef.current(null);
+        });
+        polyline.on("click", () => {
+          onClickRef.current(route);
+        });
+        polyline.on("add", () => {
+          const path = polyline.getElement?.();
+          if (path) path.style.cursor = "pointer";
+        });
+
+        polyline.addTo(map);
+        polylinesByTripRef.current.set(route.tripId, polyline);
+      }
+
+      // Fit bounds to all routes (only on initial load · don't
+      // fight the user if they zoom in)
+      if (allLatLngs.length > 0) {
+        const bounds = L.latLngBounds(allLatLngs);
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+      }
+    }
+    apply();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routes]);
+
+  // ── Highlight effect · re-style polylines when highlight changes
+  useEffect(() => {
+    for (const [tripId, pl] of polylinesByTripRef.current.entries()) {
+      const isHi = tripId === highlightedTripId;
+      const dimOthers = highlightedTripId !== null && !isHi;
+      pl.setStyle({
+        weight: isHi ? 5 : 3,
+        opacity: dimOthers ? 0.18 : isHi ? 1 : 0.65,
+      });
+      if (isHi) pl.bringToFront();
+    }
+  }, [highlightedTripId]);
+
+  // ── Empty state ───────────────────────────────────────────
+  if (routes.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <span>Sin rutas para mostrar</span>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className={styles.map} />;
+}

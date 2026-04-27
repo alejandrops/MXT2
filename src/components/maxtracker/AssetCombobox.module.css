@@ -1,0 +1,197 @@
+.wrap {
+  position: relative;
+  display: inline-block;
+  min-width: 280px;
+}
+
+/* ── Trigger (closed state) ──────────────────────────────────── */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  width: 100%;
+  height: 28px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--tx);
+  cursor: pointer;
+  text-align: left;
+}
+
+.trigger:hover {
+  border-color: var(--brd2);
+}
+
+.triggerActive {
+  border-color: var(--blu);
+  background: var(--blu-bg);
+}
+
+.triggerOpen {
+  border-color: var(--blu);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+}
+
+.label {
+  color: var(--t3);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.value {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--m);
+}
+
+.placeholder {
+  color: var(--t3);
+}
+
+.chev {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--t3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.clearBtn:hover {
+  background: var(--brd);
+  color: var(--tx);
+}
+
+/* ── Popover (open state) ─────────────────────────────────────── */
+
+.popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: 400px;
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: var(--r-sm);
+  z-index: 1500;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--sf);
+}
+
+.searchIcon {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  outline: none;
+  padding: 2px 0;
+}
+
+.searchInput::placeholder {
+  color: var(--t3);
+}
+
+/* ── Listbox ──────────────────────────────────────────────────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 1px 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: var(--m);
+  font-size: 12.5px;
+  color: var(--tx);
+}
+
+.itemActive {
+  background: var(--bg2, rgba(0, 0, 0, 0.04));
+}
+
+.itemSelected {
+  font-weight: 600;
+}
+
+.itemMain {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  grid-column: 1;
+}
+
+.itemName {
+  color: var(--tx);
+}
+
+.itemPlate {
+  color: var(--t2);
+  font-size: 11.5px;
+}
+
+.itemMeta {
+  grid-column: 1;
+  font-size: 11px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.itemCheck {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--blu);
+}
+
+.empty {
+  padding: 12px 10px;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  text-align: center;
+}

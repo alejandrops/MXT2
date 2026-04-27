@@ -1,0 +1,240 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  min-width: 280px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.count {
+  font-weight: 500;
+  color: var(--t3);
+  margin-left: 4px;
+}
+
+/* ── Stats grid ──────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.statLabel {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.statValue {
+  font-family: var(--m);
+  font-size: 14px;
+  color: var(--tx);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--brd);
+  margin: 0 -2px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--t2);
+  margin-bottom: -1px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.tab:hover {
+  color: var(--tx);
+}
+
+.tabActive {
+  color: var(--tx);
+  border-bottom-color: var(--blu);
+  font-weight: 600;
+}
+
+.tabCount {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.tabActive .tabCount {
+  background: var(--blu-bg);
+  color: var(--blu);
+}
+
+/* ── Event list ──────────────────────────────────────────── */
+
+.eventList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.eventLi {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eventRow {
+  display: grid;
+  grid-template-columns: 38px 6px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.2;
+  /* Reset button defaults (used when interactive) */
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.eventRow:hover {
+  background: var(--bg);
+}
+
+.eventRow:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: 1px;
+}
+
+.eventTime {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+.eventDot {
+  width: 6px;
+  height: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blu);
+  display: inline-block;
+}
+
+.dotCRITICAL {
+  background: #dc2626;
+}
+.dotHIGH {
+  background: #ea580c;
+}
+.dotMEDIUM {
+  background: #d97706;
+}
+.dotLOW {
+  background: #6b7280;
+}
+
+.eventType {
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventSev {
+  font-family: var(--m);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.sevCRITICAL {
+  background: var(--red-bg);
+  color: var(--red-t);
+}
+.sevHIGH {
+  background: var(--ora-bg);
+  color: var(--ora-t);
+}
+.sevMEDIUM {
+  background: var(--ora-bg);
+  color: var(--ora-t);
+  opacity: 0.8;
+}
+.sevLOW {
+  background: var(--bg);
+  color: var(--t2);
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.empty {
+  padding: 16px 8px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-sm);
+}

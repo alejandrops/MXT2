@@ -1,0 +1,124 @@
+/* ════════════════════════════════════════════════════════════
+   RoutePlayback · zone-based 100vh layout
+   ────────────────────────────────────────────────────────────
+   The page hosts this in a grid row of `1fr`, so we get the
+   full remaining viewport height. Internally:
+
+   ┌─────────────────────────────┬──────────────────┐
+   │                             │                  │
+   │           MAP               │   detail panel   │
+   │     (flex: 1, fills)        │  (sticky scroll) │
+   │                             │                  │
+   ├─────────────────────────────┤                  │
+   │   speed chart  (~90px)      │                  │
+   ├─────────────────────────────┤                  │
+   │   segment band (~60px)      │                  │
+   ├─────────────────────────────┤                  │
+   │   scrubber     (~90px)      │                  │
+   └─────────────────────────────┴──────────────────┘
+
+   The mapColumn is a flex column whose first child (the map)
+   has flex: 1 and the rest are flex-shrink:0. So as the
+   viewport grows, the map gets bigger; the bottom widgets stay
+   their natural size.
+   ════════════════════════════════════════════════════════════ */
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+@media (min-width: 1600px) {
+  .layout {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+}
+
+.mapColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  /* The map itself has flex:1 (see RouteMap.module.css below);
+     its sibling chart/band/scrubber stay at their natural size. */
+}
+
+.detailColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  /* Internal scroll if the content (lists of segments/events)
+     exceeds the column height. The page itself never scrolls. */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brd2) transparent;
+  padding-right: 4px;
+}
+
+.detailColumn::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detailColumn::-webkit-scrollbar-thumb {
+  background: var(--brd2);
+  border-radius: 3px;
+}
+
+.detailColumn::-webkit-scrollbar-thumb:hover {
+  background: var(--t3);
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--t3);
+  font-family: var(--m);
+  font-size: 13px;
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-md);
+  background: var(--sf);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapLoading {
+  flex: 1;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  background: var(--sf);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--t3);
+}
+
+/* Wrap so the layer toggle can sit absolute over the map */
+.mapWrap {
+  position: relative;
+  width: 100%;
+}
+
+.mapControls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 500;
+}

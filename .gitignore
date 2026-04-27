@@ -1,0 +1,66 @@
+# ──────────────────────────────────
+# dependencies
+# ──────────────────────────────────
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ──────────────────────────────────
+# Next.js build output
+# ──────────────────────────────────
+.next/
+out/
+build/
+dist/
+next-env.d.ts
+
+# ──────────────────────────────────
+# runtime & debug
+# ──────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ──────────────────────────────────
+# IDE & OS
+# ──────────────────────────────────
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+
+# ──────────────────────────────────
+# environment
+# ──────────────────────────────────
+# NOTE: .env IS committed because it only holds the local SQLite
+# path — no secrets. Rename to .env.example if that changes.
+.env.local
+.env.*.local
+
+# ──────────────────────────────────
+# Prisma
+# ──────────────────────────────────
+# dev.db is NOT committed · it's regenerable from seed.ts + the
+# CSV files in seed-data/. After cloning the repo, run:
+#   npx prisma db push --skip-generate
+#   npx prisma generate
+#   npm run db:seed
+# This keeps the repo small (dev.db can be 80+ MB seeded) and
+# avoids merge conflicts on the binary file.
+prisma/*.db
+prisma/*.db-journal
+
+# ──────────────────────────────────
+# TypeScript
+# ──────────────────────────────────
+*.tsbuildinfo

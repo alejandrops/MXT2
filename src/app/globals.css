@@ -1,0 +1,253 @@
+/* ═══════════════════════════════════════════════════════════════
+   Maxtracker · Design Tokens & Base Styles
+   ─────────────────────────────────────────────────────────────
+   Source: v8.18 SCADA theme. These tokens are the canonical
+   design system embryo. When DOC-10 (Design System) is formally
+   extracted, this file is the source of truth.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── BRAND ─────────────────────────────────────────────────── */
+  --dark:          #0C1520;
+  --dark2:         #1A2535;
+  --red:           #E8352A;
+  --red-dark:      #C42820;
+  --red-bg:        #FEF0EF;
+  --red-t:         #7F1D1D;
+  --red-b:         #FECACA;
+
+  /* ── SEMANTIC STATES ───────────────────────────────────────── */
+  --ora:           #F59E0B;
+  --ora-bg:        #FFFBEB;
+  --ora-t:         #78350F;
+  --yel-brd:       #FDE68A;
+  --grn:           #059669;
+  --grn-bg:        #ECFDF5;
+  --grn-t:         #064E3B;
+  --grn-brd:       #86EFAC;
+  --blu:           #2563EB;
+  --blu-bg:        #EFF6FF;
+  --blu-t:         #1E3A8A;
+  --blu-brd:       #BFDBFE;
+  --tel:           #0891B2;
+  --tel-bg:        #ECFEFF;
+  --tel-t:         #164E63;
+  --tel-brd:       #A5F3FC;
+  --pur:           #7C3AED;
+  --pur-bg:        #F5F3FF;
+  --pur-t:         #4C1D95;
+  --amb:           var(--ora);
+  --amb-bg:        var(--ora-bg);
+  --amb-t:         var(--ora-t);
+
+  /* ── SURFACES ──────────────────────────────────────────────── */
+  --bg:            #EDEEF1;   /* page background */
+  --sf:            #FAFAFA;   /* card surface */
+  --sf2:           #EDEEEF;   /* subtle alt surface */
+  --brd:           #CDD0D5;   /* default border */
+  --brd2:          #B4B8BE;   /* emphasized border */
+  --tx:            #111827;   /* primary text */
+  --t2:            #6B7280;   /* secondary text */
+  --t3:            #9CA3AF;   /* tertiary text / labels */
+  --hover:         rgba(0,0,0,.04);
+  --map-bg:        #E8EEF3;
+
+  /* ── TYPOGRAPHY ────────────────────────────────────────────── */
+  --f:             'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --m:             'IBM Plex Mono', ui-monospace, monospace;
+
+  --fs-hero:       64px;
+  --fs-kpi:        40px;
+  --fs-mid:        26px;
+  --fs-sm:         18px;
+  --fs-xs:         15px;
+  --fs-body:       12px;
+  --fs-label:      10px;
+  --fs-meta:       9px;
+
+  /* Card-level typography — used by AlarmCard, DriverScoreCard,
+     AssetEventCard, EventRow to keep all card content at the
+     same visual altitude (DEUDA-1.3-V02). */
+  --fs-card-title: 13px;
+  --fs-card-body:  11.5px;
+  --fs-card-meta:  10.5px;
+  --pad-card:      10px 12px;
+
+  /* ── LAYOUT ────────────────────────────────────────────────── */
+  --sw:            220px;     /* sidebar width expanded */
+  --sc:            48px;      /* sidebar width collapsed */
+  --th:            50px;      /* topbar height */
+  --mh:            38px;      /* module bar (top black bar) height */
+
+  /* ── RADII ─────────────────────────────────────────────────── */
+  --r:             2px;
+  --r-sm:          1px;
+  --r-xs:          1px;
+  --r-md:          2px;
+  --r-pill:        2px;
+  --r-full:        50%;
+
+  /* ── SPACING ───────────────────────────────────────────────── */
+  --gap-xs:        6px;
+  --gap-sm:        10px;
+  --gap-md:        12px;
+  --gap-lg:        16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESETS
+   ═══════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--f);
+  font-size: 14px;
+  color: var(--tx);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ICON HELPER — genuinely global, used everywhere
+   ═══════════════════════════════════════════════════════════════ */
+
+.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.ico svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Inline meta separator
+   ─────────────────────────────────────────────────────────────
+   Standard "·" used between metadata items in card meta lines.
+   Consolidates the duplicated rules from AlarmCard.module.css
+   and EventRow.module.css (DEUDA-1.6-B3).
+   ═══════════════════════════════════════════════════════════════ */
+
+.dotSep {
+  color: var(--brd2);
+  margin: 0 1px;
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   APP SHELL — top-level layout structure
+   ═══════════════════════════════════════════════════════════════ */
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.app-content-admin {
+  background: #0F1117;
+  color: #E2E8F0;
+
+  /* Dark token overrides · let pages reuse var(--sf) etc.
+     without rewriting their CSS modules. */
+  --bg: #0F1117;
+  --sf: #1A1F2E;
+  --sf2: #232A3D;
+  --brd: #2D3748;
+  --brd2: #3D4658;
+  --tx: #E2E8F0;
+  --t2: #94A3B8;
+  --t3: #64748B;
+  --dark: #6366F1;
+  --blu: #6366F1;
+}
+.app-content::-webkit-scrollbar {
+  width: 4px;
+}
+.app-content::-webkit-scrollbar-thumb {
+  background: var(--brd2);
+  border-radius: 2px;
+}
+
+.app-pad {
+  padding: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TEMPORARY PLACEHOLDER STYLES — Lote 1.1
+   Removed in Lote 1.3 when real screens render
+   ═══════════════════════════════════════════════════════════════ */
+
+.placeholder {
+  padding: 40px;
+  text-align: center;
+  color: var(--t3);
+  font-family: var(--m);
+}
+.placeholder h2 {
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--t2);
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+.placeholder code {
+  background: var(--sf);
+  padding: 2px 8px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+}

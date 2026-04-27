@@ -1,0 +1,9 @@
+.page {
+  padding: 12px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  height: calc(100vh - var(--th, 50px));
+  overflow: hidden;
+}

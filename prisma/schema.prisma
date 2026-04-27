@@ -1,0 +1,333 @@
+// ═══════════════════════════════════════════════════════════════
+//  Maxtracker · Prisma Schema
+//  ─────────────────────────────────────────────────────────────
+//  Lote 1 scope: 9 entities to support the Seguridad vertical
+//  slice (Dashboard D + Lista A + Libro B).
+//
+//  Decisions applied:
+//    · ADR-000  Inaugural stack: Next.js 15 + Prisma 6 + SQLite
+//    · ADR-001  One asset belongs to exactly ONE group (1:N)
+//
+//  Deliberately OUT of scope for Lote 1 (deferred to Lotes 2-4):
+//    · Trip, Zone/Geofence, Document, ServiceRecord
+//    · User/Auth (Auth0 integration)
+//    · KpiDailySnapshot (pre-aggregation)
+//    · AlarmRule (rule engine)
+//    · POI (points of interest)
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ORGANIZATIONAL
+// ═══════════════════════════════════════════════════════════════
+
+/// The platform tenant (i.e. Maxtracker itself). A single row in
+/// v1. Multi-tenant reseller scenarios are handled as additional
+/// Organizations in a future lote.
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  accounts  Account[]
+  createdAt DateTime  @default(now())
+}
+
+/// A client of the platform (e.g. a logistics company, a mining
+/// operation, a delivery network). Everything the user sees is
+/// scoped to an Account.
+model Account {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  slug           String       @unique
+  tier           Tier         @default(PRO)
+  industry       String?
+  groups         Group[]
+  assets         Asset[]
+  persons        Person[]
+  alarms         Alarm[]
+  createdAt      DateTime     @default(now())
+}
+
+enum Tier {
+  BASE
+  PRO
+  ENTERPRISE
+}
+
+/// Logical grouping of assets within an Account. Two-level
+/// hierarchy supported via self-relation (memory: max 2 niveles,
+/// extensible in v2). An Asset belongs to at most one Group
+/// directly (ADR-001).
+model Group {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  parentId  String?
+  parent    Group?   @relation("GroupHierarchy", fields: [parentId], references: [id])
+  children  Group[]  @relation("GroupHierarchy")
+  name      String
+  assets    Asset[]
+  createdAt DateTime @default(now())
+
+  @@index([accountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MONITORED OBJECT
+// ═══════════════════════════════════════════════════════════════
+
+/// The thing being monitored. Mobile (vehicle, machine) or fixed
+/// (silo, elevator, refrigerator unit).
+model Asset {
+  id              String       @id @default(cuid())
+  accountId       String
+  account         Account      @relation(fields: [accountId], references: [id])
+  /// ADR-001: nullable FK, 1:N cardinality.
+  groupId         String?
+  group           Group?       @relation(fields: [groupId], references: [id])
+  name            String
+  plate           String?      @unique
+  vin             String?      @unique
+  mobilityType    MobilityType @default(MOBILE)
+  /// Used by the live tracking map to pick an icon when the
+  /// "icons by type" view option is enabled. Falls back to the
+  /// generic shape if GENERIC.
+  vehicleType     VehicleType  @default(GENERIC)
+  make            String?
+  model           String?
+  year            Int?
+  status          AssetStatus  @default(IDLE)
+  currentDriverId String?
+  currentDriver   Person?      @relation("CurrentDriver", fields: [currentDriverId], references: [id])
+  devices         Device[]
+  positions       Position[]
+  events          Event[]
+  alarms          Alarm[]
+  createdAt       DateTime     @default(now())
+
+  @@index([accountId, status])
+  @@index([groupId])
+}
+
+enum MobilityType {
+  MOBILE
+  FIXED
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  TRUCK
+  HEAVY_MACHINERY
+  TRAILER
+  SILO
+  GENERIC
+}
+
+enum AssetStatus {
+  MOVING
+  IDLE
+  STOPPED
+  OFFLINE
+  MAINTENANCE
+}
+
+/// Physical IoT hardware attached to an Asset. An asset can have
+/// multiple devices simultaneously; exactly one is marked as
+/// primary for position reporting.
+model Device {
+  id          String    @id @default(cuid())
+  assetId     String
+  asset       Asset     @relation(fields: [assetId], references: [id])
+  imei        String    @unique
+  vendor      String
+  model       String
+  isPrimary   Boolean   @default(false)
+  lastSeenAt  DateTime?
+  installedAt DateTime  @default(now())
+
+  @@index([assetId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PEOPLE
+// ═══════════════════════════════════════════════════════════════
+
+/// Drivers and operators. Different from the system User (auth)
+/// entity — those come in a later lote when we wire Auth0.
+model Person {
+  id               String    @id @default(cuid())
+  accountId        String
+  account          Account   @relation(fields: [accountId], references: [id])
+  firstName        String
+  lastName         String
+  document         String?
+  licenseExpiresAt DateTime?
+  hiredAt          DateTime?
+  /// Rolling safety score 0-100, derived from Event history.
+  /// Seeded statically in Lote 1; derived dynamically in Lote 3.
+  safetyScore      Int       @default(75)
+  drivenAssets     Asset[]   @relation("CurrentDriver")
+  events           Event[]
+  alarms           Alarm[]
+
+  @@index([accountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TELEMETRY
+// ═══════════════════════════════════════════════════════════════
+
+/// Raw GPS position record. In production these land on a
+/// TimescaleDB hypertable; in SQLite they live as a plain table.
+/// recordedAt = device time, receivedAt = server ingest time.
+/// Backfill scenarios make these diverge (memory: backfill_flag).
+model Position {
+  id         String   @id @default(cuid())
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id])
+  recordedAt DateTime
+  receivedAt DateTime @default(now())
+  lat        Float
+  lng        Float
+  speedKmh   Float
+  heading    Int?
+  ignition   Boolean  @default(true)
+
+  @@index([assetId, recordedAt])
+}
+
+/// Discrete observation derived from telemetry (harsh braking,
+/// speeding threshold crossed, ignition change, etc.). Feeds KPIs
+/// and may escalate into an Alarm.
+model Event {
+  id         String    @id @default(cuid())
+  assetId    String
+  asset      Asset     @relation(fields: [assetId], references: [id])
+  personId   String?
+  person     Person?   @relation(fields: [personId], references: [id])
+  type       EventType
+  severity   Severity  @default(MEDIUM)
+  occurredAt DateTime
+  lat        Float?
+  lng        Float?
+  speedKmh   Float?
+  /// Stringified JSON (SQLite has no Jsonb). Postgres migration
+  /// will convert this field to Json type.
+  metadata   String?
+
+  @@index([assetId, occurredAt])
+  @@index([personId, occurredAt])
+}
+
+enum EventType {
+  // ─── Conducción · driver behavior ──────────────────
+  HARSH_BRAKING
+  HARSH_ACCELERATION
+  HARSH_CORNERING
+  SPEEDING
+  IDLING
+  IGNITION_ON
+  IGNITION_OFF
+
+  // ─── Seguridad · threats & sabotage ────────────────
+  PANIC_BUTTON
+  UNAUTHORIZED_USE
+  DOOR_OPEN
+  SIDE_DOOR_OPEN
+  CARGO_DOOR_OPEN
+  TRAILER_DETACH
+  GPS_DISCONNECT
+  POWER_DISCONNECT
+  JAMMING_DETECTED
+  SABOTAGE
+
+  // ─── Transversales ──────────────────────────────────
+  GEOFENCE_ENTRY
+  GEOFENCE_EXIT
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ALARMS
+// ═══════════════════════════════════════════════════════════════
+
+/// Escalated event requiring human attention. Lifecycle:
+/// OPEN → ATTENDED → CLOSED (or DISMISSED). Rule engine for
+/// auto-escalation comes in Lote 3.
+///
+/// `domain` separates Conducción (driver behavior) from
+/// Seguridad (threats / sabotage). Each module shows only
+/// alarms of its own domain.
+model Alarm {
+  id          String      @id @default(cuid())
+  accountId   String
+  account     Account     @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       Asset       @relation(fields: [assetId], references: [id])
+  personId    String?
+  person      Person?     @relation(fields: [personId], references: [id])
+  domain      AlarmDomain
+  type        AlarmType
+  severity    Severity
+  status      AlarmStatus @default(OPEN)
+  triggeredAt DateTime
+  attendedAt  DateTime?
+  closedAt    DateTime?
+  lat         Float?
+  lng         Float?
+  notes       String?
+
+  @@index([accountId, domain, status, triggeredAt])
+  @@index([assetId, triggeredAt])
+}
+
+enum AlarmDomain {
+  CONDUCCION
+  SEGURIDAD
+}
+
+enum AlarmType {
+  // ─── Conducción ──────────────────
+  HARSH_DRIVING_PATTERN
+  SPEEDING_CRITICAL
+  RECKLESS_BEHAVIOR
+
+  // ─── Seguridad ───────────────────
+  PANIC
+  UNAUTHORIZED_USE
+  SABOTAGE
+  GPS_DISCONNECT
+  POWER_DISCONNECT
+  JAMMING
+  TRAILER_DETACH
+  CARGO_BREACH
+  DOOR_BREACH
+  GEOFENCE_BREACH_CRITICAL
+
+  // ─── Transversales ───────────────
+  DEVICE_OFFLINE
+}
+
+enum AlarmStatus {
+  OPEN
+  ATTENDED
+  CLOSED
+  DISMISSED
+}

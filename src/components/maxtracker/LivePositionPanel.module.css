@@ -1,0 +1,124 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.title {
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.time {
+  font-family: var(--m);
+  font-size: 12.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.emptyHint {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  padding: 8px 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cellLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.icon {
+  color: var(--t3);
+}
+
+.cellValue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--m);
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.num {
+  font-size: 15px;
+}
+
+.unit {
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 400;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 2px;
+  align-self: center;
+}
+
+.dotOn {
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+}
+
+.dotOff {
+  background: #6b7280;
+}
+
+/* Speed thresholds · matches typical Argentine highway limits */
+.speedCritical .num {
+  color: #dc2626;
+}
+
+.speedHigh .num {
+  color: #ea580c;
+}
+
+/* Activity state colors */
+.stateMOVING .num {
+  color: #2563eb;
+}
+
+.stateIDLE .num {
+  color: #d97706;
+}
+
+.stateSTOPPED .num {
+  color: var(--t2);
+}

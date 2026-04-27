@@ -1,0 +1,403 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Must sit above ALL Leaflet panes (which go up to ~700) and
+     above the selected-marker boost (z-index 1000). 9999 leaves
+     plenty of room for tooltips/popovers we may add later. */
+  z-index: 9999;
+  padding: 24px;
+}
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  width: min(640px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--brd);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.closeBtn {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--t2);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: var(--sf);
+}
+
+/* ── Mode picker ──────────────────────────────────────────── */
+
+.modeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.modeOpt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  background: var(--sf);
+}
+
+.modeOptActive {
+  border-color: var(--blu);
+  background: var(--blu-bg);
+}
+
+.modeRadio {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--blu);
+}
+
+.modeText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modeLabel {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.modeDesc {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t3);
+  line-height: 1.35;
+}
+
+/* ── Filters (search + chips) ──────────────────────────────── */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.filtersDimmed {
+  opacity: 0.45;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 5px 9px;
+}
+
+.searchIcon {
+  color: var(--t3);
+}
+
+.searchInput {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  outline: none;
+  min-width: 0;
+}
+
+.searchInput:disabled {
+  cursor: not-allowed;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: 12px;
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t2);
+  cursor: pointer;
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+}
+
+.chipActive {
+  background: var(--blu);
+  border-color: var(--blu);
+  color: white;
+}
+
+.chipCount {
+  font-family: var(--m);
+  font-size: 10.5px;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0 5px;
+  border-radius: 8px;
+}
+
+.chipActive .chipCount {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Vehicle list ─────────────────────────────────────────── */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  min-height: 0;
+}
+
+.listDimmed {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.emptyList {
+  padding: 30px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--sf);
+}
+
+.rowChecked {
+  background: var(--blu-bg);
+}
+
+.rowChecked:hover {
+  background: var(--blu-bg);
+}
+
+.check {
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--blu);
+}
+
+.shape {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  font-family: var(--m);
+}
+
+.shapeMOVING {
+  background: #1e3a8a;
+}
+.shapeSTOPPED {
+  background: #475569;
+}
+.shapeOFF {
+  background: #9ca3af;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rowName {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.rowPlate {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t2);
+}
+
+.rowMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.commDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.commONLINE {
+  background: #16a34a;
+}
+.commRECENT {
+  background: #eab308;
+}
+.commSTALE {
+  background: #ea580c;
+}
+.commLONG {
+  background: #dc2626;
+}
+.commNO_COMM {
+  background: #6b7280;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--brd);
+  background: var(--sf);
+  flex-shrink: 0;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t2);
+}
+
+.selectionCount {
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.linkBtn {
+  background: transparent;
+  border: 0;
+  color: var(--blu);
+  font-family: var(--m);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+.footerRight {
+  display: flex;
+  gap: 8px;
+}
+
+.btnSecondary,
+.btnPrimary {
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 12.5px;
+  cursor: pointer;
+  border: 1px solid;
+  font-weight: 500;
+}
+
+.btnSecondary {
+  background: var(--bg);
+  border-color: var(--brd);
+  color: var(--tx);
+}
+
+.btnSecondary:hover {
+  border-color: var(--brd2);
+  background: var(--sf);
+}
+
+.btnPrimary {
+  background: var(--blu);
+  border-color: var(--blu);
+  color: white;
+}
+
+.btnPrimary:hover {
+  background: var(--blu-d, #1d4ed8);
+}

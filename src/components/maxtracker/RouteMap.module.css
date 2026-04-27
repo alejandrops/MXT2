@@ -1,0 +1,68 @@
+.map {
+  width: 100%;
+  /* In Históricos: lives inside a flex column (mapColumn) and
+     takes flex:1 so it fills all the vertical space that's
+     left after the speed chart, segment band, and scrubber. 
+     We also set a min-height so the map remains usable on very
+     short windows. */
+  flex: 1;
+  min-height: 280px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+/* Tighten Leaflet's default popup styling to match our typography.
+   Selectors are scoped under .map (a local class) to satisfy
+   CSS Modules' "pure selectors" rule. */
+.map :global(.leaflet-popup-content-wrapper) {
+  border-radius: var(--r-md);
+  font-family: var(--m);
+  font-size: 12px;
+}
+
+.map :global(.leaflet-popup-content) {
+  margin: 8px 12px;
+  line-height: 1.4;
+}
+
+/* ── Stop marker pulse keyframes ─────────────────────────── */
+:global(.stop-marker) {
+  background: transparent !important;
+  border: 0 !important;
+  pointer-events: none;
+}
+
+:global(.stop-tooltip) {
+  background: rgba(15, 23, 42, 0.90) !important;
+  color: #fff !important;
+  border: 0 !important;
+  font-family: var(--m, monospace);
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 7px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30) !important;
+}
+
+:global(.stop-tooltip)::before {
+  border-top-color: rgba(15, 23, 42, 0.90) !important;
+}
+
+@keyframes stopMarkerPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+:global(.trip-start-marker),
+:global(.trip-end-marker) {
+  background: transparent !important;
+  border: 0 !important;
+}

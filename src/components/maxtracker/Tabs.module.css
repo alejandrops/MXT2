@@ -1,0 +1,75 @@
+.bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid var(--brd);
+  margin-bottom: 0;
+  overflow-x: auto;
+}
+
+.bar::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  /* B2 fix: 2px underline that visually replaces the parent's
+     1px border-bottom on the active tab. Sit the tab 1px
+     forward so its underline overlaps the bar's border. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tab:hover {
+  color: var(--tx);
+}
+
+.active {
+  color: var(--tx);
+  border-bottom-color: var(--red);
+  font-weight: 600;
+}
+
+/* B1 fix: disabled tabs are now clearly different from active.
+   Lower opacity on the text, explicit cursor, and no hover state. */
+.disabled {
+  color: var(--t3);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.disabled:hover {
+  color: var(--t3);
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 5px;
+  background: var(--sf2);
+  color: var(--t2);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--m);
+  letter-spacing: 0;
+}
+
+.active .count {
+  background: var(--red-bg);
+  color: var(--red-dark);
+}

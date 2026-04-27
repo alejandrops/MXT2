@@ -1,0 +1,296 @@
+.wrap {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  scrollbar-width: thin;
+  scrollbar-color: var(--brd2) transparent;
+}
+
+.wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.wrap::-webkit-scrollbar-thumb {
+  background: var(--brd2);
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--tx);
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--brd);
+  white-space: nowrap;
+  background: var(--bg);
+}
+
+.thLeft {
+  text-align: left;
+}
+.thRight {
+  text-align: right;
+}
+.thCenter {
+  text-align: center;
+}
+
+/* ── Rows ────────────────────────────────────────────────── */
+
+.row {
+  border-bottom: 1px solid var(--brd);
+  cursor: default;
+  transition: background 0.08s ease-out;
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.rowHi {
+  background: var(--blu-bg);
+}
+.rowHi:hover {
+  background: var(--blu-bg);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+/* ── Cells ───────────────────────────────────────────────── */
+
+.tdLeft,
+.tdRight,
+.tdCenter {
+  padding: 9px 10px;
+  vertical-align: middle;
+}
+.tdRight {
+  text-align: right;
+}
+.tdCenter {
+  text-align: center;
+}
+
+/* ── Asset cell ──────────────────────────────────────────── */
+
+.assetLink {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.assetLink:hover .assetName {
+  color: var(--blu);
+}
+
+.assetName {
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tx);
+  white-space: nowrap;
+}
+
+.assetPlate {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+/* ── Driver cell ─────────────────────────────────────────── */
+
+.driver {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--t2);
+}
+
+.driverIcon {
+  color: var(--t3);
+}
+
+.noDriver {
+  color: var(--t3);
+}
+
+/* ── Date cells ──────────────────────────────────────────── */
+
+.dateTimeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.dateTimeDate {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+}
+
+.dateTimeClock {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+/* ── Numeric cells ───────────────────────────────────────── */
+
+.numeric {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.numericMuted {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.unit {
+  font-size: 10px;
+  color: var(--t3);
+  font-weight: 400;
+}
+
+.speedWarn {
+  color: #ea580c;
+}
+
+.speedCrit {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ── Event counts ────────────────────────────────────────── */
+
+.eventsNone {
+  color: var(--t3);
+}
+
+.events {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.eventsCrit {
+  color: #dc2626;
+}
+
+.eventsCritBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border-radius: 3px;
+}
+
+/* ── Open arrow ──────────────────────────────────────────── */
+
+.openBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  color: var(--t3);
+  text-decoration: none;
+}
+
+.openBtn:hover {
+  background: var(--bg);
+  color: var(--blu);
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.empty {
+  padding: 60px 20px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--t2);
+  background: var(--sf);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-md);
+}
+
+.emptyHint {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--t3);
+}
+
+/* ── Sortable headers ──────────────────────────────────────── */
+
+.thButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  transition: color 0.1s;
+}
+
+.thButton:hover {
+  color: var(--tx);
+}
+
+.thButtonActive {
+  color: var(--tx);
+}
+
+.thArrow {
+  color: #2563eb;
+}
+
+.thArrowSpacer {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}

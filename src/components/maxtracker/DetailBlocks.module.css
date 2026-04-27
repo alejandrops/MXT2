@@ -1,0 +1,297 @@
+/* ════════════════════════════════════════════════════════════
+   DetailBlocks · shared CSS for AssetDetailPanel + TelemetryPanel
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Panel shell ─────────────────────────────────────────── */
+
+.panel {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── Section header ──────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 5px;
+  border-top: 1px solid var(--brd);
+  background: var(--bg);
+}
+
+.sectionLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sectionRight {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Rows · label·valor ──────────────────────────────────── */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--brd);
+  gap: 12px;
+  min-height: 30px;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowLabel {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t2);
+  flex-shrink: 0;
+}
+
+.rowValue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.num {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 500;
+}
+
+.coords {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── Indicators ──────────────────────────────────────────── */
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 2px;
+  align-self: center;
+}
+
+.dotOn {
+  background: #16a34a;
+}
+
+.dotOff {
+  background: #9ca3af;
+}
+
+.comm_ONLINE {
+  background: #16a34a;
+}
+.comm_RECENT {
+  background: #d97706;
+}
+.comm_STALE {
+  background: #6b7280;
+}
+.comm_LONG {
+  background: #6b7280;
+}
+.comm_NO_COMM {
+  background: #9ca3af;
+}
+
+/* ── Accent variants ─────────────────────────────────────── */
+
+.accent_high .num {
+  color: #ea580c;
+}
+
+.accent_critical .num {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.accent_warn .num {
+  color: #d97706;
+}
+
+.accent_good .num {
+  color: #16a34a;
+}
+
+/* ── Placeholder hints ────────────────────────────────────── */
+
+.placeholderHint {
+  padding: 9px 12px;
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+/* ── Driver card ──────────────────────────────────────────── */
+
+.driverCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s;
+}
+
+.driverCard:hover {
+  background: var(--bg);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brd);
+  color: var(--t2);
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.driverInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.driverName {
+  font-family: var(--m);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driverDoc {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+.scorePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.scoreGrn {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+.scoreAmb {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+.scoreRed {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.chev {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+/* ── SCADA-style dense rows ──────────────────────────────────
+   Used in /seguimiento/historial telemetry section · the values
+   update tick-by-tick and benefit from a more compact, more
+   "instrument panel" visual: monospaced numbers, slightly tighter
+   padding, less line height. Same data, less footprint. */
+
+.rowsDense {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.02),
+    rgba(15, 23, 42, 0.00)
+  );
+}
+
+.row.rowDense {
+  padding: 4px 12px;
+  min-height: 24px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.row.rowDense .rowLabel {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--t3);
+}
+
+.row.rowDense .num {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.row.rowDense .unit {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

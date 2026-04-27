@@ -1,0 +1,85 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  align-items: center;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 4px;
+}
+
+.dotTRIP {
+  background: #2563eb;
+}
+
+.dotIDLE {
+  background: #d97706;
+}
+
+.dotSTOP {
+  background: #6b7280;
+}
+
+.track {
+  position: relative;
+  height: 18px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.block {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border: 0;
+  cursor: pointer;
+  transition: filter 0.1s;
+  padding: 0;
+  margin: 0;
+}
+
+.block:hover {
+  filter: brightness(1.1);
+}
+
+.kindTRIP {
+  background: #2563eb;
+}
+
+.kindIDLE {
+  background: #d97706;
+}
+
+.kindSTOP {
+  background: #9ca3af;
+}
+
+.cursor {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: #dc2626;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px white, 0 0 4px rgba(220, 38, 38, 0.5);
+  transform: translateX(-1px);
+}

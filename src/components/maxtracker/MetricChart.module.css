@@ -1,0 +1,142 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px 10px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.legendLabel {
+  font-weight: 600;
+}
+
+.legendMax {
+  color: var(--t2);
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  cursor: crosshair;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.grid {
+  stroke: var(--brd);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.area {
+  fill: rgba(37, 99, 235, 0.15);
+  stroke: none;
+}
+
+.line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.cursor {
+  stroke: #dc2626;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.callout {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  font-weight: 600;
+}
+
+/* ── Header (replaces .legend) ────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-bottom: 2px;
+}
+
+.tabs {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 1px;
+  gap: 0;
+}
+
+.tab {
+  padding: 3px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--r-sm) - 1px);
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.tab:hover {
+  color: var(--tx);
+}
+
+.tabActive {
+  background: var(--dark);
+  color: #fff;
+}
+
+.tabActive:hover {
+  color: #fff;
+}
+
+.headerMax {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+  text-transform: lowercase;
+  letter-spacing: 0;
+}

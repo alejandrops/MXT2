@@ -1,0 +1,73 @@
+.map {
+  width: 100%;
+  height: clamp(500px, calc(100vh - 180px), 1200px);
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+/* Custom marker tweaks: kill default leaflet bg/border that
+   would show a square outline around the divIcon. Selectors are
+   scoped under .map (a local class) to satisfy CSS Modules'
+   "pure selectors" rule. */
+.map :global(.fleet-marker) {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* IMPORTANT · CSS transform conflict with Leaflet positioning
+   ─────────────────────────────────────────────────────────────
+   Leaflet positions the marker root with inline
+     transform: translate3d(x, y, 0)
+   updated on every pan/zoom. If we set ANY transform on this
+   same element via CSS class or animation, it fights with the
+   inline transform and the marker can disappear (translates to
+   0,0 visually). The fix is to apply scale/animation to the
+   INNER div (the visual container we render in buildFleetMarkerHtml),
+   never the root that Leaflet manages. We use a CSS child
+   selector to target the first visual wrapper.
+*/
+.map :global(.fleet-marker) > * {
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.18s ease-out,
+    filter 0.18s ease-out;
+  transform-origin: center center;
+}
+
+/* Selected marker · scale + pulse applied to the INNER wrapper
+   so Leaflet's translate3d on the root keeps working. */
+.map :global(.fleet-marker-selected) {
+  z-index: 1000 !important;
+}
+.map :global(.fleet-marker-selected) > * {
+  transform: scale(1.5);
+  filter:
+    drop-shadow(0 0 0 #fff)
+    drop-shadow(0 0 14px rgba(37, 99, 235, 0.85));
+  animation: pulseSelectContinuous 2.4s ease-in-out infinite;
+}
+
+/* Other markers fade out further when there's a selection ·
+   opacity 0.3 + grayscale to amplify contrast vs the selected one.
+   Also applied to the inner wrapper so the root translate stays. */
+.map :global(.fleet-marker-dimmed) > * {
+  opacity: 0.3;
+  filter: grayscale(0.5);
+}
+
+@keyframes pulseSelectContinuous {
+  0%, 100% {
+    transform: scale(1.5);
+    filter:
+      drop-shadow(0 0 0 #fff)
+      drop-shadow(0 0 12px rgba(37, 99, 235, 0.75));
+  }
+  50% {
+    transform: scale(1.55);
+    filter:
+      drop-shadow(0 0 0 #fff)
+      drop-shadow(0 0 22px rgba(37, 99, 235, 0.95));
+  }
+}

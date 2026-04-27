@@ -1,0 +1,71 @@
+.th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0;
+  border-bottom: 1px solid var(--brd);
+  background: var(--sf2);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.align_left  { text-align: left; }
+.align_right { text-align: right; }
+.align_right .link { justify-content: flex-end; }
+
+.plain {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  font-weight: inherit;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  text-decoration: none;
+  color: var(--t2);
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.1s, color 0.1s;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  font-weight: inherit;
+}
+
+.link:hover {
+  background: var(--sf);
+  color: var(--tx);
+}
+
+.active {
+  color: var(--tx);
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  color: var(--t3);
+}
+
+.active .arrow {
+  color: var(--red);
+}
+
+.idle {
+  opacity: 0.5;
+}
+
+.link:hover .idle {
+  opacity: 1;
+}

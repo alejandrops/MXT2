@@ -1,0 +1,278 @@
+```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#FAFAFA",
+    "primaryBorderColor": "#CDD0D5",
+    "primaryTextColor": "#111827",
+    "lineColor": "#6B7280",
+    "fontSize": "13px"
+  }
+}}%%
+
+erDiagram
+
+  Organization ||--o{ Account : "tenant"
+  Account      ||--o{ Group   : "owns"
+  Account      ||--o{ Asset   : "owns"
+  Account      ||--o{ Person  : "employs"
+  Account      ||--o{ Alarm   : "scoped"
+
+  Group ||--o{ Group : "parent of"
+  Group ||--o{ Asset : "contains [ADR-001]"
+
+  Asset ||--o{ Device   : "has"
+  Asset ||--o{ Position : "reports"
+  Asset ||--o{ Event    : "produces"
+  Asset ||--o{ Alarm    : "triggers"
+
+  Person ||--o{ Asset : "drives [snapshot]"
+  Person ||--o{ Event : "actor at moment"
+  Person ||--o{ Alarm : "actor at moment"
+
+  Organization {
+    String   id        PK
+    String   name
+    String   slug      UK
+    DateTime createdAt
+  }
+
+  Account {
+    String   id              PK
+    String   organizationId  FK
+    String   name
+    String   slug            UK
+    Tier     tier
+    String   industry
+    DateTime createdAt
+  }
+
+  Group {
+    String   id        PK
+    String   accountId FK
+    String   parentId  FK
+    String   name
+    DateTime createdAt
+  }
+
+  Asset {
+    String       id              PK
+    String       accountId       FK
+    String       groupId         FK
+    String       name
+    String       plate           UK
+    String       vin             UK
+    MobilityType mobilityType
+    String       make
+    String       model
+    Int          year
+    AssetStatus  status
+    String       currentDriverId FK
+    DateTime     createdAt
+  }
+
+  Device {
+    String   id          PK
+    String   assetId     FK
+    String   imei        UK
+    String   vendor
+    String   model
+    Boolean  isPrimary
+    DateTime lastSeenAt
+    DateTime installedAt
+  }
+
+  Person {
+    String   id               PK
+    String   accountId        FK
+    String   firstName
+    String   lastName
+    String   document
+    DateTime licenseExpiresAt
+    DateTime hiredAt
+    Int      safetyScore
+  }
+
+  Position {
+    String   id         PK
+    String   assetId    FK
+    DateTime recordedAt
+    DateTime receivedAt
+    Float    lat
+    Float    lng
+    Float    speedKmh
+    Int      heading
+    Boolean  ignition
+  }
+
+  Event {
+    String    id         PK
+    String    assetId    FK
+    String    personId   FK
+    EventType type
+    Severity  severity
+    DateTime  occurredAt
+    Float     lat
+    Float     lng
+    Float     speedKmh
+    String    metadata
+  }
+
+  Alarm {
+    String      id          PK
+    String      accountId   FK
+    String      assetId     FK
+    String      personId    FK
+    AlarmType   type
+    Severity    severity
+    AlarmStatus status
+    DateTime    triggeredAt
+    DateTime    attendedAt
+    DateTime    closedAt
+    Float       lat
+    Float       lng
+    String      notes
+  }
+```
+
+---
+
+## Diagrama de entidades diferidas (Lotes 2-4)
+
+Para visualizar cómo el modelo crece:
+
+```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#FFFBEB",
+    "primaryBorderColor": "#FDE68A",
+    "primaryTextColor": "#78350F",
+    "lineColor": "#6B7280"
+  }
+}}%%
+
+erDiagram
+
+  Account ||--o{ Trip            : "has"
+  Account ||--o{ Zone            : "defines"
+  Account ||--o{ ServiceRecord   : "tracks"
+  Account ||--o{ Document        : "stores"
+  Account ||--o{ POI             : "places"
+  Account ||--o{ AlarmRule       : "configures"
+  Account ||--o{ KpiDailySnapshot : "rolls-up"
+  Account ||--o{ User            : "members"
+  Account ||--o{ Role            : "defines"
+
+  Asset  ||--o{ Trip            : "executes"
+  Asset  ||--o{ ServiceRecord   : "receives"
+  Asset  ||--o{ Document        : "owns"
+
+  Person ||--o{ Trip      : "drives"
+  Person ||--o{ Document  : "owns"
+  Person ||--o{ User      : "may link"
+
+  Zone        ||--o{ Event      : "intersects"
+  AlarmRule   ||--o{ Alarm      : "fires"
+  Role        ||--o{ User       : "assigned"
+
+  Trip {
+    String   id
+    String   assetId
+    String   personId
+    DateTime startedAt
+    DateTime endedAt
+    Float    distanceKm
+    Float    avgSpeedKmh
+    String   status
+  }
+
+  Zone {
+    String id
+    String accountId
+    String name
+    String type
+    Json   geometry
+    Json   rules
+  }
+
+  ServiceRecord {
+    String   id
+    String   assetId
+    String   type
+    DateTime performedAt
+    Int      kmAtService
+    Float    costAmount
+  }
+
+  Document {
+    String   id
+    String   accountId
+    String   ownerType
+    String   ownerId
+    String   type
+    String   number
+    DateTime expiresAt
+  }
+
+  POI {
+    String id
+    String accountId
+    String name
+    Float  lat
+    Float  lng
+  }
+
+  AlarmRule {
+    String  id
+    String  accountId
+    String  scope
+    String  scopeId
+    Boolean enabled
+    Json    trigger
+    Json    action
+  }
+
+  KpiDailySnapshot {
+    String   id
+    String   accountId
+    String   scope
+    String   scopeId
+    DateTime date
+    Int      eventCount
+    Int      alarmCount
+    Float    kmDriven
+    Int      safetyScore
+  }
+
+  User {
+    String id
+    String email
+    String name
+    String role
+    String accountId
+    String linkedPersonId
+  }
+
+  Role {
+    String id
+    String accountId
+    String name
+    Json   permissions
+  }
+```
+
+---
+
+## Cómo renderizar este archivo
+
+| Cliente | Soporte |
+|---|---|
+| **GitHub** | Renderizado nativo si commiteás como `.mermaid` o dentro de bloques ` ```mermaid ` en Markdown |
+| **GitLab** | Renderizado nativo en `.md` (no en `.mermaid` standalone) |
+| **VS Code** | Extensión "Markdown Preview Mermaid Support" |
+| **Mermaid Live** | Pegar el contenido en https://mermaid.live |
+| **Obsidian / Notion** | Soporte nativo |
+
+Si necesitás exportar a PNG/SVG: Mermaid Live tiene download. Para
+producción de docs externos vamos a tener un script en Lote 2.4.

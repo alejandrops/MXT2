@@ -1,0 +1,68 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.assetName {
+  font-family: var(--f);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tx);
+  letter-spacing: -0.2px;
+}
+
+.assetPlate {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t2);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--brd);
+}
+
+.makeModel {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 22px; /* align with text after icon */
+}
+
+.divider {
+  height: 1px;
+  background: var(--brd);
+  margin: 2px 0;
+}
+
+.dateText {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  font-weight: 500;
+}

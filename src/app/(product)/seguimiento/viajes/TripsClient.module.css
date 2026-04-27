@@ -1,0 +1,64 @@
+/* ════════════════════════════════════════════════════════════
+   Trips client · 60/40 split with map on left, table on right
+   ════════════════════════════════════════════════════════════ */
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 580px;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (min-width: 1700px) {
+  .layout {
+    grid-template-columns: 1fr 720px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 320px 1fr;
+  }
+}
+
+.mapColumn {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tableColumn {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mapLoading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--t3);
+}
+
+/* Wrap so the layer toggle can be absolutely positioned over the map */
+.mapWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.mapControls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 500;
+}

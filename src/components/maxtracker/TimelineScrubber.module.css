@@ -1,0 +1,221 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+}
+
+/* ── Time header (start | end) ───────────────────────────── */
+
+.timeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeLabel {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Slider · now spans full card width ──────────────────── */
+
+.sliderTrack {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 14px;
+  width: 100%;
+}
+
+.eventTick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 12px;
+  background: var(--t3);
+  border-radius: 1px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.tickLOW {
+  background: #6b7280;
+}
+
+.tickMEDIUM {
+  background: #d97706;
+}
+
+.tickHIGH {
+  background: #ea580c;
+  opacity: 0.9;
+}
+
+.tickCRITICAL {
+  background: #dc2626;
+  opacity: 1;
+  width: 3px;
+}
+
+.slider {
+  width: 100%;
+  appearance: none;
+  height: 4px;
+  background: var(--brd2);
+  border-radius: 2px;
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--blu);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--brd);
+}
+
+.slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--blu);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px var(--brd);
+}
+
+/* ── Controls row ────────────────────────────────────────── */
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cursorTime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.cursorTimeNum {
+  font-family: var(--m);
+  font-size: 17px;
+  color: var(--tx);
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.cursorTimeLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Transport (skip / play) ──────────────────────────────── */
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--brd);
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  color: var(--tx);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.btn:hover {
+  background: var(--sf);
+  border-color: var(--brd2);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  background: var(--bg);
+  border-color: var(--brd);
+}
+
+.btnPrimary {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: white;
+  width: 36px;
+  height: 36px;
+}
+
+.btnPrimary:hover {
+  background: var(--tx);
+  border-color: var(--tx);
+}
+
+/* ── Speed selector ───────────────────────────────────────── */
+
+.speedGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.speedLabel {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+
+.speedBtn {
+  padding: 4px 8px;
+  border: 1px solid var(--brd);
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t2);
+  cursor: pointer;
+}
+
+.speedBtn:hover {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+
+.speedBtnActive {
+  background: var(--blu-bg);
+  border-color: var(--blu);
+  color: var(--blu);
+}

@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════════════════════════
+   Debug page styles — diagnostic, Tufte-ish, dense tables
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 20px 24px 60px;
+  max-width: 1200px;
+}
+
+.header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--brd);
+  padding-bottom: 12px;
+}
+
+.title {
+  font-size: var(--fs-mid);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+  color: var(--tx);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--t2);
+}
+
+.subtitle code {
+  font-family: var(--m);
+  font-size: 12px;
+  background: var(--sf);
+  padding: 1px 5px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-xs);
+}
+
+/* ── Sections ────────────────────────────────────────────────── */
+
+.section {
+  margin-bottom: 32px;
+}
+
+.h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+/* ── KPI grid (count tiles) ──────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--gap-sm);
+}
+
+.tile {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tileVal {
+  font-family: var(--m);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--tx);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.tileLbl {
+  font-size: 11px;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.accent_red .tileVal { color: var(--red-dark); }
+.accent_grn .tileVal { color: var(--grn); }
+.accent_amb .tileVal { color: var(--ora-t); }
+
+/* ── Table ───────────────────────────────────────────────────── */
+
+.table {
+  width: 100%;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--sf2);
+}
+
+.table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--brd);
+  color: var(--tx);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--bg);
+}
+
+.num {
+  text-align: right;
+  font-family: var(--m);
+}
+
+.dim {
+  color: var(--t2);
+}
+
+.mono {
+  font-family: var(--m);
+  font-size: 12px;
+}
+
+/* ── Pills ───────────────────────────────────────────────────── */
+
+.pill,
+.pillSm {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--sf2);
+  color: var(--t2);
+  border: 1px solid var(--brd);
+  font-family: var(--m);
+}
+
+.pillSm {
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
+/* Status accents */
+.status_MOVING       { background: var(--grn-bg); color: var(--grn-t); border-color: var(--grn-brd); }
+.status_IDLE         { background: var(--blu-bg); color: var(--blu-t); border-color: var(--blu-brd); }
+.status_STOPPED      { background: var(--sf2); color: var(--t2); }
+.status_OFFLINE      { background: var(--red-bg); color: var(--red-t); border-color: var(--red-b); }
+.status_MAINTENANCE  { background: var(--amb-bg); color: var(--amb-t); border-color: var(--yel-brd); }
+
+/* Severity accents */
+.sev_LOW       { background: var(--blu-bg); color: var(--blu-t); border-color: var(--blu-brd); }
+.sev_MEDIUM    { background: var(--amb-bg); color: var(--amb-t); border-color: var(--yel-brd); }
+.sev_HIGH      { background: var(--ora-bg); color: var(--ora-t); border-color: var(--yel-brd); }
+.sev_CRITICAL  { background: var(--red-bg); color: var(--red-t); border-color: var(--red-b); }
+
+/* ── Footer ──────────────────────────────────────────────────── */
+
+.footer {
+  margin-top: 40px;
+  padding: 14px 16px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--t2);
+}
+
+.footer p {
+  margin: 2px 0;
+}
+
+.footer strong {
+  color: var(--tx);
+}
+
+.footer code {
+  font-family: var(--m);
+  font-size: 12px;
+  background: var(--bg);
+  padding: 1px 5px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-xs);
+}

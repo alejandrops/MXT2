@@ -1,0 +1,128 @@
+/* ════════════════════════════════════════════════════════════
+   Admin placeholder pages · "próximamente" with detailed specs
+   ════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 640px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 32px 32px 28px;
+}
+
+.iconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.icon {
+  color: #6366F1;
+}
+
+.title {
+  font-family: var(--m);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tx);
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  font-family: var(--m);
+  font-size: 13px;
+  color: var(--t2);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.divider {
+  height: 1px;
+  background: var(--brd);
+  margin: 0 0 20px;
+}
+
+.specs {
+  margin-bottom: 18px;
+}
+
+.specsLabel {
+  display: block;
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.specsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.specsList li {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--tx);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.specsList li::before {
+  content: "·";
+  color: #6366F1;
+  position: absolute;
+  left: 4px;
+  font-weight: 700;
+}
+
+.specsList code {
+  font-family: var(--m);
+  font-size: 11.5px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818CF8;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--sf2);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t2);
+  text-decoration: none;
+  transition: background 0.1s;
+}
+
+.backLink:hover {
+  background: var(--brd);
+  color: var(--tx);
+}

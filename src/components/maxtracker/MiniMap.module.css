@@ -1,0 +1,18 @@
+.wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.map :global(.leaflet-container) {
+  background: var(--bg);
+}

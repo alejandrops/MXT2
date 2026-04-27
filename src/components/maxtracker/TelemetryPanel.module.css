@@ -1,0 +1,26 @@
+/* ════════════════════════════════════════════════════════════
+   TelemetryPanel · Históricos right panel · specifics
+   ─────────────────────────────────────────────────────────────
+   The panel shell, sections, rows, dots, driver card and accent
+   styles all come from DetailBlocks.module.css. Only screen-
+   specific things (empty state and the multi-line coordinates
+   row) live here.
+   ════════════════════════════════════════════════════════════ */
+
+.emptyHint {
+  padding: 24px 12px;
+  text-align: center;
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t3);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.coords {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

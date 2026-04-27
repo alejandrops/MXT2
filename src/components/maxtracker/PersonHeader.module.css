@@ -1,0 +1,170 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 16px;
+  border-bottom: 1px solid var(--brd);
+  margin-bottom: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-family: var(--m);
+  color: var(--t2);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: var(--tx);
+}
+
+/* ── Title row ──────────────────────────────────────────── */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.titleBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--m);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--f);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-family: var(--m);
+  font-size: 12.5px;
+  color: var(--t2);
+}
+
+/* ── Status block (right) ───────────────────────────────── */
+
+.statusBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.scoreBadge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid;
+}
+
+.scoreNum {
+  font-family: var(--m);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.scoreLabel {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+}
+
+.scoreCritical {
+  background: var(--red-bg);
+  border-color: var(--red-b);
+  color: var(--red-t);
+}
+
+.scoreWarn {
+  background: var(--ora-bg);
+  border-color: var(--yel-brd);
+  color: var(--ora-t);
+}
+
+.scoreOk {
+  background: var(--grn-bg);
+  border-color: var(--grn-brd);
+  color: var(--grn-t);
+}
+
+.lastSeen {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--t3);
+}
+
+/* ── Meta row (bottom) ──────────────────────────────────── */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  font-family: var(--m);
+  color: var(--t2);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.metaLabel {
+  color: var(--t3);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-left: 2px;
+}
+
+.metaValue {
+  color: var(--tx);
+}
+
+.metaValueWarn {
+  color: var(--ora-t);
+}
