@@ -102,16 +102,26 @@
   gap: 16px;
   align-items: start;
   min-width: 0;
+  position: relative;
+}
+
+.body[data-sidebar-state="compact"] {
+  grid-template-columns: 1fr 60px;
+}
+
+.body[data-sidebar-state="hidden"] {
+  grid-template-columns: 1fr;
 }
 
 @media (min-width: 1600px) {
-  .body {
+  .body[data-sidebar-state="full"] {
     grid-template-columns: 1fr 400px;
   }
 }
 
 @media (max-width: 1100px) {
-  .body {
+  .body[data-sidebar-state="full"],
+  .body[data-sidebar-state="compact"] {
     grid-template-columns: 1fr;
   }
 }
@@ -122,6 +132,97 @@
 
 .sideColumn {
   min-width: 0;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: calc(100vh - 200px);
+}
+
+.sideColumn[data-state="compact"] {
+  /* alineado con grid 60px · padding mínimo */
+}
+
+.sideHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--bg);
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.sideColumn[data-state="compact"] .sideHeader {
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.sideTitle {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t2);
+}
+
+.sideToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--t2);
+  cursor: pointer;
+}
+
+.sideToggleBtn:hover {
+  background: var(--sf);
+  color: var(--tx);
+}
+
+/* ── Floating button para reabrir cuando sidebar hidden ─── */
+
+.sidebarFloatingBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 500;
+}
+
+.sidebarFloatingBtn:hover {
+  background: var(--bg);
+  border-color: var(--brd2);
+}
+
+.sidebarFloatingCount {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--t2);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
 }
 
 .mapPlaceholder {

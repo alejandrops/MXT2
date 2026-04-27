@@ -26,6 +26,12 @@ import { MultiMapGrid, type SelectionMode } from "@/components/maxtracker/MultiM
 import { VehicleSelectorModal } from "@/components/maxtracker/VehicleSelectorModal";
 import { AeropuertoView } from "@/components/maxtracker/views/AeropuertoView";
 import { KanbanView } from "@/components/maxtracker/views/KanbanView";
+import { SidebarCompact } from "@/components/maxtracker/SidebarCompact";
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+} from "lucide-react";
 import {
   ViewOptionsPopover,
   DEFAULT_VIEW_OPTIONS,
@@ -137,6 +143,45 @@ export function FleetTrackingClient({
     if (typeof window === "undefined") return;
     window.localStorage.setItem("maxtracker:gridLayout", gridLayout);
   }, [gridLayout]);
+
+  // Sidebar visibility · A8
+  // Default depende del viewMode pero el usuario puede overridear.
+  // El override se persiste por viewMode, así cada modo recuerda su
+  // propio estado.
+  type SidebarState = "full" | "compact" | "hidden";
+  const [sidebarOverride, setSidebarOverride] = useState<
+    Partial<Record<ViewMode, SidebarState>>
+  >(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = window.localStorage.getItem("maxtracker:sidebarOverride");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      "maxtracker:sidebarOverride",
+      JSON.stringify(sidebarOverride),
+    );
+  }, [sidebarOverride]);
+
+  const sidebarDefault: Record<ViewMode, SidebarState> = {
+    mapa: "full",
+    mosaico: "full",
+    scada: "compact",
+    aeropuerto: "hidden",
+    kanban: "hidden",
+  };
+  const sidebarState: SidebarState =
+    sidebarOverride[viewMode] ?? sidebarDefault[viewMode];
+
+  function setSidebarState(next: SidebarState) {
+    setSidebarOverride((prev) => ({ ...prev, [viewMode]: next }));
+  }
 
   // Multi-map selection state
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("auto");
@@ -302,7 +347,7 @@ export function FleetTrackingClient({
         onChangeAssets={setFilterAssetIds}
       />
 
-      <div className={styles.body}>
+      <div className={styles.body} data-sidebar-state={sidebarState}>
         <div className={styles.mapColumn}>
           {/* ── Render por viewMode ────────────────────────────
               · mapa       · single-pane FleetMap (claras)
@@ -360,22 +405,86 @@ export function FleetTrackingClient({
             <KanbanView assets={visibleAssets} />
           )}
         </div>
-        <div className={styles.sideColumn}>
-          {selectedAsset ? (
-            <AssetDetailPanel
-              asset={selectedAsset}
-              onBack={handleBackToList}
-            />
-          ) : (
-            <FleetSidebar
-              assets={visibleAssets}
-              selectedId={selectedId}
-              onSelect={handleSelect}
-              groupColorById={groupColorById}
-            />
-          )}
-        </div>
+        {sidebarState !== "hidden" && (
+          <div
+            className={styles.sideColumn}
+            data-state={sidebarState}
+          >
+            <div className={styles.sideHeader}>
+              {sidebarState === "full" ? (
+                <>
+                  <span className={styles.sideTitle}>
+                    {selectedAsset ? "Detalle" : "Vehículos"}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.sideToggleBtn}
+                    onClick={() =>
+                      setSidebarState(
+                        viewMode === "kanban" || viewMode === "aeropuerto"
+                          ? "hidden"
+                          : "compact",
+                      )
+                    }
+                    title="Colapsar panel"
+                    aria-label="Colapsar panel"
+                  >
+                    <PanelRightClose size={14} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.sideToggleBtn}
+                  onClick={() => setSidebarState("full")}
+                  title="Expandir panel"
+                  aria-label="Expandir panel"
+                >
+                  <PanelLeftClose size={14} />
+                </button>
+              )}
+            </div>
+            {sidebarState === "full" ? (
+              selectedAsset ? (
+                <AssetDetailPanel
+                  asset={selectedAsset}
+                  onBack={handleBackToList}
+                />
+              ) : (
+                <FleetSidebar
+                  assets={visibleAssets}
+                  selectedId={selectedId}
+                  onSelect={handleSelect}
+                  groupColorById={groupColorById}
+                />
+              )
+            ) : (
+              // compact · sólo iconos resumidos · selección de status
+              <SidebarCompact
+                assets={visibleAssets}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+              />
+            )}
+          </div>
+        )}
+        {sidebarState === "hidden" && (
+          <button
+            type="button"
+            className={styles.sidebarFloatingBtn}
+            onClick={() => setSidebarState("full")}
+            title="Mostrar lista de vehículos"
+            aria-label="Mostrar lista de vehículos"
+          >
+            <PanelLeftOpen size={14} />
+            <span>Vehículos</span>
+            <span className={styles.sidebarFloatingCount}>
+              {visibleAssets.length}
+            </span>
+          </button>
+        )}
       </div>
+
 
       <VehicleSelectorModal
         open={selectorOpen}
