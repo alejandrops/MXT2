@@ -292,6 +292,8 @@ export interface DriverListParams {
   pageSize?: number;
   sortBy?: "name" | "safetyScore" | "events30d";
   sortDir?: "asc" | "desc";
+  /** Tenant scope · idem AssetListParams. Si null no filtra. */
+  scopedAccountIds?: string[] | null;
 }
 
 export interface DriverListResult {
@@ -315,10 +317,19 @@ export async function listDrivers(
     pageSize = 25,
     sortBy = "name",
     sortDir = "asc",
+    scopedAccountIds,
   } = params;
+
+  // Tenant scope · si scopedAccountIds = [] devuelvo vacío
+  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
+    return { rows: [], total: 0, page, pageSize, pageCount: 1 };
+  }
 
   // ── Build where clause ─────────────────────────────────
   const where: any = {
+    ...(Array.isArray(scopedAccountIds)
+      ? { accountId: { in: scopedAccountIds } }
+      : {}),
     ...(accountId ? { accountId } : {}),
     ...(search
       ? {
@@ -460,8 +471,28 @@ export interface DriverCounts {
 
 export async function getDriverCounts(opts: {
   accountId?: string | null;
+  scopedAccountIds?: string[] | null;
 } = {}): Promise<DriverCounts> {
-  const where: any = opts.accountId ? { accountId: opts.accountId } : {};
+  // Tenant scope · si vacío devolver 0s
+  if (Array.isArray(opts.scopedAccountIds) && opts.scopedAccountIds.length === 0) {
+    return { total: 0, active: 0, inactive: 0, licenseExpiringSoon: 0, avgSafetyScore: 0 };
+  }
+
+  const where: any = {};
+  if (Array.isArray(opts.scopedAccountIds)) {
+    where.accountId = { in: opts.scopedAccountIds };
+  }
+  if (opts.accountId) {
+    // Si ya hay filtro de scope, restringir aún más con accountId UI
+    if (where.accountId) {
+      // accountId UI debe estar en scope · si no, vacío
+      const scoped = opts.scopedAccountIds ?? [];
+      if (!scoped.includes(opts.accountId)) {
+        return { total: 0, active: 0, inactive: 0, licenseExpiringSoon: 0, avgSafetyScore: 0 };
+      }
+    }
+    where.accountId = opts.accountId;
+  }
 
   const [total, active, soonCount, avgAgg] = await Promise.all([
     db.person.count({ where }),
@@ -509,4 +540,79 @@ export async function listDriversForFilter(): Promise<DriverForFilter[]> {
     select: { id: true, firstName: true, lastName: true },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers para drawer · A4
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Detalle completo de Person para el drawer de edit. Devuelve
+ * null si no existe o si está fuera del scope.
+ */
+export async function getPersonForEdit(
+  personId: string,
+  scopedAccountIds: string[] | null,
+): Promise<{
+  id: string;
+  accountId: string;
+  firstName: string;
+  lastName: string;
+  document: string | null;
+  hiredAt: Date | null;
+  licenseExpiresAt: Date | null;
+  safetyScore: number;
+} | null> {
+  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
+    return null;
+  }
+  const where: any = { id: personId };
+  if (Array.isArray(scopedAccountIds)) {
+    where.accountId = { in: scopedAccountIds };
+  }
+  return db.person.findFirst({
+    where,
+    select: {
+      id: true,
+      accountId: true,
+      firstName: true,
+      lastName: true,
+      document: true,
+      hiredAt: true,
+      licenseExpiresAt: true,
+      safetyScore: true,
+    },
+  });
+}
+
+/**
+ * Cuenta cuántas relaciones tiene una Person · usado para validar
+ * antes de hard-delete. Si tiene 1+ de cualquier tipo, no se puede
+ * eliminar (hay que reasignar primero).
+ */
+export async function getPersonRelationCounts(
+  personId: string,
+): Promise<{
+  drivenAssets: number;
+  events: number;
+  alarms: number;
+  trips: number;
+  assetDriverDays: number;
+  total: number;
+}> {
+  const [drivenAssets, events, alarms, trips, assetDriverDays] = await Promise.all([
+    db.asset.count({ where: { currentDriverId: personId } }),
+    db.event.count({ where: { personId } }),
+    db.alarm.count({ where: { personId } }),
+    db.trip.count({ where: { personId } }),
+    db.assetDriverDay.count({ where: { personId } }),
+  ]);
+  return {
+    drivenAssets,
+    events,
+    alarms,
+    trips,
+    assetDriverDays,
+    total: drivenAssets + events + alarms + trips + assetDriverDays,
+  };
 }

@@ -5,6 +5,7 @@ import {
   type DriverSort,
   type DriversSearchParams,
 } from "@/lib/url-drivers";
+import { PersonActionsKebab } from "@/app/(product)/catalogos/conductores/PersonActionsKebab";
 import type { DriverListRow } from "@/lib/queries/persons";
 import styles from "./DriverTable.module.css";
 
@@ -20,9 +21,15 @@ import styles from "./DriverTable.module.css";
 interface DriverTableProps {
   rows: DriverListRow[];
   current: DriversSearchParams;
+  /** Si true, muestra kebab Editar/Eliminar. Si false, chevron a Libro. */
+  showActions?: boolean;
 }
 
-export function DriverTable({ rows, current }: DriverTableProps) {
+export function DriverTable({
+  rows,
+  current,
+  showActions = false,
+}: DriverTableProps) {
   if (rows.length === 0) {
     return (
       <div className={styles.empty}>
@@ -62,7 +69,7 @@ export function DriverTable({ rows, current }: DriverTableProps) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <DriverRow key={row.id} row={row} />
+            <DriverRow key={row.id} row={row} showActions={showActions} />
           ))}
         </tbody>
       </table>
@@ -70,7 +77,13 @@ export function DriverTable({ rows, current }: DriverTableProps) {
   );
 }
 
-function DriverRow({ row }: { row: DriverListRow }) {
+function DriverRow({
+  row,
+  showActions,
+}: {
+  row: DriverListRow;
+  showActions: boolean;
+}) {
   const href = `/objeto/conductor/${row.id}`;
   const fullName = `${row.firstName} ${row.lastName}`;
 
@@ -145,10 +158,19 @@ function DriverRow({ row }: { row: DriverListRow }) {
         />
       </Cell>
 
-      {/* Chevron */}
-      <Cell href={href} align="right">
-        <ChevronRight size={14} className={styles.chev} />
-      </Cell>
+      {/* Acción · kebab si CRUD, chevron clásico si no */}
+      <td className={`${styles.td} ${styles.alignRight} ${styles.actionTd}`}>
+        {showActions ? (
+          <PersonActionsKebab
+            personId={row.id}
+            fullName={`${row.firstName} ${row.lastName}`}
+          />
+        ) : (
+          <Link href={href} className={styles.cellLink}>
+            <ChevronRight size={14} className={styles.chev} />
+          </Link>
+        )}
+      </td>
     </tr>
   );
 }

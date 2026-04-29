@@ -56,6 +56,7 @@ import {
 } from "./seed-data/geo";
 import { REAL_VEHICLES } from "./seed-data/real-vehicles";
 import { parseRealCsv } from "./seed-data/parse-real-csv";
+import { seedUsersAndProfiles } from "./seed-users";
 import { join } from "node:path";
 
 faker.seed(42);
@@ -204,6 +205,8 @@ function mapEventToAlarm(
 async function reset() {
   // Delete in reverse FK order. SQLite doesn't enforce FKs unless
   // pragma is enabled, but Prisma respects relation deletes.
+  await db.user.deleteMany();
+  await db.profile.deleteMany();
   await db.assetDriverDay.deleteMany();
   await db.trip.deleteMany();
   await db.livePosition.deleteMany();
@@ -848,6 +851,13 @@ async function main() {
   await rollupAssetWeeklyStats(allAssets);
   const totalWeeklyStats = await db.assetWeeklyStats.count();
   console.log(`   ✓ ${totalWeeklyStats} asset-weekly-stats rows`);
+
+  // ── Users & Profiles (Lote F1 · fundamentos auth) ────────────────
+  // Crea 4 perfiles builtin + 8 usuarios demo (1 SA, 1 MA, 3 CA, 3 OP)
+  // cubriendo los 3 accounts seedeados. Auth real con Auth0 viene en
+  // v1.1+ · por ahora sesión simulada con cookie + switcher demo.
+  console.log("   · seeding users and profiles…");
+  await seedUsersAndProfiles(db);
 
   // ── Summary ──────────────────────────────────────────────────────
   console.timeEnd("seed");

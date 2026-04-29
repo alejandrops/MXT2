@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { SortHeader } from "./SortHeader";
 import { StatusPill } from "./StatusPill";
+import { AssetActionsKebab } from "@/app/(product)/catalogos/vehiculos/AssetActionsKebab";
 import type { AssetsSearchParams } from "@/lib/url";
 import type { AssetListRow } from "@/types/domain";
 import styles from "./AssetTable.module.css";
@@ -25,9 +26,16 @@ import styles from "./AssetTable.module.css";
 interface AssetTableProps {
   rows: AssetListRow[];
   current: AssetsSearchParams;
+  /** Si true, muestra el kebab con Editar/Eliminar (CRUD).
+   *  Si false, muestra el chevron clásico → Libro del Objeto. */
+  showActions?: boolean;
 }
 
-export function AssetTable({ rows, current }: AssetTableProps) {
+export function AssetTable({
+  rows,
+  current,
+  showActions = false,
+}: AssetTableProps) {
   if (rows.length === 0) {
     return (
       <div className={styles.empty}>
@@ -57,7 +65,7 @@ export function AssetTable({ rows, current }: AssetTableProps) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <AssetRow key={row.id} row={row} />
+            <AssetRow key={row.id} row={row} showActions={showActions} />
           ))}
         </tbody>
       </table>
@@ -69,7 +77,13 @@ export function AssetTable({ rows, current }: AssetTableProps) {
 //  AssetRow · single row (each cell is a Link to Libro B)
 // ═══════════════════════════════════════════════════════════════
 
-function AssetRow({ row }: { row: AssetListRow }) {
+function AssetRow({
+  row,
+  showActions,
+}: {
+  row: AssetListRow;
+  showActions: boolean;
+}) {
   const href = `/objeto/vehiculo/${row.id}`;
   const driver = row.currentDriver;
 
@@ -118,10 +132,16 @@ function AssetRow({ row }: { row: AssetListRow }) {
         <SpeedCell lastPosition={row.lastPosition} />
       </Cell>
 
-      {/* Chevron action cell */}
-      <Cell href={href} align="right">
-        <ChevronRight size={14} className={styles.chev} />
-      </Cell>
+      {/* Acción · kebab si CRUD, chevron clásico si no */}
+      <td className={`${styles.td} ${styles.alignRight} ${styles.actionTd}`}>
+        {showActions ? (
+          <AssetActionsKebab assetId={row.id} assetName={row.name} />
+        ) : (
+          <Link href={href} className={styles.cellLink}>
+            <ChevronRight size={14} className={styles.chev} />
+          </Link>
+        )}
+      </td>
     </tr>
   );
 }

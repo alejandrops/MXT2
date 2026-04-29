@@ -1,0 +1,244 @@
+/* ═══════════════════════════════════════════════════════════════
+   SeguridadTab · cambiar password + sesiones mock
+   ═══════════════════════════════════════════════════════════════ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.section:last-of-type {
+  border-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.sectionHint {
+  margin: 0 0 8px;
+  font-family: var(--f);
+  font-size: 12px;
+  color: #6B7280;
+  line-height: 1.5;
+  max-width: 540px;
+}
+
+/* ── Form de password ──────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  margin-top: 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #4B5563;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fieldRequired {
+  color: #DC2626;
+  font-weight: 600;
+}
+
+.fieldError {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: #DC2626;
+  font-weight: 500;
+}
+
+.input {
+  font-family: var(--f);
+  font-size: 13px;
+  color: #111827;
+  padding: 8px 10px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 80ms;
+}
+
+.input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input:disabled {
+  background: #F3F4F6;
+  cursor: not-allowed;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.successMsg {
+  font-family: var(--f);
+  font-size: 12px;
+  color: #059669;
+  font-weight: 500;
+}
+
+.submitBtn {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #1D4ED8;
+}
+
+.submitBtn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* ── Sesiones activas ──────────────────────────────── */
+
+.sessionsHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.sessionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 540px;
+}
+
+.sessionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+}
+
+.sessionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.sessionInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sessionDevice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.sessionCurrent {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #1E3A8A;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.sessionMeta {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: #6B7280;
+}
+
+.sessionSep {
+  color: #D1D5DB;
+}
+
+.revokeBtn {
+  padding: 6px 10px;
+  background: #FFFFFF;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 80ms;
+}
+
+.revokeBtn:hover {
+  background: #FEF2F2;
+}
+
+.emptyMsg {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #6B7280;
+  padding: 12px 14px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  max-width: 540px;
+}

@@ -37,6 +37,7 @@ model Organization {
   name      String
   slug      String    @unique
   accounts  Account[]
+  users     User[]
   createdAt DateTime  @default(now())
 }
 
@@ -57,6 +58,7 @@ model Account {
   alarms         Alarm[]
   assetDriverDays AssetDriverDay[]
   assetWeeklyStats AssetWeeklyStats[]
+  users          User[]
   createdAt      DateTime     @default(now())
 }
 
@@ -510,4 +512,96 @@ enum AlarmStatus {
   ATTENDED
   CLOSED
   DISMISSED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH & PERMISSIONS
+//  ─────────────────────────────────────────────────────────────
+//  Lote F1 · fundamentos para Configuración personal y Backoffice.
+//
+//  Auth real (Auth0) viene en v1.1+. Por ahora la sesión es
+//  simulada con una cookie "mxt-demo-user-id" + selector de
+//  identidad en el topbar. passwordHash queda como columna pero
+//  no se valida en demo.
+//
+//  Multi-tenancy:
+//    · Super admin / Maxtracker admin · accountId = null (cross)
+//    · Client admin / Operator · accountId set (scoped)
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  firstName       String
+  lastName        String
+  phone           String?
+  documentNumber  String?
+
+  /// Dummy en demo · auth real (Auth0) en v1.1+
+  passwordHash    String
+  status          UserStatus @default(ACTIVE)
+
+  // ─── Tenant scoping ──────────────────────────────────────
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  /// Null si Super admin o Admin Maxtracker (cross-account).
+  /// Set si Admin de Cliente u Operador (scoped a un Account).
+  accountId       String?
+  account         Account?  @relation(fields: [accountId], references: [id])
+
+  // ─── Role assignment ─────────────────────────────────────
+  profileId       String
+  profile         Profile   @relation(fields: [profileId], references: [id])
+
+  // ─── Personal preferences (Configuración) ────────────────
+  language             String   @default("es-AR")
+  theme                Theme    @default(LIGHT)
+  notifyAlarmHighCrit  Boolean  @default(true)
+  notifyScoreDrop      Boolean  @default(true)
+  notifyBoletinClosed  Boolean  @default(true)
+  notifyCriticalEvent  Boolean  @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+}
+
+/// Perfil de permisos · 4 builtin (SUPER_ADMIN, MAXTRACKER_ADMIN,
+/// CLIENT_ADMIN, OPERATOR) + posibles personalizados a futuro
+/// (isBuiltin = false).
+model Profile {
+  id          String    @id @default(cuid())
+  systemKey   ProfileKey @unique
+  /// Nombre editable por admin · "Operador" puede renombrarse a
+  /// "Despachador" sin cambiar systemKey
+  nameLabel   String
+  description String?
+
+  /// Permisos por módulo · JSON con shape PermissionsMap definido
+  /// en src/lib/permissions.ts. Editable desde /admin/perfiles.
+  permissions Json
+
+  users       User[]
+  isBuiltin   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum ProfileKey {
+  SUPER_ADMIN
+  MAXTRACKER_ADMIN
+  CLIENT_ADMIN
+  OPERATOR
 }

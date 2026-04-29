@@ -96,6 +96,7 @@ const MODULES: ModuleDef[] = [
       { label: "Reportes", href: "/actividad/reportes" },
       { label: "Scorecard", href: "/actividad/scorecard" },
       { label: "Viajes", href: "/actividad/viajes" },
+      { label: "API", href: "/actividad/api" },
     ],
   },
   {
@@ -109,6 +110,7 @@ const MODULES: ModuleDef[] = [
       { label: "Alarmas", href: "/seguridad/alarmas", badge: 7 },
       // Cross-module shortcut to the same screen as Seguimiento>Historial
       { label: "Seguimiento", href: "/seguimiento/historial" },
+      { label: "Reporte", href: null }, // not built yet
     ],
   },
   {
@@ -168,7 +170,6 @@ const MODULES: ModuleDef[] = [
     pages: [
       { label: "Vista ejecutiva", href: "/direccion/vista-ejecutiva" },
       { label: "Distribución por grupo", href: "/direccion/distribucion-grupos" },
-      { label: "Correlaciones", href: "/direccion/correlaciones" },
       { label: "Boletín", href: "/direccion/boletin" },
     ],
   },
@@ -241,19 +242,22 @@ export function Sidebar() {
         )}
       </Link>
 
-      {/* ── Search shortcut · disabled placeholder ──────────────
-          Visible but inactive while a real command palette is built.
-          Tooltip indicates upcoming feature. */}
+      {/* ── Search shortcut · abre CommandPalette ───────────────
+          Dispara un custom event que el CommandPalette escucha.
+          Mantiene el ⌘K como shortcut original sin acoplar refs. */}
       {!collapsed && (
-        <div
-          className={`${styles.search} ${styles.searchDisabled}`}
-          title="Búsqueda global · próximamente"
-          aria-disabled="true"
+        <button
+          type="button"
+          className={styles.search}
+          onClick={() => {
+            window.dispatchEvent(new Event("open-command-palette"));
+          }}
+          title="Búsqueda global · ⌘K"
         >
           <Search size={13} />
           <span>Buscar</span>
           <kbd className={styles.kbd}>⌘K</kbd>
-        </div>
+        </button>
       )}
 
       {/* ── Modules accordion ─────────────────────────────────── */}
@@ -281,10 +285,14 @@ export function Sidebar() {
           {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           {!collapsed && <span>Colapsar</span>}
         </button>
-        <button className={styles.configBtn} disabled>
+        <Link
+          href="/configuracion"
+          className={styles.configBtn}
+          title="Configuración"
+        >
           <Settings size={15} />
           {!collapsed && <span>Configuración</span>}
-        </button>
+        </Link>
       </div>
     </aside>
   );

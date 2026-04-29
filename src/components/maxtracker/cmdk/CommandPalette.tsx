@@ -81,6 +81,18 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [open]);
 
+  // ── Listener custom event · permite abrir el palette desde
+  //    cualquier botón del shell sin acoplar refs ni context.
+  //    Disparar con: window.dispatchEvent(new Event("open-command-palette"))
+  useEffect(() => {
+    function handleOpenEvent() {
+      setOpen(true);
+    }
+    window.addEventListener("open-command-palette", handleOpenEvent);
+    return () =>
+      window.removeEventListener("open-command-palette", handleOpenEvent);
+  }, []);
+
   // ── Focus input cuando abre · resetear estado ─────────────
   useEffect(() => {
     if (open) {

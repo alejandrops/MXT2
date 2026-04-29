@@ -258,3 +258,106 @@
   color: #6366F1;
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Lote F1 · Identity switcher demo + role line en menú usuario
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Línea del rol/cliente debajo del email en el header del menú */
+.menuRoleLine {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-top: 2px;
+}
+
+.menuRoleSep {
+  color: var(--t3);
+}
+
+/* Chevron del item "Cambiar identidad demo" */
+.menuItemChev {
+  margin-left: auto;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+/* Lista de identidades demo · indented dentro del dropdown */
+.identityList {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-top: 1px solid var(--brd);
+  border-bottom: 1px solid var(--brd);
+  margin: 2px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.identityItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px 8px 28px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--f);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.identityItem:last-child {
+  border-bottom: 0;
+}
+
+.identityItem:hover:not(:disabled) {
+  background: var(--sf);
+}
+
+.identityItem:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.identityItemActive {
+  background: var(--blu-bg);
+}
+
+.identityItemActive:hover:not(:disabled) {
+  background: var(--blu-bg);
+}
+
+.identityHeading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.identityName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.identityActiveBadge {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--blu-t);
+  background: var(--blu-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  border: 1px solid var(--blu-brd);
+}
+
+.identitySub {
+  font-size: 10.5px;
+  color: var(--t3);
+  font-family: var(--f);
+}
+
+.identitySep {
+  color: var(--t3);
+}

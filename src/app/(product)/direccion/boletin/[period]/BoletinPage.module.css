@@ -73,14 +73,15 @@
 
 @media print {
   .boletin {
-    background: white;
+    background: #fff !important;
   }
   .body {
     max-width: none;
     padding: 0;
-    gap: 16px;
+    gap: 12px;
   }
+  /* Placeholders no deben aparecer impresos · si quedaron, ocultar */
   .placeholder {
-    page-break-inside: avoid;
+    display: none !important;
   }
 }

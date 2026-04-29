@@ -1,6 +1,7 @@
 import {
   getAccountsForFilter,
   getDriverCounts,
+  getPersonForEdit,
   listDrivers,
 } from "@/lib/queries";
 import {
@@ -14,17 +15,20 @@ import {
   parseDriversParams,
 } from "@/lib/url-drivers";
 import { formatNumber } from "@/lib/format";
+import { getSession } from "@/lib/session";
+import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import { PersonEditDrawer } from "./PersonEditDrawer";
+import { NewPersonButton } from "./NewPersonButton";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  /catalogos/conductores · driver listing
+//  /catalogos/conductores · Lista + CRUD
 //  ─────────────────────────────────────────────────────────────
-//  Server Component · twin of /catalogos/vehiculos:
-//    · KPI strip (Total / Activos / Inactivos / Score promedio /
-//      Licencias por vencer)
-//    · Filter bar (search, account, status pills)
-//    · Sortable table with clickable rows → conductor detail
-//    · Pagination
+//  Lote A4 · gemelo de A3 sobre Person:
+//    · Tenant scoping en queries
+//    · Botón "+ Nuevo conductor" si canWrite
+//    · Kebab Editar/Eliminar por fila
+//    · Drawer ?new=1 / ?edit=<id>
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -37,6 +41,21 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const params = parseDriversParams(raw);
 
+  // Drawer flags
+  const isNew = raw.new === "1";
+  const editIdRaw = raw.edit;
+  const editId = Array.isArray(editIdRaw) ? editIdRaw[0] : editIdRaw;
+  const drawerMode: "new" | "edit" | "closed" = editId
+    ? "edit"
+    : isNew
+      ? "new"
+      : "closed";
+
+  // Sesión y permisos
+  const session = await getSession();
+  const scopedAccountIds = getScopedAccountIds(session, "catalogos");
+  const userCanWrite = canWrite(session, "catalogos");
+
   const [listResult, counts, accounts] = await Promise.all([
     listDrivers({
       search: params.search,
@@ -46,13 +65,36 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
       pageSize: 25,
       sortBy: params.sort,
       sortDir: params.dir,
+      scopedAccountIds,
     }),
-    getDriverCounts({ accountId: params.accountId }),
-    getAccountsForFilter(),
+    getDriverCounts({ accountId: params.accountId, scopedAccountIds }),
+    getAccountsForFilter(scopedAccountIds),
   ]);
+
+  // Drawer data
+  let drawerInitial: Awaited<ReturnType<typeof getPersonForEdit>> = null;
+  if (drawerMode === "edit" && editId && userCanWrite) {
+    drawerInitial = await getPersonForEdit(editId, scopedAccountIds);
+  }
 
   return (
     <div className={styles.page}>
+      {/* ── Header con título y botón "+ Nuevo" ─────────────── */}
+      {userCanWrite && (
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h1 className={styles.title}>Conductores</h1>
+            <p className={styles.subtitle}>
+              Catálogo del personal operativo
+              {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
+                ? ` · ${accounts[0].name}`
+                : ""}
+            </p>
+          </div>
+          <NewPersonButton />
+        </div>
+      )}
+
       {/* ── KPI strip ─────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile label="Total" value={formatNumber(counts.total)} />
@@ -88,9 +130,12 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
       <DriverFilterBar current={params} accounts={accounts} />
 
       {/* ── Table ──────────────────────────────────────────── */}
-      <DriverTable rows={listResult.rows} current={params} />
+      <DriverTable
+        rows={listResult.rows}
+        current={params}
+        showActions={userCanWrite}
+      />
 
-      {/* ── Pagination ─────────────────────────────────────── */}
       <Pagination
         total={listResult.total}
         page={listResult.page}
@@ -98,6 +143,14 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
         pageCount={listResult.pageCount}
         buildHref={(page) => buildDriversHref(params, { page })}
       />
+
+      {/* ── Drawer ────────────────────────────────────────── */}
+      {drawerMode !== "closed" && userCanWrite && (
+        <PersonEditDrawer
+          initialPerson={drawerMode === "edit" ? drawerInitial : null}
+          accountOptions={accounts}
+        />
+      )}
     </div>
   );
 }

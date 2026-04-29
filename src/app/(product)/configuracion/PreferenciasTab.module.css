@@ -1,0 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════
+   PreferenciasTab · idioma + tema
+   ═══════════════════════════════════════════════════════════════ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.section:last-of-type {
+  border-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.sectionHint {
+  margin: 0 0 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  color: #6B7280;
+  line-height: 1.5;
+  max-width: 540px;
+}
+
+/* ── Selectbox idioma ────────────────────────────────── */
+
+.select {
+  font-family: var(--f);
+  font-size: 13px;
+  color: #111827;
+  padding: 8px 10px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  max-width: 280px;
+  appearance: auto;
+}
+
+.select:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.select:disabled {
+  background: #F3F4F6;
+  cursor: not-allowed;
+}
+
+/* ── Radio cards · tema ──────────────────────────────── */
+
+.radioGroup {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 600px;
+}
+
+@media (max-width: 700px) {
+  .radioGroup {
+    grid-template-columns: 1fr;
+  }
+}
+
+.radioCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 80ms, background-color 80ms;
+}
+
+.radioCard:hover {
+  border-color: #9CA3AF;
+}
+
+.radioCard:has(input:checked) {
+  border-color: #2563EB;
+  background: #EFF6FF;
+}
+
+.radioInput {
+  margin: 2px 0 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #2563EB;
+}
+
+.radioBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.radioLabel {
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.radioHint {
+  font-family: var(--f);
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+/* ── Form footer ─────────────────────────────────────── */
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.successMsg {
+  font-family: var(--f);
+  font-size: 12px;
+  color: #059669;
+  font-weight: 500;
+}
+
+.submitBtn {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #1D4ED8;
+}
+
+.submitBtn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}

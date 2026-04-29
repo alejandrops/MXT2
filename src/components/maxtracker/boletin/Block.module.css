@@ -590,3 +590,115 @@
   color: var(--t2);
   font-weight: 700;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Bloque J · Highlights y observaciones
+   ═══════════════════════════════════════════════════════════════ */
+
+.highlightList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.highlightItem {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  font-family: var(--f);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--tx);
+}
+
+.highlightSymbol {
+  font-weight: 700;
+  text-align: center;
+  font-size: 14px;
+  width: 24px;
+}
+
+.highlightSymbol_positive { color: var(--grn); }
+.highlightSymbol_negative { color: var(--red); }
+.highlightSymbol_warning  { color: var(--ora); }
+.highlightSymbol_neutral  { color: var(--t3); }
+
+.highlightText strong {
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.highlightLink {
+  color: var(--blu);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.highlightLink:hover {
+  text-decoration: underline;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Print refinado · cada bloque inicia limpio en página
+   ═══════════════════════════════════════════════════════════════ */
+
+@media print {
+  .block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid #888;
+    box-shadow: none !important;
+    background: #fff !important;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 0;
+  }
+
+  .blockHeader {
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+  }
+
+  .blockLetter {
+    background: #f0f0f0 !important;
+    color: #111 !important;
+  }
+
+  .blockTitle {
+    color: #000 !important;
+  }
+
+  .blockHint {
+    color: #444 !important;
+  }
+
+  /* Tablas · borders más nítidos para impresión */
+  .statsTable thead th,
+  .anomTable thead th {
+    background: #f0f0f0 !important;
+    border-bottom: 1px solid #444 !important;
+    color: #000 !important;
+  }
+
+  .statsTable tbody td,
+  .anomTable tbody td {
+    border-bottom: 1px solid #ddd !important;
+    color: #111 !important;
+  }
+
+  /* Highlights · símbolos siguen en color (semánticos) */
+  .highlightLink {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Empty / lead text */
+  .empty,
+  .lead {
+    color: #333 !important;
+  }
+}

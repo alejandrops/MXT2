@@ -9,6 +9,7 @@ import { BlockE_TopConductores } from "@/components/maxtracker/boletin/BlockE_To
 import { BlockF_Seguridad } from "@/components/maxtracker/boletin/BlockF_Seguridad";
 import { BlockG_Conduccion } from "@/components/maxtracker/boletin/BlockG_Conduccion";
 import { BlockH_AnomaliasEstadisticas } from "@/components/maxtracker/boletin/BlockH_AnomaliasEstadisticas";
+import { BlockJ_Highlights } from "@/components/maxtracker/boletin/BlockJ_Highlights";
 import styles from "./BoletinPage.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -110,17 +111,14 @@ export default async function BoletinPage({ params }: PageProps) {
 
         <BlockH_AnomaliasEstadisticas data={data} />
 
-        {/* Placeholders para bloques I-J · entregados en próximos lotes */}
+        {/* Bloque I · Sostenibilidad · placeholder hasta que exista el módulo */}
         <BlockPlaceholder
           letter="I"
           title="Sostenibilidad · combustible"
           hint="Cuando el módulo esté construido"
         />
-        <BlockPlaceholder
-          letter="J"
-          title="Highlights y observaciones"
-          hint="Texto editorial generado · próximo lote"
-        />
+
+        <BlockJ_Highlights data={data} />
       </article>
     </div>
   );

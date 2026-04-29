@@ -1,0 +1,223 @@
+/* ═══════════════════════════════════════════════════════════════
+   /configuracion · layout y clases compartidas entre tabs
+   Colores hex hardcoded para evitar el bug de --tx overrideado.
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: var(--f);
+}
+
+/* ── Header de la página ────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 13px;
+  color: #6B7280;
+}
+
+/* ── Layout 2 columnas · tabs aside + contenido ─────────── */
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Tabs aside ────────────────────────────────────────── */
+
+.tabsAside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.userCard {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.userAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.userName {
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userRole {
+  font-family: var(--f);
+  font-size: 11px;
+  color: #6B7280;
+}
+
+.userAccount {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: #9CA3AF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Tabs nav ─────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--f);
+  font-size: 13px;
+  color: #4B5563;
+  transition: background-color 60ms;
+}
+
+.tabBtn:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+.tabBtnActive {
+  background: #EFF6FF;
+  color: #1E3A8A;
+  font-weight: 500;
+}
+
+.tabBtnActive:hover {
+  background: #DBEAFE;
+  color: #1E3A8A;
+}
+
+.tabIcon {
+  display: inline-flex;
+  align-items: center;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.tabBtnActive .tabIcon {
+  color: #1E3A8A;
+}
+
+.tabLabel {
+  flex: 1;
+}
+
+.tabBadge {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400E;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-family: var(--f);
+}
+
+/* ── Contenido del tab ────────────────────────────────── */
+
+.tabContent {
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 24px 28px;
+  min-height: 400px;
+}
+
+.tabHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.tabTitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.tabSubtitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #6B7280;
+  line-height: 1.5;
+}

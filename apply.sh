@@ -1,30 +1,17 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-# apply.sh · Lote boletin-bloque-H-anomalias
+# apply.sh · Fix · PersonEditDrawer · variable shadowing global document
 # ─────────────────────────────────────────────────────────────
-# Implementa el Bloque H del Boletín · Anomalías Estadísticas.
+# Bug del lote A4 · declaré una variable de estado llamada
+# `document` que tapaba el global `document` del navegador. Por
+# eso fallaba `document.addEventListener` en useEffect del drawer.
 #
-# Identifica vehículos cuya métrica del período cae fuera de la
-# banda [μ ± 2σ] de la flota. Por cada anomalía reporta:
-# vehículo, métrica, valor, banda esperada, desvío en σ.
-#
-# Métricas evaluadas:
-#   · Distancia (km)
-#   · Viajes (count)
-#   · Tiempo en marcha (h)
-#   · Eventos / 100km   ← alto = peor (color rojo en arriba)
-#
-# Filtros · solo vehículos con >50km para evitar ratios infinitos.
-# Necesita >=5 vehículos en el período para análisis estadístico.
+# Fix · renombrar variable local de `document` a `documentNumber`.
+# El field del schema sigue siendo `document` (en Person.document)
+# · solo cambia el nombre interno de la variable React.
 #
 # Archivos:
-#   · src/app/(product)/direccion/boletin/[period]/page.tsx
-#       - Agrega activeMin y tripCount a VehicleRow
-#       - Importa BlockH y reemplaza placeholder por componente
-#   · src/components/maxtracker/boletin/BlockH_AnomaliasEstadisticas.tsx (NUEVO)
-#       - Cálculo y renderizado del bloque
-#   · src/components/maxtracker/boletin/Block.module.css
-#       - Agrega clases para tabla densa de anomalías
+#   · src/app/(product)/catalogos/conductores/PersonEditDrawer.tsx (mod)
 #
 # Idempotente.
 # ═══════════════════════════════════════════════════════════════
@@ -63,25 +50,22 @@ apply_file() {
   echo "✅ Aplicado · $rel"
 }
 
-apply_file "src/app/(product)/direccion/boletin/[period]/page.tsx"
-apply_file "src/components/maxtracker/boletin/BlockH_AnomaliasEstadisticas.tsx"
-apply_file "src/components/maxtracker/boletin/Block.module.css"
+apply_file "src/app/(product)/catalogos/conductores/PersonEditDrawer.tsx"
 
 if [ -d ".next" ]; then
   rm -rf .next
-  echo "🧹 Borrado .next (re-compilación limpia al próximo dev)"
+  echo "🧹 Borrado .next"
 fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Lote aplicado · boletin-bloque-H-anomalias"
+echo "Fix aplicado · PersonEditDrawer · doc shadow"
+echo ""
+echo "Próximo paso: npm run dev"
 echo ""
 echo "Validar:"
-echo "  · Abrí /direccion/boletin/<periodo>"
-echo "  · Bajá hasta el Bloque H (después del G · Conducción)"
-echo "  · Debería mostrar 1+ anomalías (Camión AH460 con distancia"
-echo "    extrema es candidato seguro al outlier)"
-echo "  · Click en el nombre del vehículo · va al Libro del Objeto"
-echo "  · El Bloque I (Sostenibilidad) sigue como placeholder"
-echo "  · El Bloque J (Highlights) sigue como placeholder · próx lote"
+echo "  · /catalogos/conductores → click '+ Nuevo conductor'"
+echo "  · Drawer abre sin error 'addEventListener is not a function'"
+echo "  · El campo Documento sigue funcionando normal"
+echo "  · ESC cierra el drawer"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

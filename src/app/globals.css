@@ -265,7 +265,7 @@ a {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 1.5cm 1.2cm;
   }
 
   html,
@@ -278,5 +278,27 @@ a {
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* ── Ocultar el shell del producto · solo queda .app-content ──
+     Estructura del shell:
+       .app-root
+         .app-body
+           <Sidebar />        ← oculto (hermano de .app-main)
+           .app-main
+             <Topbar />       ← oculto (hermano de .app-content)
+             <GlobalFilterBar/> ← oculto (idem)
+             .app-content     ← ESTO queda · contiene la página
+  */
+  .app-body > *:not(.app-main) {
+    display: none !important;
+  }
+  .app-main > *:not(.app-content) {
+    display: none !important;
+  }
+  .app-content {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
   }
 }

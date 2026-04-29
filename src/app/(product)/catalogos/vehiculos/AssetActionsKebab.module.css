@@ -1,0 +1,149 @@
+/* ═══════════════════════════════════════════════════════════════
+   AssetActionsKebab · botón ⋮ + menu desplegable
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #6B7280;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+/* ── Menu ────────────────────────────────────────────── */
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  min-width: 160px;
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: var(--f);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #111827;
+  text-align: left;
+  transition: background-color 60ms;
+}
+
+.menuItem:hover {
+  background: #F3F4F6;
+}
+
+.menuItemDanger {
+  color: #DC2626;
+}
+
+.menuItemDanger:hover {
+  background: #FEF2F2;
+}
+
+/* ── Confirm popover ────────────────────────────────── */
+
+.confirmPopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
+  min-width: 280px;
+  padding: 14px;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--f);
+}
+
+.confirmHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.confirmHint {
+  font-size: 11.5px;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cancelBtn {
+  padding: 6px 12px;
+  background: #FFFFFF;
+  color: #4B5563;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #F3F4F6;
+}
+
+.confirmBtn {
+  padding: 6px 12px;
+  background: #DC2626;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #B91C1C;
+}
+
+.confirmBtn:disabled,
+.cancelBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
