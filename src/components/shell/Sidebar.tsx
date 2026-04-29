@@ -177,12 +177,12 @@ const MODULES: ModuleDef[] = [
     key: "gest",
     label: "Catálogos",
     icon: <Building2 size={16} />,
-    pathPrefix: "/gestion",
+    pathPrefix: "/catalogos",
     enabled: true,
     pages: [
-      { label: "Vehículos", href: "/gestion/vehiculos" },
-      { label: "Conductores", href: "/gestion/conductores" },
-      { label: "Grupos", href: "/gestion/grupos" },
+      { label: "Vehículos", href: "/catalogos/vehiculos" },
+      { label: "Conductores", href: "/catalogos/conductores" },
+      { label: "Grupos", href: "/catalogos/grupos" },
     ],
   },
 ];

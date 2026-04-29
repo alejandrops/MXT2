@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-//  URL helpers for /gestion/vehiculos/[id]?tab=historico
+//  URL helpers for /objeto/vehiculo/[id]?tab=historico
 //  ─────────────────────────────────────────────────────────────
 //  El tab "Histórico" embebe TripsTable filtrado por assetId.
 //  Reusa los tipos de TripsParams (sort/dir) pero el href siempre
-//  vuelve a /gestion/vehiculos/[id] preservando ?tab=historico.
+//  vuelve a /objeto/vehiculo/[id] preservando ?tab=historico.
 //
 //  El rango de fechas no es URL-driven en este lote · va fijo a
 //  los últimos 30 días (consistente con la KPI strip de la 360).
@@ -27,7 +27,7 @@ export function buildAssetHistoricoHref(
   if (merged.sortDir !== "desc") {
     params.set("dir", merged.sortDir);
   }
-  return `/gestion/vehiculos/${assetId}?${params.toString()}`;
+  return `/objeto/vehiculo/${assetId}?${params.toString()}`;
 }
 
 /**

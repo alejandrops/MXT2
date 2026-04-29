@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   LiveStatus · información en tiempo real del vehículo
+   LiveStatus · información en tiempo real del vehículo · sin --t1
    ═══════════════════════════════════════════════════════════════ */
 
 .wrap {
@@ -13,8 +13,6 @@
   font-size: 12px;
   overflow: hidden;
 }
-
-/* ── Banner de alarmas activas ──────────────────────────── */
 
 .alarmBanner {
   display: flex;
@@ -47,8 +45,6 @@
 .alarmAction:hover {
   text-decoration: underline;
 }
-
-/* ── Fila de estado actual ──────────────────────────────── */
 
 .stateRow {
   display: flex;
@@ -103,8 +99,6 @@
   font-size: 12px;
 }
 
-/* Status dots · binarios · solo donde aportan */
-
 .dot {
   display: inline-block;
   width: 7px;
@@ -113,20 +107,10 @@
   flex-shrink: 0;
 }
 
-.dot_on {
-  background: #16a34a;
-}
-.dot_warn {
-  background: #d97706;
-}
-.dot_neutral {
-  background: var(--t3);
-}
-.dot_off {
-  background: #cbd5e1;
-}
-
-/* ── Fila de datos del vehículo ─────────────────────────── */
+.dot_on { background: #16a34a; }
+.dot_warn { background: #d97706; }
+.dot_neutral { background: var(--t3); }
+.dot_off { background: #cbd5e1; }
 
 .dataRow {
   display: flex;
@@ -159,6 +143,6 @@
 }
 
 .dataValue {
-  color: var(--t1);
+  color: var(--tx);
   font-weight: 500;
 }

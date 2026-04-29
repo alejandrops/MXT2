@@ -4,14 +4,17 @@ import type { AnalysisGranularity } from "@/lib/queries";
 import type { ObjectType } from "@/lib/object-modules";
 import { getAssetDayMapInRange } from "@/lib/queries/asset-day-map-in-range";
 import { DayRouteCard } from "@/components/maxtracker/objeto/DayRouteCard";
+import { DrivenAssetsSection } from "@/components/maxtracker/objeto/DrivenAssetsSection";
+import { GroupCompositionSection } from "@/components/maxtracker/objeto/GroupCompositionSection";
 import styles from "./ActivityBookTab.module.css";
 
 // ═══════════════════════════════════════════════════════════════
 //  ActivityBookTab · módulo Actividad para el Libro · F2.B
 //  ─────────────────────────────────────────────────────────────
 //  Estructura · template estructural común a todos los modules:
-//    0. (vehiculo) · DayRouteCard · ruta del último día con datos
-//       dentro del período · respeta el PeriodBar (Lote 2.2)
+//    0a. (vehiculo)  · DayRouteCard · ruta del último día con datos
+//    0b. (conductor) · DrivenAssetsSection · vehículos asignados
+//    0c. (grupo)     · GroupCompositionSection · vehículos + conductores
 //    1. KPIs del período · 4 cards
 //    2. Distribución temporal · barras por bucket de tiempo
 //    3. Comparativa contra peers · vs flota y vs grupo (si aplica)
@@ -83,11 +86,29 @@ export async function ActivityBookTab({
 
   return (
     <div className={styles.body}>
-      {/* ── 0. DayRouteCard (solo vehículos) ───────────────── */}
+      {/* ── 0a. DayRouteCard (vehículos) ───────────────────── */}
       {dayMap && type === "vehiculo" && (
         <section>
           <DayRouteCard assetId={id} dayMap={dayMap} />
         </section>
+      )}
+
+      {/* ── 0b. Vehículos asignados (conductores) ──────────── */}
+      {type === "conductor" && (
+        <DrivenAssetsSection
+          personId={id}
+          fromDate={fromDate}
+          toDate={toDate}
+        />
+      )}
+
+      {/* ── 0c. Composición del grupo (grupos) ─────────────── */}
+      {type === "grupo" && (
+        <GroupCompositionSection
+          groupId={id}
+          fromDate={fromDate}
+          toDate={toDate}
+        />
       )}
 
       {/* ── 1. KPIs ────────────────────────────────────────── */}

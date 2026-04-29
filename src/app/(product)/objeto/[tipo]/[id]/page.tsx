@@ -8,8 +8,12 @@ import {
 } from "@/lib/object-modules";
 import type { AnalysisGranularity } from "@/lib/queries";
 import { getAssetLiveStatus } from "@/lib/queries/asset-live-status";
+import { getDriverProfile } from "@/lib/queries/driver-profile";
+import { getGroupProfile } from "@/lib/queries/group-profile";
 import { ObjectBook } from "@/components/maxtracker/objeto/ObjectBook";
 import { LiveStatus } from "@/components/maxtracker/objeto/LiveStatus";
+import { DriverProfile } from "@/components/maxtracker/objeto/DriverProfile";
+import { GroupProfile } from "@/components/maxtracker/objeto/GroupProfile";
 import type { ObjectStatus } from "@/components/maxtracker/ui";
 import { ActivityBookTab } from "./modules/ActivityBookTab";
 import { SecurityBookTab } from "./modules/SecurityBookTab";
@@ -101,8 +105,27 @@ export default async function ObjectBookPage({
   // Live status · solo para vehículos · cargado en paralelo en lo posible.
   // Es la tira de información en tiempo real que vive entre el header y el
   // PeriodBar · banner de alarmas + estado actual + datos del vehículo.
-  const liveStatus =
-    type === "vehiculo" ? await getAssetLiveStatus(id) : null;
+  const [liveStatus, driverProfile, groupProfile] = await Promise.all([
+    type === "vehiculo" ? getAssetLiveStatus(id) : Promise.resolve(null),
+    type === "conductor" ? getDriverProfile(id) : Promise.resolve(null),
+    type === "grupo" ? getGroupProfile(id) : Promise.resolve(null),
+  ]);
+
+  // Header slot · contenido fijo entre el header y el PeriodBar.
+  // Cada tipo tiene su propio profile.
+  let headerSlot: React.ReactNode = undefined;
+  if (liveStatus) {
+    headerSlot = (
+      <LiveStatus
+        data={liveStatus}
+        alarmsHref={`/objeto/vehiculo/${id}?m=seguridad`}
+      />
+    );
+  } else if (driverProfile) {
+    headerSlot = <DriverProfile data={driverProfile} />;
+  } else if (groupProfile) {
+    headerSlot = <GroupProfile data={groupProfile} />;
+  }
 
   const { prevAnchorIso, nextAnchorIso } = computePeriodNav(
     granularity,
@@ -124,14 +147,7 @@ export default async function ObjectBookPage({
       prevAnchorIso={prevAnchorIso}
       nextAnchorIso={nextAnchorIso}
       isAnchorToday={isAnchorToday}
-      headerSlot={
-        liveStatus ? (
-          <LiveStatus
-            data={liveStatus}
-            alarmsHref={`/objeto/vehiculo/${id}?m=seguridad`}
-          />
-        ) : undefined
-      }
+      headerSlot={headerSlot}
     >
       {activeModule === "actividad" && (
         <ActivityBookTab

@@ -1,22 +1,30 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import type { TripRoute, TripRow } from "@/lib/queries/trips";
-import { buildHistoricosHref } from "@/lib/url-historicos";
-import { TripsTable } from "@/components/maxtracker/TripsTable";
+import type { Day } from "@/lib/queries/trips-by-day";
 import {
   MapLayerToggle,
   type MapLayer,
 } from "@/components/maxtracker/MapLayerToggle";
-import type { TripsParams } from "@/lib/url-trips";
+import { DaysList } from "./DaysList";
+import { TripDetailPanel } from "./TripDetailPanel";
 import styles from "./TripsClient.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  TripsClient · joins TripsTable and TripsRoutesMap with shared
-//  hover state. Map has a layer toggle. Click on a trip
-//  (table row arrow OR map polyline) → navigate to Históricos.
+//  TripsClient · vista "Día por día" del rework de Viajes
+//  ─────────────────────────────────────────────────────────────
+//  Layout invertido · listado protagonista a la izquierda (60%),
+//  mapa subordinado a la derecha (40%).
+//
+//  Selección por click · NO hover. Click en un item del listado:
+//    1. Resalta la polyline en el mapa (los demás se oscurecen)
+//    2. Abre el TripDetailPanel sobre el mapa
+//
+//  CAP · cuando totalDays > days.length, mostramos un banner con
+//  "Viendo 20 de 161" + botón "Ver más" que actualiza ?cap= en
+//  la URL · suma 20 cada click.
 // ═══════════════════════════════════════════════════════════════
 
 const TripsRoutesMap = dynamic(
@@ -30,19 +38,19 @@ const TripsRoutesMap = dynamic(
   },
 );
 
-interface TripsClientProps {
-  trips: TripRow[];
-  routes: TripRoute[];
-  sortParams: TripsParams;
+interface Props {
+  days: Day[];
+  totalDays: number;
+  currentCap: number;
 }
 
-export function TripsClient({ trips, routes, sortParams }: TripsClientProps) {
-  const router = useRouter();
-  const [highlightedTripId, setHighlightedTripId] = useState<string | null>(
-    null,
-  );
+const CAP_STEP = 20;
 
-  // Persist layer choice across reloads (matches FleetTrackingClient)
+export function TripsClient({ days, totalDays, currentCap }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [mapLayer, setMapLayer] = useState<MapLayer>(() => {
     if (typeof window === "undefined") return "BW";
     const saved = window.localStorage.getItem("trips-map-layer");
@@ -59,69 +67,108 @@ export function TripsClient({ trips, routes, sortParams }: TripsClientProps) {
     }
   }
 
-  function handleClickRoute(route: TripRoute) {
-    const trip = trips.find((t) => t.id === route.tripId);
-    if (!trip) return;
-    const date = ymd(trip.startedAt);
-    // F2: pasar HH:MM del viaje · misma lógica que TripsTable.
-    const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
-    const hhmm = (d: Date) => {
-      const local = new Date(d.getTime() - AR_OFFSET_MS);
-      return `${String(local.getUTCHours()).padStart(2, "0")}:${String(
-        local.getUTCMinutes(),
-      ).padStart(2, "0")}`;
-    };
-    const fromTime = hhmm(trip.startedAt);
-    const toTime = hhmm(trip.endedAt);
-    router.push(
-      buildHistoricosHref(
-        { assetId: null, date: null, fromTime: null, toTime: null },
-        {
-          assetId: trip.assetId,
-          date,
-          fromTime,
-          toTime: fromTime < toTime ? toTime : null,
-        },
-      ),
-    );
+  function loadMore() {
+    const nextCap = currentCap + CAP_STEP;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("cap", String(nextCap));
+    router.push(`/actividad/viajes?${params.toString()}`);
   }
+
+  // Encontrar el día y el item seleccionado
+  const selection = useMemo(() => {
+    if (!selectedItemId) return null;
+    for (const day of days) {
+      const item = day.items.find((i) => i.id === selectedItemId);
+      if (item) return { day, item };
+    }
+    return null;
+  }, [selectedItemId, days]);
+
+  // Construir las "rutas" para el mapa
+  const routes = useMemo(() => {
+    const list: {
+      tripId: string;
+      assetId: string;
+      points: { lat: number; lng: number }[];
+    }[] = [];
+    for (const day of days) {
+      for (const item of day.items) {
+        if (item.kind === "trip") {
+          list.push({
+            tripId: item.id,
+            assetId: day.assetId,
+            points: [
+              { lat: item.startLat, lng: item.startLng },
+              { lat: item.endLat, lng: item.endLng },
+            ],
+          });
+        }
+      }
+    }
+    return list;
+  }, [days]);
+
+  const highlightedTripId =
+    selection?.item.kind === "trip" ? selection.item.id : null;
+
+  const showCapBanner = totalDays > days.length;
 
   return (
     <div className={styles.layout}>
-      <div className={styles.mapColumn}>
-        <div className={styles.mapWrap}>
-          <TripsRoutesMap
-            routes={routes}
-            highlightedTripId={highlightedTripId}
-            onHoverTrip={setHighlightedTripId}
-            onClickTrip={handleClickRoute}
-            layer={mapLayer}
-          />
-          <div className={styles.mapControls}>
-            <MapLayerToggle
-              value={mapLayer}
-              onChange={handleLayerChange}
-            />
+      {/* ── Lista (protagonista · 60%) ────────────────────────── */}
+      <div className={styles.listColumn}>
+        {showCapBanner && (
+          <div className={styles.capBanner}>
+            <span className={styles.capLabel}>
+              Viendo {days.length} de {totalDays} tarjetas
+            </span>
+            <span className={styles.capHint}>
+              · refiná filtros para ver lo que te interesa
+            </span>
+            <button
+              type="button"
+              className={styles.capButton}
+              onClick={loadMore}
+            >
+              Ver {Math.min(CAP_STEP, totalDays - days.length)} más
+            </button>
           </div>
-        </div>
-      </div>
-      <div className={styles.tableColumn}>
-        <TripsTable
-          trips={trips}
-          highlightedTripId={highlightedTripId}
-          onHoverTrip={setHighlightedTripId}
-          sortParams={sortParams}
+        )}
+        <DaysList
+          days={days}
+          selectedItemId={selectedItemId}
+          onSelectItem={(id) =>
+            setSelectedItemId(id === selectedItemId ? null : id)
+          }
         />
+      </div>
+
+      {/* ── Mapa + panel (subordinado · 40%) ──────────────────── */}
+      <div className={styles.mapColumn}>
+        {selection ? (
+          <TripDetailPanel
+            day={selection.day}
+            item={selection.item}
+            onClose={() => setSelectedItemId(null)}
+          />
+        ) : (
+          <div className={styles.mapWrap}>
+            <TripsRoutesMap
+              routes={routes}
+              highlightedTripId={highlightedTripId}
+              onHoverTrip={() => {}}
+              onClickTrip={(route) => setSelectedItemId(route.tripId)}
+              layer={mapLayer}
+            />
+            <div className={styles.mapControls}>
+              <MapLayerToggle
+                value={mapLayer}
+                onChange={handleLayerChange}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-}
-
-function ymd(date: Date): string {
-  const localMs = date.getTime() - 3 * 60 * 60 * 1000;
-  const d = new Date(localMs);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const da = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${da}`;
 }

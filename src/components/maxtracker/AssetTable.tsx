@@ -13,7 +13,7 @@ import styles from "./AssetTable.module.css";
 //  clickable rows.
 //
 //  The clickability pattern: each <td> wraps its content in a
-//  Link to /gestion/vehiculos/[id]. Together they form a full-row
+//  Link to /objeto/vehiculo/[id]. Together they form a full-row
 //  hit area while preserving table semantics. The outer <tr>
 //  carries a hover style triggered by `tr:hover` on any of the
 //  inner Links.
@@ -70,7 +70,7 @@ export function AssetTable({ rows, current }: AssetTableProps) {
 // ═══════════════════════════════════════════════════════════════
 
 function AssetRow({ row }: { row: AssetListRow }) {
-  const href = `/gestion/vehiculos/${row.id}`;
+  const href = `/objeto/vehiculo/${row.id}`;
   const driver = row.currentDriver;
 
   return (

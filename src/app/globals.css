@@ -47,6 +47,7 @@
   --brd:           #CDD0D5;   /* default border */
   --brd2:          #B4B8BE;   /* emphasized border */
   --tx:            #111827;   /* primary text */
+  --t1:            #1F2937;   /* primary text · ligeramente más suave que --tx */
   --t2:            #6B7280;   /* secondary text */
   --t3:            #9CA3AF;   /* tertiary text / labels */
   --hover:         rgba(0,0,0,.04);
@@ -209,6 +210,7 @@ a {
   --brd: #2D3748;
   --brd2: #3D4658;
   --tx: #E2E8F0;
+  --t1: #CBD5E1;
   --t2: #94A3B8;
   --t3: #64748B;
   --dark: #6366F1;

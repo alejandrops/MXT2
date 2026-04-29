@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  URL helpers for /gestion/conductores
+//  URL helpers for /catalogos/conductores
 //  ─────────────────────────────────────────────────────────────
 //  Same pattern as assets list: search + accountId + status filter,
 //  sort field + direction, page. All validated against allowed
@@ -88,5 +88,5 @@ export function buildDriversHref(
   }
 
   const qs = params.toString();
-  return qs ? `/gestion/conductores?${qs}` : "/gestion/conductores";
+  return qs ? `/catalogos/conductores?${qs}` : "/catalogos/conductores";
 }

@@ -7,9 +7,9 @@
 //  `event*` prefix.
 //
 //  Example URLs:
-//    /gestion/vehiculos/abc?tab=eventos
-//    /gestion/vehiculos/abc?tab=eventos&eventType=HARSH_BRAKING
-//    /gestion/vehiculos/abc?tab=eventos&eventSeverity=CRITICAL&eventPage=2
+//    /objeto/vehiculo/abc?tab=eventos
+//    /objeto/vehiculo/abc?tab=eventos&eventType=HARSH_BRAKING
+//    /objeto/vehiculo/abc?tab=eventos&eventSeverity=CRITICAL&eventPage=2
 //
 //  The `tab` param itself stays as-is (managed by the parent
 //  Tabs component).
@@ -111,7 +111,7 @@ export function buildAssetEventsHref(
   if (merged.eventSeverity) params.set("eventSeverity", merged.eventSeverity);
   if (merged.eventPage !== 1) params.set("eventPage", String(merged.eventPage));
 
-  return `/gestion/vehiculos/${assetId}?${params.toString()}`;
+  return `/objeto/vehiculo/${assetId}?${params.toString()}`;
 }
 
 export function hasActiveAssetEventsFilters(p: AssetEventsParams): boolean {

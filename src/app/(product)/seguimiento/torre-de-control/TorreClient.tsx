@@ -393,7 +393,7 @@ function DetailPanel({
         <div className={styles.detailHeaderTop}>
           <SevBigTag sev={detail.severity} />
           <Link
-            href={`/gestion/vehiculos/${detail.assetId}`}
+            href={`/objeto/vehiculo/${detail.assetId}`}
             className={styles.detailAssetLink}
           >
             <span className={styles.detailAssetName}>{detail.assetName}</span>

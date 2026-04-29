@@ -112,7 +112,7 @@ export const SCREENS: ScreenEntry[] = [
       "gestion",
       "listado",
     ],
-    href: "/gestion/vehiculos",
+    href: "/catalogos/vehiculos",
     module: "Catálogos",
   },
   {
@@ -126,7 +126,7 @@ export const SCREENS: ScreenEntry[] = [
       "gestion",
       "listado",
     ],
-    href: "/gestion/conductores",
+    href: "/catalogos/conductores",
     module: "Catálogos",
   },
   {
@@ -139,7 +139,7 @@ export const SCREENS: ScreenEntry[] = [
       "gestion",
       "listado",
     ],
-    href: "/gestion/grupos",
+    href: "/catalogos/grupos",
     module: "Catálogos",
   },
   // Boletín (subitem nuevo de Dirección · Lote Boletín 1)

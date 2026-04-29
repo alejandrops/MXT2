@@ -81,7 +81,7 @@ export function parseAssetsParams(
 }
 
 /**
- * Builds a `/gestion/vehiculos?...` URL by merging the current
+ * Builds a `/catalogos/vehiculos?...` URL by merging the current
  * params with an override. Pass any field as `null` to clear it.
  *
  * If `override.page` is not provided AND any filter is being
@@ -116,7 +116,7 @@ export function buildAssetsHref(
   if (merged.page !== 1) params.set("page", String(merged.page));
 
   const qs = params.toString();
-  return qs ? `/gestion/vehiculos?${qs}` : "/gestion/vehiculos";
+  return qs ? `/catalogos/vehiculos?${qs}` : "/catalogos/vehiculos";
 }
 
 /**

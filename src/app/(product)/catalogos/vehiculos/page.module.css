@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════
+   Lista de Assets (Patrón A)
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1280px;
+}
+
+/* ── KPI Strip · 5 tiles ─────────────────────────────────── */
+
+/* DEUDA-1.3-V01 fix: same cap as Dashboard D. */
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 220px));
+  gap: var(--gap-sm);
+  justify-content: start;
+}
+
+@media (max-width: 1100px) {
+  .kpiStrip {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

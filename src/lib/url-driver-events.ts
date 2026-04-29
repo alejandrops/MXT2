@@ -95,7 +95,7 @@ export function buildDriverEventsHref(
   if (merged.driverEventPage !== 1)
     params.set("driverEventPage", String(merged.driverEventPage));
 
-  return `/gestion/conductores/${personId}?${params.toString()}`;
+  return `/objeto/conductor/${personId}?${params.toString()}`;
 }
 
 export function hasActiveDriverEventsFilters(p: DriverEventsParams): boolean {

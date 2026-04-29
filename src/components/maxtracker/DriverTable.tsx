@@ -12,7 +12,7 @@ import styles from "./DriverTable.module.css";
 //  DriverTable
 //  ─────────────────────────────────────────────────────────────
 //  Twin of AssetTable: sortable columns, full-row clickable
-//  links to /gestion/conductores/[id].
+//  links to /objeto/conductor/[id].
 //
 //  Self-contained sort header to keep AssetTable unchanged.
 // ═══════════════════════════════════════════════════════════════
@@ -71,7 +71,7 @@ export function DriverTable({ rows, current }: DriverTableProps) {
 }
 
 function DriverRow({ row }: { row: DriverListRow }) {
-  const href = `/gestion/conductores/${row.id}`;
+  const href = `/objeto/conductor/${row.id}`;
   const fullName = `${row.firstName} ${row.lastName}`;
 
   return (
