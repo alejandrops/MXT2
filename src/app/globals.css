@@ -251,3 +251,30 @@ a {
   border-radius: var(--r-sm);
   font-size: 12px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Print media · global rules para reportes imprimibles
+   ─────────────────────────────────────────────────────────────
+   Usado por las pantallas en /(print)/... para pasar a PDF.
+   Las reglas de clases específicas viven en cada CSS module
+   del reporte · estas son las globales que deben aplicar a
+   html/body/* cuando el usuario hace Cmd+P.
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

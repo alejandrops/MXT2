@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════
+   ObjectBook · shell del Libro
+   ═══════════════════════════════════════════════════════════════ */
+
+.book {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: var(--bg);
+}
+
+.periodBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Actions · botones del slot del PageHeader · Tufte
+   ═══════════════════════════════════════════════════════════════ */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--t1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.actionLink:hover {
+  background: var(--bg);
+  color: var(--tx);
+}
+.actionLink svg {
+  color: var(--t3);
+  flex-shrink: 0;
+}

@@ -70,6 +70,10 @@ export interface FleetRow {
   cells: FleetCell[];
   /** Total · suma o max según métrica */
   total: number;
+  /** Total del período anterior equivalente · null si no hay datos */
+  previousTotal: number | null;
+  /** Delta % vs período anterior · null si previo es 0 o null */
+  previousDeltaPct: number | null;
 }
 
 export interface ColLabel {
@@ -87,6 +91,25 @@ export interface TrendPoint {
   label: string;
   value: number;
   iso: string;
+}
+
+export interface AnomalyRow {
+  assetId: string;
+  assetName: string;
+  assetPlate: string | null;
+  groupName: string | null;
+  /** Valor del período actual */
+  currentValue: number;
+  /** Media de los N períodos previos del mismo tipo */
+  historicalMean: number;
+  /** Desvío estándar histórico */
+  historicalStd: number;
+  /** Z-score signed · (current - mean) / std */
+  zScore: number;
+  /** "high" si zScore > 0, "low" si < 0 */
+  direction: "high" | "low";
+  /** "critical" si |z| ≥ 3, "warning" si entre 2 y 3 */
+  severity: "warning" | "critical";
 }
 
 export interface FleetAnalysisData {
@@ -115,6 +138,8 @@ export interface FleetAnalysisData {
   /** Promedio diario/semanal/mensual de la métrica · contextual */
   averageLabel: string;
   averageValue: number;
+  /** Anomalías detectadas · solo en granularidades day/week/month */
+  anomalies: AnomalyRow[];
   /** Para nav prev/next/today */
   anchorIso: string;
   prevAnchorIso: string;
@@ -189,6 +214,23 @@ export async function getFleetAnalysis(
     personIds: scope.personIds,
   });
 
+  // 5b · Cargar totales por vehículo del período ANTERIOR
+  // (para calcular delta vs previo en cada fila · usado por Reportes)
+  const periodLenMs =
+    periodSpec.to.getTime() - periodSpec.from.getTime();
+  const prevFrom = new Date(periodSpec.from.getTime() - periodLenMs);
+  const prevTo = periodSpec.from;
+  const prevTotalsByAsset =
+    assets.length > 0
+      ? await totalsByAssetForRange({
+          from: prevFrom,
+          to: prevTo,
+          metric: params.metric,
+          assetIds: assets.map((a) => a.id),
+          personIds: scope.personIds,
+        })
+      : new Map<string, number>();
+
   // 6 · Construir filas
   const rows: FleetRow[] = assets.map((a) => {
     const rowCells = periodSpec.cols.map((col): FleetCell => {
@@ -207,6 +249,8 @@ export async function getFleetAnalysis(
       params.metric === "maxSpeedKmh"
         ? Math.max(0, ...rowCells.map((c) => c.value))
         : rowCells.reduce((acc, c) => acc + c.value, 0);
+    const prevTotal = prevTotalsByAsset.get(a.id) ?? 0;
+    const hasPrev = prevTotalsByAsset.has(a.id);
     return {
       assetId: a.id,
       assetName: a.name,
@@ -215,6 +259,9 @@ export async function getFleetAnalysis(
       vehicleType: a.vehicleType,
       cells: rowCells,
       total,
+      previousTotal: hasPrev ? prevTotal : null,
+      previousDeltaPct:
+        hasPrev && prevTotal > 0 ? (total - prevTotal) / prevTotal : null,
     };
   });
 
@@ -258,6 +305,16 @@ export async function getFleetAnalysis(
   // 10 · Promedio · sólo aplica a métricas tipo "sum"
   const avg = computeAverage(params.granularity, total, periodSpec, params.metric);
 
+  // 11 · Detección de anomalías · solo en granularidades day/week/month
+  const anomalies = await detectAnomalies({
+    granularity: params.granularity,
+    metric: params.metric,
+    periodSpec,
+    rows: filteredRows,
+    personIds: scope.personIds,
+    now,
+  });
+
   return {
     granularity: params.granularity,
     metric: params.metric,
@@ -276,6 +333,7 @@ export async function getFleetAnalysis(
     maxCellValue,
     averageLabel: avg.label,
     averageValue: avg.value,
+    anomalies,
     anchorIso: periodSpec.anchorIso,
     prevAnchorIso: periodSpec.prevAnchorIso,
     nextAnchorIso: periodSpec.nextAnchorIso,
@@ -881,6 +939,177 @@ async function calcPreviousTotal(p: {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  Anomaly detection · z-score vs historical mean
+//  ─────────────────────────────────────────────────────────────
+//  Para cada vehículo del período actual, calcula media y desvío
+//  estándar de los últimos N períodos del MISMO TIPO. Si el valor
+//  actual cae fuera de ±2σ, lo marca como anomalía.
+//
+//  Solo aplica para granularidades day/week/month. Para year-* no
+//  habría histórico suficiente (necesitaríamos 6 años de datos).
+// ═══════════════════════════════════════════════════════════════
+
+const HISTORY_LEN = 6;
+
+async function detectAnomalies(p: {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  periodSpec: PeriodSpec;
+  rows: FleetRow[];
+  personIds?: string[];
+  now: number;
+}): Promise<AnomalyRow[]> {
+  // Las granularidades anuales no tienen histórico suficiente
+  if (p.granularity === "year-weeks" || p.granularity === "year-months") {
+    return [];
+  }
+  if (p.rows.length === 0) return [];
+
+  const periodLenMs =
+    p.periodSpec.to.getTime() - p.periodSpec.from.getTime();
+  const assetIds = p.rows.map((r) => r.assetId);
+
+  // Cargar totales por vehículo para los HISTORY_LEN períodos previos
+  const historicals: Map<string, number>[] = [];
+  for (let i = 1; i <= HISTORY_LEN; i++) {
+    const from = new Date(p.periodSpec.from.getTime() - i * periodLenMs);
+    const to = new Date(p.periodSpec.from.getTime() - (i - 1) * periodLenMs);
+    const totals = await totalsByAssetForRange({
+      from,
+      to,
+      metric: p.metric,
+      assetIds,
+      personIds: p.personIds,
+    });
+    historicals.push(totals);
+  }
+
+  // Calcular z-score por vehículo
+  const out: AnomalyRow[] = [];
+  for (const row of p.rows) {
+    const samples = historicals.map((m) => m.get(row.assetId) ?? 0);
+    // Si todas las muestras son 0 y el actual también es 0, skip
+    const allZero = samples.every((s) => s === 0) && row.total === 0;
+    if (allZero) continue;
+
+    const mean = average(samples);
+    const std = stdDev(samples, mean);
+    // Floor del std para evitar divisiones por casi-cero
+    // si el vehículo tiene operación muy uniforme
+    const minStd = Math.max(std, mean * 0.1, 0.5);
+    const z = (row.total - mean) / minStd;
+
+    if (Math.abs(z) >= 2) {
+      out.push({
+        assetId: row.assetId,
+        assetName: row.assetName,
+        assetPlate: row.assetPlate,
+        groupName: row.groupName,
+        currentValue: row.total,
+        historicalMean: mean,
+        historicalStd: std,
+        zScore: z,
+        direction: z > 0 ? "high" : "low",
+        severity: Math.abs(z) >= 3 ? "critical" : "warning",
+      });
+    }
+  }
+
+  // Sort por |z| desc · más anómalos primero
+  out.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
+  return out;
+}
+
+async function totalsByAssetForRange(p: {
+  from: Date;
+  to: Date;
+  metric: ActivityMetric;
+  assetIds: string[];
+  personIds?: string[];
+}): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (p.assetIds.length === 0) return out;
+
+  const personFilter =
+    p.personIds && p.personIds.length > 0
+      ? { personId: { in: p.personIds } }
+      : {};
+
+  if (
+    p.metric === "distanceKm" ||
+    p.metric === "activeMin" ||
+    p.metric === "tripCount" ||
+    p.metric === "fuelLiters"
+  ) {
+    const rows = await db.assetDriverDay.findMany({
+      where: {
+        assetId: { in: p.assetIds },
+        day: { gte: p.from, lt: p.to },
+        ...personFilter,
+      },
+      select: {
+        assetId: true,
+        distanceKm: true,
+        activeMin: true,
+        tripCount: true,
+      },
+    });
+    for (const r of rows as any[]) {
+      let v = 0;
+      if (p.metric === "distanceKm") v = r.distanceKm;
+      else if (p.metric === "activeMin") v = r.activeMin;
+      else if (p.metric === "tripCount") v = r.tripCount;
+      else if (p.metric === "fuelLiters") v = r.activeMin * 0.12;
+      out.set(r.assetId, (out.get(r.assetId) ?? 0) + v);
+    }
+  } else if (p.metric === "maxSpeedKmh") {
+    const rows = await db.trip.findMany({
+      where: {
+        assetId: { in: p.assetIds },
+        startedAt: { gte: p.from, lt: p.to },
+        ...personFilter,
+      },
+      select: { assetId: true, maxSpeedKmh: true },
+    });
+    for (const r of rows as any[]) {
+      const cur = out.get(r.assetId) ?? 0;
+      if (r.maxSpeedKmh > cur) out.set(r.assetId, r.maxSpeedKmh);
+    }
+  } else {
+    // event-based metrics
+    const rows = await db.event.findMany({
+      where: {
+        assetId: { in: p.assetIds },
+        occurredAt: { gte: p.from, lt: p.to },
+        ...personFilter,
+      },
+      select: { assetId: true, type: true, severity: true },
+    });
+    for (const r of rows as any[]) {
+      if (p.metric === "highEventCount") {
+        if (r.severity !== "HIGH" && r.severity !== "CRITICAL") continue;
+      } else if (p.metric === "speedingCount") {
+        if (!isSpeedingType(String(r.type))) continue;
+      }
+      out.set(r.assetId, (out.get(r.assetId) ?? 0) + 1);
+    }
+  }
+  return out;
+}
+
+function average(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function stdDev(arr: number[], mean: number): number {
+  if (arr.length === 0) return 0;
+  const variance =
+    arr.reduce((acc, v) => acc + (v - mean) ** 2, 0) / arr.length;
+  return Math.sqrt(variance);
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  Helpers · constants
 // ═══════════════════════════════════════════════════════════════
 
@@ -1005,4 +1234,1124 @@ function formatDayLong(d: Date): string {
     local.getUTCDay()
   ];
   return `${dow} ${local.getUTCDate()} ${MONTH_LONG[local.getUTCMonth()]} ${local.getUTCFullYear()}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Multi-metric · todas las métricas por vehículo en una pasada
+//  ─────────────────────────────────────────────────────────────
+//  Modo "foto fija" del período · 1 fila por vehículo · N
+//  columnas, una por cada métrica relevante. Cada celda incluye
+//  el valor del período y el delta vs período anterior.
+//
+//  Para escalar a flotas grandes se podría cachear o pre-agregar
+//  en una tabla rollup, pero para 30-50 vehículos las 14 queries
+//  paralelas (7 métricas × 2 períodos) son aceptables.
+// ═══════════════════════════════════════════════════════════════
+
+export const MULTI_METRIC_KEYS: ActivityMetric[] = [
+  "distanceKm",
+  "activeMin",
+  "idleMin",
+  "tripCount",
+  "eventCount",
+  "speedingCount",
+  "maxSpeedKmh",
+  "fuelLiters",
+];
+
+export interface MultiMetricCell {
+  value: number;
+  /** delta vs período anterior · null si no hay histórico */
+  deltaPct: number | null;
+}
+
+export interface MultiMetricRow {
+  assetId: string;
+  assetName: string;
+  assetPlate: string | null;
+  groupName: string | null;
+  vehicleType: string;
+  metrics: Record<ActivityMetric, MultiMetricCell>;
+}
+
+export interface FleetMultiMetricData {
+  granularity: AnalysisGranularity;
+  periodFrom: Date;
+  periodTo: Date;
+  periodLabel: string;
+  periodSubLabel: string;
+  rows: MultiMetricRow[];
+  /** Totales agregados por métrica */
+  totals: Record<ActivityMetric, MultiMetricCell>;
+  anchorIso: string;
+  prevAnchorIso: string;
+  nextAnchorIso: string | null;
+  scope: {
+    groups: { id: string; name: string }[];
+    vehicleTypes: { value: string; label: string }[];
+    drivers: { id: string; name: string }[];
+  };
+  appliedScope: ScopeFilters;
+}
+
+export async function getFleetMultiMetric(
+  params: FleetParams,
+): Promise<FleetMultiMetricData> {
+  const now = params.now ?? Date.now();
+  const scope = params.scope ?? {};
+  const anchor = parseArIso(params.anchor);
+
+  const periodSpec = computePeriodSpec(params.granularity, anchor, now);
+
+  const [allGroups, allDrivers] = await Promise.all([
+    db.group.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.person.findMany({
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    }),
+  ]);
+
+  const assets = await loadAssets(scope);
+  const assetIds = assets.map((a) => a.id);
+
+  const periodLenMs =
+    periodSpec.to.getTime() - periodSpec.from.getTime();
+  const prevFrom = new Date(periodSpec.from.getTime() - periodLenMs);
+  const prevTo = periodSpec.from;
+
+  // 7 métricas × 2 períodos · 14 fetches en paralelo
+  const [currentMaps, previousMaps] = await Promise.all([
+    Promise.all(
+      MULTI_METRIC_KEYS.map((m) =>
+        totalsByAssetForRange({
+          from: periodSpec.from,
+          to: periodSpec.to,
+          metric: m,
+          assetIds,
+          personIds: scope.personIds,
+        }),
+      ),
+    ),
+    Promise.all(
+      MULTI_METRIC_KEYS.map((m) =>
+        totalsByAssetForRange({
+          from: prevFrom,
+          to: prevTo,
+          metric: m,
+          assetIds,
+          personIds: scope.personIds,
+        }),
+      ),
+    ),
+  ]);
+
+  // Construir filas
+  const rows: MultiMetricRow[] = assets.map((a) => {
+    const metrics = {} as Record<ActivityMetric, MultiMetricCell>;
+    MULTI_METRIC_KEYS.forEach((m, i) => {
+      const cur = currentMaps[i]!.get(a.id) ?? 0;
+      const prev = previousMaps[i]!.get(a.id) ?? 0;
+      metrics[m] = {
+        value: cur,
+        deltaPct: prev > 0 ? (cur - prev) / prev : null,
+      };
+    });
+    return {
+      assetId: a.id,
+      assetName: a.name,
+      assetPlate: a.plate,
+      groupName: a.group?.name ?? null,
+      vehicleType: a.vehicleType,
+      metrics,
+    };
+  });
+
+  // Sort por distanceKm desc
+  rows.sort(
+    (a, b) => b.metrics.distanceKm.value - a.metrics.distanceKm.value,
+  );
+
+  // Filtrar inactivos si la flota es grande
+  const filteredRows =
+    rows.length <= 30
+      ? rows
+      : rows.filter((r) =>
+          MULTI_METRIC_KEYS.some((m) => r.metrics[m].value > 0),
+        );
+
+  // Totales por métrica
+  const totals = {} as Record<ActivityMetric, MultiMetricCell>;
+  MULTI_METRIC_KEYS.forEach((m, i) => {
+    let curSum = 0;
+    let curMax = 0;
+    let prevSum = 0;
+    let prevMax = 0;
+    for (const r of filteredRows) {
+      curSum += r.metrics[m].value;
+      if (r.metrics[m].value > curMax) curMax = r.metrics[m].value;
+      const prev = previousMaps[i]!.get(r.assetId) ?? 0;
+      prevSum += prev;
+      if (prev > prevMax) prevMax = prev;
+    }
+    const cur = m === "maxSpeedKmh" ? curMax : curSum;
+    const prev = m === "maxSpeedKmh" ? prevMax : prevSum;
+    totals[m] = {
+      value: cur,
+      deltaPct: prev > 0 ? (cur - prev) / prev : null,
+    };
+  });
+
+  return {
+    granularity: params.granularity,
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows: filteredRows,
+    totals,
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Multi-metric · DRIVERS · todas las métricas por persona
+//  ─────────────────────────────────────────────────────────────
+//  Análogo a getFleetMultiMetric pero indexado por persona.
+//  Las personas relevantes son las que aparecen como driver en
+//  trips del período (con scope filter aplicado a los vehículos).
+//
+//  Métricas: distancia, horas, viajes, eventos, excesos,
+//  high-events, vel máx · 7 métricas (idle y fuel no aplican
+//  a personas, son propiedad del vehículo).
+//
+//  Campo derivado: vehiclesUsed · cuántos vehículos distintos
+//  manejó la persona en el período.
+// ═══════════════════════════════════════════════════════════════
+
+export const DRIVER_METRIC_KEYS: ActivityMetric[] = [
+  "distanceKm",
+  "activeMin",
+  "tripCount",
+  "eventCount",
+  "speedingCount",
+  "highEventCount",
+  "maxSpeedKmh",
+];
+
+export interface DriverMultiMetricRow {
+  personId: string;
+  personName: string;
+  /** Cantidad de vehículos distintos manejados en el período */
+  vehiclesUsed: number;
+  metrics: Record<ActivityMetric, MultiMetricCell>;
+}
+
+export interface DriversMultiMetricData {
+  granularity: AnalysisGranularity;
+  periodFrom: Date;
+  periodTo: Date;
+  periodLabel: string;
+  periodSubLabel: string;
+  rows: DriverMultiMetricRow[];
+  totals: Record<ActivityMetric, MultiMetricCell>;
+  anchorIso: string;
+  prevAnchorIso: string;
+  nextAnchorIso: string | null;
+  scope: {
+    groups: { id: string; name: string }[];
+    vehicleTypes: { value: string; label: string }[];
+    drivers: { id: string; name: string }[];
+  };
+  appliedScope: ScopeFilters;
+}
+
+export async function getDriversMultiMetric(
+  params: FleetParams,
+): Promise<DriversMultiMetricData> {
+  const now = params.now ?? Date.now();
+  const scope = params.scope ?? {};
+  const anchor = parseArIso(params.anchor);
+
+  const periodSpec = computePeriodSpec(params.granularity, anchor, now);
+
+  const [allGroups, allDrivers] = await Promise.all([
+    db.group.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.person.findMany({
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    }),
+  ]);
+
+  // 1 · Resolver pool de assets según scope (groupIds, vehicleTypes)
+  const assets = await loadAssets({
+    ...scope,
+    personIds: undefined, // ignoramos personIds para el pool de assets
+  });
+  const assetIds = assets.map((a) => a.id);
+
+  if (assetIds.length === 0) {
+    return emptyDriversData(periodSpec, scope, allGroups, allDrivers);
+  }
+
+  // 2 · Personas que aparecen como driver en trips del período
+  const trips = await db.trip.findMany({
+    where: {
+      assetId: { in: assetIds },
+      startedAt: { gte: periodSpec.from, lt: periodSpec.to },
+      personId: { not: null },
+    },
+    select: { personId: true, assetId: true },
+  });
+
+  const personAssetSet = new Map<string, Set<string>>();
+  for (const t of trips as any[]) {
+    if (!t.personId) continue;
+    if (!personAssetSet.has(t.personId)) {
+      personAssetSet.set(t.personId, new Set());
+    }
+    personAssetSet.get(t.personId)!.add(t.assetId);
+  }
+  let candidatePersonIds = Array.from(personAssetSet.keys());
+
+  // 3 · Filtros de scope sobre personas
+  if (scope.personIds && scope.personIds.length > 0) {
+    const allowed = new Set(scope.personIds);
+    candidatePersonIds = candidatePersonIds.filter((id) => allowed.has(id));
+  }
+
+  if (candidatePersonIds.length === 0) {
+    return emptyDriversData(periodSpec, scope, allGroups, allDrivers);
+  }
+
+  // 4 · Cargar info de personas
+  const personRecords = await db.person.findMany({
+    where: { id: { in: candidatePersonIds } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+
+  // 5 · Filtro por search
+  let filteredPersons = personRecords;
+  if (scope.search && scope.search.trim().length > 0) {
+    const q = scope.search.toLowerCase();
+    filteredPersons = personRecords.filter((p: any) =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q),
+    );
+  }
+
+  const finalPersonIds = filteredPersons.map((p: any) => p.id);
+
+  if (finalPersonIds.length === 0) {
+    return emptyDriversData(periodSpec, scope, allGroups, allDrivers);
+  }
+
+  // 6 · Métricas en paralelo · 7 × 2 = 14 fetches
+  const periodLenMs =
+    periodSpec.to.getTime() - periodSpec.from.getTime();
+  const prevFrom = new Date(periodSpec.from.getTime() - periodLenMs);
+  const prevTo = periodSpec.from;
+
+  const [currentMaps, previousMaps] = await Promise.all([
+    Promise.all(
+      DRIVER_METRIC_KEYS.map((m) =>
+        totalsByPersonForRange({
+          from: periodSpec.from,
+          to: periodSpec.to,
+          metric: m,
+          personIds: finalPersonIds,
+          assetIds,
+        }),
+      ),
+    ),
+    Promise.all(
+      DRIVER_METRIC_KEYS.map((m) =>
+        totalsByPersonForRange({
+          from: prevFrom,
+          to: prevTo,
+          metric: m,
+          personIds: finalPersonIds,
+          assetIds,
+        }),
+      ),
+    ),
+  ]);
+
+  // 7 · Construir filas
+  const rows: DriverMultiMetricRow[] = filteredPersons.map((p: any) => {
+    const metrics = {} as Record<ActivityMetric, MultiMetricCell>;
+    DRIVER_METRIC_KEYS.forEach((m, i) => {
+      const cur = currentMaps[i]!.get(p.id) ?? 0;
+      const prev = previousMaps[i]!.get(p.id) ?? 0;
+      metrics[m] = {
+        value: cur,
+        deltaPct: prev > 0 ? (cur - prev) / prev : null,
+      };
+    });
+    return {
+      personId: p.id,
+      personName: `${p.firstName} ${p.lastName}`,
+      vehiclesUsed: personAssetSet.get(p.id)?.size ?? 0,
+      metrics,
+    };
+  });
+
+  // 8 · Sort por distanceKm desc
+  rows.sort(
+    (a, b) => b.metrics.distanceKm.value - a.metrics.distanceKm.value,
+  );
+
+  // 9 · Totales
+  const totals = {} as Record<ActivityMetric, MultiMetricCell>;
+  DRIVER_METRIC_KEYS.forEach((m, i) => {
+    let curSum = 0;
+    let curMax = 0;
+    let prevSum = 0;
+    let prevMax = 0;
+    for (const r of rows) {
+      curSum += r.metrics[m].value;
+      if (r.metrics[m].value > curMax) curMax = r.metrics[m].value;
+      const prev = previousMaps[i]!.get(r.personId) ?? 0;
+      prevSum += prev;
+      if (prev > prevMax) prevMax = prev;
+    }
+    const cur = m === "maxSpeedKmh" ? curMax : curSum;
+    const prev = m === "maxSpeedKmh" ? prevMax : prevSum;
+    totals[m] = {
+      value: cur,
+      deltaPct: prev > 0 ? (cur - prev) / prev : null,
+    };
+  });
+
+  return {
+    granularity: params.granularity,
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows,
+    totals,
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+  };
+}
+
+function emptyDriversData(
+  periodSpec: any,
+  scope: ScopeFilters,
+  allGroups: any[],
+  allDrivers: any[],
+): DriversMultiMetricData {
+  const totals = {} as Record<ActivityMetric, MultiMetricCell>;
+  DRIVER_METRIC_KEYS.forEach((m) => {
+    totals[m] = { value: 0, deltaPct: null };
+  });
+  return {
+    granularity: periodSpec.granularity ?? "month-days",
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows: [],
+    totals,
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+  };
+}
+
+async function totalsByPersonForRange(p: {
+  from: Date;
+  to: Date;
+  metric: ActivityMetric;
+  personIds: string[];
+  assetIds: string[];
+}): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (p.personIds.length === 0 || p.assetIds.length === 0) return out;
+
+  const baseFilter = {
+    personId: { in: p.personIds },
+    assetId: { in: p.assetIds },
+  };
+
+  if (
+    p.metric === "distanceKm" ||
+    p.metric === "activeMin" ||
+    p.metric === "tripCount"
+  ) {
+    const rows = await db.assetDriverDay.findMany({
+      where: {
+        ...baseFilter,
+        day: { gte: p.from, lt: p.to },
+      },
+      select: {
+        personId: true,
+        distanceKm: true,
+        activeMin: true,
+        tripCount: true,
+      },
+    });
+    for (const r of rows as any[]) {
+      let v = 0;
+      if (p.metric === "distanceKm") v = r.distanceKm;
+      else if (p.metric === "activeMin") v = r.activeMin;
+      else if (p.metric === "tripCount") v = r.tripCount;
+      out.set(r.personId, (out.get(r.personId) ?? 0) + v);
+    }
+  } else if (p.metric === "maxSpeedKmh") {
+    const rows = await db.trip.findMany({
+      where: {
+        ...baseFilter,
+        startedAt: { gte: p.from, lt: p.to },
+      },
+      select: { personId: true, maxSpeedKmh: true },
+    });
+    for (const r of rows as any[]) {
+      if (!r.personId) continue;
+      const cur = out.get(r.personId) ?? 0;
+      if (r.maxSpeedKmh > cur) out.set(r.personId, r.maxSpeedKmh);
+    }
+  } else {
+    const rows = await db.event.findMany({
+      where: {
+        ...baseFilter,
+        occurredAt: { gte: p.from, lt: p.to },
+      },
+      select: { personId: true, type: true, severity: true },
+    });
+    for (const r of rows as any[]) {
+      if (!r.personId) continue;
+      if (p.metric === "highEventCount") {
+        if (r.severity !== "HIGH" && r.severity !== "CRITICAL") continue;
+      } else if (p.metric === "speedingCount") {
+        if (!isSpeedingType(String(r.type))) continue;
+      }
+      out.set(r.personId, (out.get(r.personId) ?? 0) + 1);
+    }
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRIVERS ANALYSIS · análogo a getFleetAnalysis indexado por persona
+//  ─────────────────────────────────────────────────────────────
+//  1 fila por persona (no por vehículo) × N columnas según
+//  granularidad. Solo personas que manejaron al menos un vehículo
+//  del scope en el período.
+//
+//  Reusa todo el frame de getFleetAnalysis (period spec, anomaly
+//  detection, trend, deltas) pero las celdas se agrupan por
+//  personId en vez de assetId.
+// ═══════════════════════════════════════════════════════════════
+
+export interface DriverAnalysisRow {
+  personId: string;
+  personName: string;
+  /** Cantidad de vehículos distintos manejados en el período */
+  vehiclesUsed: number;
+  cells: FleetCell[];
+  total: number;
+  previousTotal: number | null;
+  previousDeltaPct: number | null;
+}
+
+export interface DriverAnomalyRow {
+  personId: string;
+  personName: string;
+  currentValue: number;
+  historicalMean: number;
+  historicalStd: number;
+  zScore: number;
+  direction: "high" | "low";
+  severity: "warning" | "critical";
+}
+
+export interface DriversAnalysisData {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  metricLabel: string;
+  periodFrom: Date;
+  periodTo: Date;
+  periodLabel: string;
+  periodSubLabel: string;
+  rows: DriverAnalysisRow[];
+  colLabels: ColLabel[];
+  colCount: number;
+  total: number;
+  previousTotal: number | null;
+  deltaPct: number | null;
+  trend: TrendPoint[];
+  maxCellValue: number;
+  averageLabel: string;
+  averageValue: number;
+  anomalies: DriverAnomalyRow[];
+  anchorIso: string;
+  prevAnchorIso: string;
+  nextAnchorIso: string | null;
+  scope: {
+    groups: { id: string; name: string }[];
+    vehicleTypes: { value: string; label: string }[];
+    drivers: { id: string; name: string }[];
+  };
+  appliedScope: ScopeFilters;
+  hasDrill: boolean;
+}
+
+export async function getDriversAnalysis(
+  params: FleetParams,
+): Promise<DriversAnalysisData> {
+  const now = params.now ?? Date.now();
+  const scope = params.scope ?? {};
+  const anchor = parseArIso(params.anchor);
+
+  // 1. Period
+  const periodSpec = computePeriodSpec(params.granularity, anchor, now);
+
+  // 2. Pool de assets según scope (sin personIds)
+  const assets = await loadAssets({
+    ...scope,
+    personIds: undefined,
+  });
+  const assetIds = assets.map((a) => a.id);
+
+  const [allGroups, allDrivers] = await Promise.all([
+    db.group.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.person.findMany({
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    }),
+  ]);
+
+  if (assetIds.length === 0) {
+    return emptyDriversAnalysis(
+      params,
+      periodSpec,
+      scope,
+      allGroups,
+      allDrivers,
+    );
+  }
+
+  // 3. Personas activas (manejaron ≥ 1 trip en el período)
+  const trips = await db.trip.findMany({
+    where: {
+      assetId: { in: assetIds },
+      startedAt: { gte: periodSpec.from, lt: periodSpec.to },
+      personId: { not: null },
+    },
+    select: { personId: true, assetId: true },
+  });
+  const personAssetSet = new Map<string, Set<string>>();
+  for (const t of trips as any[]) {
+    if (!t.personId) continue;
+    if (!personAssetSet.has(t.personId)) {
+      personAssetSet.set(t.personId, new Set());
+    }
+    personAssetSet.get(t.personId)!.add(t.assetId);
+  }
+  let candidatePersonIds = Array.from(personAssetSet.keys());
+
+  // 4. Filtrar por scope.personIds y search
+  if (scope.personIds && scope.personIds.length > 0) {
+    const allowed = new Set(scope.personIds);
+    candidatePersonIds = candidatePersonIds.filter((id) => allowed.has(id));
+  }
+
+  if (candidatePersonIds.length === 0) {
+    return emptyDriversAnalysis(
+      params,
+      periodSpec,
+      scope,
+      allGroups,
+      allDrivers,
+    );
+  }
+
+  const personRecords = await db.person.findMany({
+    where: { id: { in: candidatePersonIds } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+
+  let filteredPersons = personRecords;
+  if (scope.search && scope.search.trim().length > 0) {
+    const q = scope.search.toLowerCase();
+    filteredPersons = personRecords.filter((p: any) =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q),
+    );
+  }
+
+  if (filteredPersons.length === 0) {
+    return emptyDriversAnalysis(
+      params,
+      periodSpec,
+      scope,
+      allGroups,
+      allDrivers,
+    );
+  }
+
+  const personIds = filteredPersons.map((p: any) => p.id);
+
+  // 5. Cargar cells × col por persona
+  const cells = await loadCellValuesByPerson({
+    granularity: params.granularity,
+    metric: params.metric,
+    period: periodSpec,
+    assetIds,
+    personIds,
+  });
+
+  // 6. Period anterior · totales por persona
+  const periodLenMs =
+    periodSpec.to.getTime() - periodSpec.from.getTime();
+  const prevFrom = new Date(periodSpec.from.getTime() - periodLenMs);
+  const prevTo = periodSpec.from;
+  const prevTotalsByPerson = await totalsByPersonForRange({
+    from: prevFrom,
+    to: prevTo,
+    metric: params.metric,
+    personIds,
+    assetIds,
+  });
+
+  // 7. Construir filas
+  const rows: DriverAnalysisRow[] = filteredPersons.map((p: any) => {
+    const rowCells = periodSpec.cols.map((col): FleetCell => {
+      const key = `${p.id}|${col.idx}`;
+      return {
+        col: col.idx,
+        value: cells.get(key) ?? 0,
+        isToday: col.isToday,
+        isWeekend: col.isWeekend,
+        drillDate: col.drillDate,
+        drillTo: drillTargetFor(params.granularity),
+        fullLabel: `${p.firstName} ${p.lastName} · ${col.fullLabel}`,
+      };
+    });
+    const total =
+      params.metric === "maxSpeedKmh"
+        ? Math.max(0, ...rowCells.map((c) => c.value))
+        : rowCells.reduce((acc, c) => acc + c.value, 0);
+    const prevTotal = prevTotalsByPerson.get(p.id) ?? 0;
+    const hasPrev = prevTotalsByPerson.has(p.id);
+    return {
+      personId: p.id,
+      personName: `${p.firstName} ${p.lastName}`,
+      vehiclesUsed: personAssetSet.get(p.id)?.size ?? 0,
+      cells: rowCells,
+      total,
+      previousTotal: hasPrev ? prevTotal : null,
+      previousDeltaPct:
+        hasPrev && prevTotal > 0 ? (total - prevTotal) / prevTotal : null,
+    };
+  });
+
+  // Sort por total desc
+  rows.sort((a, b) => b.total - a.total);
+
+  // 8. Total flota + delta
+  const total =
+    params.metric === "maxSpeedKmh"
+      ? Math.max(0, ...rows.map((r) => r.total))
+      : rows.reduce((a, r) => a + r.total, 0);
+  let previousTotal = 0;
+  let prevHasAny = false;
+  for (const v of prevTotalsByPerson.values()) {
+    previousTotal += v;
+    prevHasAny = true;
+  }
+  const previousTotalNullable = prevHasAny ? previousTotal : null;
+  const deltaPct =
+    previousTotalNullable !== null && previousTotalNullable > 0
+      ? (total - previousTotalNullable) / previousTotalNullable
+      : null;
+
+  // 9. Trend · suma vertical por columna
+  const trend: TrendPoint[] = periodSpec.cols.map((col) => {
+    let sum = 0;
+    let max = 0;
+    for (const r of rows) {
+      const c = r.cells.find((cc) => cc.col === col.idx);
+      if (!c) continue;
+      sum += c.value;
+      if (c.value > max) max = c.value;
+    }
+    const v = params.metric === "maxSpeedKmh" ? max : sum;
+    return { label: col.shortLabel, value: v, iso: col.drillDate ?? "" };
+  });
+
+  // 10. Anomalías por persona · z-score vs últimos 6 períodos
+  const anomalies = await detectAnomaliesByPerson({
+    granularity: params.granularity,
+    metric: params.metric,
+    periodSpec,
+    rows,
+    assetIds,
+    now,
+  });
+
+  // 11. Max cell value · escala color
+  let maxCellValue = 0;
+  for (const r of rows) {
+    for (const c of r.cells) if (c.value > maxCellValue) maxCellValue = c.value;
+  }
+
+  const avg = computeAverage(
+    params.granularity,
+    total,
+    periodSpec,
+    params.metric,
+  );
+
+  return {
+    granularity: params.granularity,
+    metric: params.metric,
+    metricLabel: METRIC_LABELS[params.metric],
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows,
+    colLabels: periodSpec.colLabels,
+    colCount: periodSpec.cols.length,
+    total,
+    previousTotal: previousTotalNullable,
+    deltaPct,
+    trend,
+    maxCellValue,
+    averageLabel: avg.label,
+    averageValue: avg.value,
+    anomalies,
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+    hasDrill: drillTargetFor(params.granularity) !== null,
+  };
+}
+
+function emptyDriversAnalysis(
+  params: FleetParams,
+  periodSpec: PeriodSpec,
+  scope: ScopeFilters,
+  allGroups: any[],
+  allDrivers: any[],
+): DriversAnalysisData {
+  return {
+    granularity: params.granularity,
+    metric: params.metric,
+    metricLabel: METRIC_LABELS[params.metric],
+    periodFrom: periodSpec.from,
+    periodTo: periodSpec.to,
+    periodLabel: periodSpec.periodLabel,
+    periodSubLabel: periodSpec.periodSubLabel,
+    rows: [],
+    colLabels: periodSpec.colLabels,
+    colCount: periodSpec.cols.length,
+    total: 0,
+    previousTotal: null,
+    deltaPct: null,
+    trend: [],
+    maxCellValue: 0,
+    averageLabel: "Promedio",
+    averageValue: 0,
+    anomalies: [],
+    anchorIso: periodSpec.anchorIso,
+    prevAnchorIso: periodSpec.prevAnchorIso,
+    nextAnchorIso: periodSpec.nextAnchorIso,
+    scope: {
+      groups: allGroups.map((g: any) => ({ id: g.id, name: g.name })),
+      vehicleTypes: VEHICLE_TYPES,
+      drivers: allDrivers.map((p: any) => ({
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`,
+      })),
+    },
+    appliedScope: scope,
+    hasDrill: drillTargetFor(params.granularity) !== null,
+  };
+}
+
+// Cells × col agrupadas por personId
+async function loadCellValuesByPerson(p: {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  period: PeriodSpec;
+  assetIds: string[];
+  personIds: string[];
+}): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (p.assetIds.length === 0 || p.personIds.length === 0) return out;
+
+  const baseFilter = {
+    assetId: { in: p.assetIds },
+    personId: { in: p.personIds },
+  };
+
+  // HOURLY
+  if (p.granularity === "day-hours") {
+    if (
+      p.metric === "distanceKm" ||
+      p.metric === "activeMin" ||
+      p.metric === "tripCount" ||
+      p.metric === "fuelLiters" ||
+      p.metric === "maxSpeedKmh"
+    ) {
+      const trips = await db.trip.findMany({
+        where: {
+          ...baseFilter,
+          startedAt: { gte: p.period.from, lt: p.period.to },
+        },
+        select: {
+          personId: true,
+          startedAt: true,
+          endedAt: true,
+          distanceKm: true,
+          maxSpeedKmh: true,
+        },
+      });
+      for (const t of trips as any[]) {
+        if (!t.personId) continue;
+        const h = arLocalHour(t.startedAt.getTime());
+        const key = `${t.personId}|${h}`;
+        const cur = out.get(key) ?? 0;
+        let v = 0;
+        if (p.metric === "distanceKm") v = t.distanceKm;
+        else if (p.metric === "tripCount") v = 1;
+        else if (p.metric === "activeMin")
+          v = (t.endedAt.getTime() - t.startedAt.getTime()) / 60_000;
+        else if (p.metric === "fuelLiters")
+          v =
+            ((t.endedAt.getTime() - t.startedAt.getTime()) / 60_000) * 0.12;
+        if (p.metric === "maxSpeedKmh") {
+          if (t.maxSpeedKmh > cur) out.set(key, t.maxSpeedKmh);
+        } else {
+          out.set(key, cur + v);
+        }
+      }
+    } else {
+      const events = await db.event.findMany({
+        where: {
+          ...baseFilter,
+          occurredAt: { gte: p.period.from, lt: p.period.to },
+        },
+        select: {
+          personId: true,
+          occurredAt: true,
+          type: true,
+          severity: true,
+        },
+      });
+      for (const ev of events as any[]) {
+        if (!ev.personId) continue;
+        if (p.metric === "highEventCount") {
+          if (ev.severity !== "HIGH" && ev.severity !== "CRITICAL") continue;
+        } else if (p.metric === "speedingCount") {
+          if (!isSpeedingType(String(ev.type))) continue;
+        }
+        const h = arLocalHour(ev.occurredAt.getTime());
+        const key = `${ev.personId}|${h}`;
+        out.set(key, (out.get(key) ?? 0) + 1);
+      }
+    }
+    return out;
+  }
+
+  // DAILY · agrupar por día (week-days, month-days) o por unidad
+  // mayor mediante el resolver del col. Cada col tiene un rango
+  // [from, to) que cubre 1 o N días.
+  const colByDate = new Map<string, number>();
+  for (const c of p.period.cols) {
+    // iterar cada día UTC dentro de [from, to)
+    const startMs = c.from.getTime();
+    const endMs = c.to.getTime();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    for (let ms = startMs; ms < endMs; ms += ONE_DAY) {
+      colByDate.set(ymdAr(ms), c.idx);
+    }
+  }
+
+  if (
+    p.metric === "distanceKm" ||
+    p.metric === "activeMin" ||
+    p.metric === "tripCount" ||
+    p.metric === "fuelLiters"
+  ) {
+    const rows = await db.assetDriverDay.findMany({
+      where: {
+        ...baseFilter,
+        day: { gte: p.period.from, lt: p.period.to },
+      },
+      select: {
+        personId: true,
+        day: true,
+        distanceKm: true,
+        activeMin: true,
+        tripCount: true,
+      },
+    });
+    for (const r of rows as any[]) {
+      const ymd = ymdAr(r.day.getTime());
+      const colIdx = colByDate.get(ymd);
+      if (colIdx === undefined) continue;
+      let v = 0;
+      if (p.metric === "distanceKm") v = r.distanceKm;
+      else if (p.metric === "activeMin") v = r.activeMin;
+      else if (p.metric === "tripCount") v = r.tripCount;
+      else if (p.metric === "fuelLiters") v = r.activeMin * 0.12;
+      const key = `${r.personId}|${colIdx}`;
+      out.set(key, (out.get(key) ?? 0) + v);
+    }
+  } else if (p.metric === "maxSpeedKmh") {
+    const trips = await db.trip.findMany({
+      where: {
+        ...baseFilter,
+        startedAt: { gte: p.period.from, lt: p.period.to },
+      },
+      select: { personId: true, startedAt: true, maxSpeedKmh: true },
+    });
+    for (const t of trips as any[]) {
+      if (!t.personId) continue;
+      const ymd = ymdAr(t.startedAt.getTime());
+      const colIdx = colByDate.get(ymd);
+      if (colIdx === undefined) continue;
+      const key = `${t.personId}|${colIdx}`;
+      const cur = out.get(key) ?? 0;
+      if (t.maxSpeedKmh > cur) out.set(key, t.maxSpeedKmh);
+    }
+  } else {
+    const events = await db.event.findMany({
+      where: {
+        ...baseFilter,
+        occurredAt: { gte: p.period.from, lt: p.period.to },
+      },
+      select: {
+        personId: true,
+        occurredAt: true,
+        type: true,
+        severity: true,
+      },
+    });
+    for (const ev of events as any[]) {
+      if (!ev.personId) continue;
+      if (p.metric === "highEventCount") {
+        if (ev.severity !== "HIGH" && ev.severity !== "CRITICAL") continue;
+      } else if (p.metric === "speedingCount") {
+        if (!isSpeedingType(String(ev.type))) continue;
+      }
+      const ymd = ymdAr(ev.occurredAt.getTime());
+      const colIdx = colByDate.get(ymd);
+      if (colIdx === undefined) continue;
+      const key = `${ev.personId}|${colIdx}`;
+      out.set(key, (out.get(key) ?? 0) + 1);
+    }
+  }
+  return out;
+}
+
+async function detectAnomaliesByPerson(p: {
+  granularity: AnalysisGranularity;
+  metric: ActivityMetric;
+  periodSpec: PeriodSpec;
+  rows: DriverAnalysisRow[];
+  assetIds: string[];
+  now: number;
+}): Promise<DriverAnomalyRow[]> {
+  if (p.granularity === "year-weeks" || p.granularity === "year-months")
+    return [];
+  if (p.rows.length === 0) return [];
+
+  const periodLenMs =
+    p.periodSpec.to.getTime() - p.periodSpec.from.getTime();
+  const personIds = p.rows.map((r) => r.personId);
+
+  const historicals: Map<string, number>[] = [];
+  const HISTORY = 6;
+  for (let i = 1; i <= HISTORY; i++) {
+    const from = new Date(p.periodSpec.from.getTime() - i * periodLenMs);
+    const to = new Date(p.periodSpec.from.getTime() - (i - 1) * periodLenMs);
+    const totals = await totalsByPersonForRange({
+      from,
+      to,
+      metric: p.metric,
+      personIds,
+      assetIds: p.assetIds,
+    });
+    historicals.push(totals);
+  }
+
+  const out: DriverAnomalyRow[] = [];
+  for (const row of p.rows) {
+    const samples = historicals.map((m) => m.get(row.personId) ?? 0);
+    const allZero = samples.every((s) => s === 0) && row.total === 0;
+    if (allZero) continue;
+    const mean =
+      samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length);
+    const variance =
+      samples.reduce((a, b) => a + (b - mean) ** 2, 0) /
+      Math.max(1, samples.length);
+    const std = Math.sqrt(variance);
+    const minStd = Math.max(std, mean * 0.1, 0.5);
+    const z = (row.total - mean) / minStd;
+    if (Math.abs(z) >= 2) {
+      out.push({
+        personId: row.personId,
+        personName: row.personName,
+        currentValue: row.total,
+        historicalMean: mean,
+        historicalStd: std,
+        zScore: z,
+        direction: z > 0 ? "high" : "low",
+        severity: Math.abs(z) >= 3 ? "critical" : "warning",
+      });
+    }
+  }
+  out.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
+  return out;
 }

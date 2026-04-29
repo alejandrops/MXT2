@@ -1,0 +1,107 @@
+/* ═══════════════════════════════════════════════════════════════
+   StateBlocks · Empty/Loading/Error
+   · texto centrado simple
+   · sin emoji · sin iconos decorativos
+   · color solo en el borde izquierdo de error · excepción
+   ═══════════════════════════════════════════════════════════════ */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--f);
+  color: var(--t2);
+  text-align: center;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+}
+
+.compact {
+  padding: 16px 20px;
+  font-size: 11px;
+}
+.compact .title {
+  font-size: 12px;
+}
+.compact .hint {
+  font-size: 11px;
+}
+
+.normal {
+  padding: 32px 24px;
+  font-size: 12px;
+}
+.normal .title {
+  font-size: 14px;
+}
+.normal .hint {
+  font-size: 12px;
+}
+
+.large {
+  padding: 64px 32px;
+  font-size: 13px;
+}
+.large .title {
+  font-size: 16px;
+}
+.large .hint {
+  font-size: 13px;
+}
+
+/* ── Texto ─────────────────────────────────────────── */
+
+.title {
+  margin: 0;
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.hint {
+  margin: 0;
+  color: var(--t3);
+  max-width: 460px;
+  line-height: 1.5;
+}
+
+.action {
+  margin-top: 8px;
+}
+
+/* ── Loading progress bar · sin spinner llamativo ──── */
+
+.progressTrack {
+  width: 140px;
+  height: 2px;
+  background: var(--brd);
+  overflow: hidden;
+  border-radius: 1px;
+  margin-top: 8px;
+}
+
+.progressBar {
+  height: 100%;
+  width: 30%;
+  background: var(--blu);
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(450%);
+  }
+}
+
+/* ── Error · borde izquierdo rojo · excepción ──────── */
+
+.error {
+  border-left: 3px solid var(--red);
+  text-align: left;
+  align-items: flex-start;
+}

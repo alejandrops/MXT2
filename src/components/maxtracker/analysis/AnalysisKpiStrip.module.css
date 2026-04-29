@@ -1,0 +1,218 @@
+/* ═══════════════════════════════════════════════════════════════
+   AnalysisKpiStrip · 4 tiles
+   ═══════════════════════════════════════════════════════════════ */
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+  padding: 14px 20px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 20px;
+  border-right: 1px solid var(--brd);
+  min-width: 0;
+}
+
+.tile:first-child {
+  padding-left: 0;
+}
+
+.tile:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 1100px) {
+  .strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 0;
+  }
+  .tile:nth-child(2n) {
+    border-right: 0;
+  }
+}
+
+/* ── Tile internals ───────────────────────────────────────── */
+
+.tileHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.tileIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--t3);
+}
+
+.tileLabel {
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tilePrimary {
+  font-family: var(--m);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tileSecondary {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Delta inline ─────────────────────────────────────────── */
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--m);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.deltaPct {
+  font-weight: 600;
+}
+
+.deltaPrev {
+  color: var(--t3);
+  font-weight: 400;
+  font-family: var(--f);
+}
+
+.deltaUp {
+  color: #1e40af;
+}
+.deltaDown {
+  color: #b45309;
+}
+.deltaFlat {
+  color: var(--t3);
+}
+.deltaGood {
+  color: #16a34a;
+}
+.deltaBad {
+  color: var(--red);
+}
+
+/* ── Bar (tile Top) ──────────────────────────────────────── */
+
+.bar {
+  position: relative;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--blu);
+  border-radius: 2px;
+}
+
+.barLabel {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  font-family: var(--f);
+  font-size: 10px;
+  color: var(--t3);
+  white-space: nowrap;
+}
+
+/* ── Anomaly tile ─────────────────────────────────────────── */
+
+.tileAnomaly {
+  /* tile mantiene la misma estructura */
+}
+
+.iconWarning {
+  color: var(--ora);
+}
+
+.iconCritical {
+  color: var(--red);
+}
+
+.anomalyList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.anomalyItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--tx);
+  line-height: 1.3;
+}
+
+.anomalyDir {
+  font-family: var(--m);
+  font-size: 11px;
+  font-weight: 700;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.anomalyHigh {
+  color: var(--red);
+}
+
+.anomalyLow {
+  color: #1e40af;
+}
+
+.anomalyName {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.anomalyZ {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}

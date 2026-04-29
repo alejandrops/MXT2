@@ -1,0 +1,503 @@
+/* ═══════════════════════════════════════════════════════════════
+   Block · estilo común de bloques A-J · Tufte editorial
+   ═══════════════════════════════════════════════════════════════ */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  page-break-inside: avoid;
+}
+
+.blockHeader {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.blockLetter {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.blockTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.blockTitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--tx);
+  letter-spacing: -0.005em;
+}
+
+.blockHint {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--t3);
+  line-height: 1.4;
+}
+
+/* ── KPI grid (Bloque A) ───────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.lead {
+  font-family: var(--f);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--t1);
+  margin: 0;
+}
+
+.lead strong {
+  color: var(--tx);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Stats table (Bloque B) ────────────────────────────────── */
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--f);
+  font-size: 12.5px;
+}
+
+.statsTable thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t3);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--bg);
+}
+
+.statsTable thead th:nth-child(2),
+.statsTable thead th:nth-child(3) {
+  text-align: right;
+}
+
+.statsTable tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--t1);
+}
+
+.statsTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.statValue {
+  text-align: right;
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.statHint {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Subsection ────────────────────────────────────────────── */
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subsectionTitle {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t2);
+}
+
+/* ── Daily bars ────────────────────────────────────────────── */
+
+.barsSvg {
+  display: block;
+  width: 100%;
+  height: 80px;
+  font-family: var(--f);
+}
+
+.bar {
+  fill: #1e40af;
+}
+
+.barLbl {
+  font-size: 9.5px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+.empty {
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Print stylesheet ──────────────────────────────────────── */
+
+@media print {
+  .block {
+    border: 1px solid var(--brd);
+    page-break-inside: avoid;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bloque C · Performance grupos
+   ═══════════════════════════════════════════════════════════════ */
+
+.groupName {
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.badgeBest,
+.badgeWorst {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badgeBest {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badgeWorst {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Bar inline en celda · valor + barra horizontal */
+.barCellWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.barCellTrack {
+  flex: 1;
+  max-width: 80px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+
+.barCellFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--t3);
+}
+
+.barCellFillSelf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--blu);
+}
+
+.barCellFillBad {
+  background: var(--red);
+}
+
+.barCellValue {
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bloques D y E · Top/Bottom rankings
+   ═══════════════════════════════════════════════════════════════ */
+
+.topBottomGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 700px) {
+  .topBottomGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.rankList {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rankRow {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  font-family: var(--f);
+  font-size: 12px;
+}
+
+.rankRow:last-child {
+  border-bottom: 0;
+}
+
+.rankNum {
+  font-family: var(--m);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t3);
+  text-align: right;
+}
+
+.rankPrimary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rankLink {
+  color: var(--blu);
+  text-decoration: none;
+  font-weight: 500;
+}
+.rankLink:hover {
+  text-decoration: underline;
+}
+
+.rankPlate {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+.rankSec {
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.rankValue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  white-space: nowrap;
+  min-width: 110px;
+}
+
+.rankUnit {
+  font-family: var(--f);
+  font-size: 9.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rankAux {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+.rankGood,
+.scoreGood {
+  font-family: var(--m);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #065f46;
+}
+
+.rankBad,
+.scoreBad {
+  font-family: var(--m);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #991b1b;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bloques F y G · Seguridad y Conducción
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Grid de KPIs de 3 columnas para Bloque G */
+.kpiGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .kpiGrid3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Grid de subsections lado a lado · 2 columnas */
+.fGrid,
+.gGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 700px) {
+  .fGrid,
+  .gGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Breakdown bars · uniforme entre F y G */
+.bdGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bdRow {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px;
+  gap: 10px;
+  align-items: center;
+  font-family: var(--f);
+  font-size: 12px;
+}
+
+.bdLabel {
+  color: var(--t1);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bdTrack {
+  position: relative;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.bdFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.bdFillNeutral {
+  background: var(--blu);
+}
+
+/* Severity colors (reutilizadas también en Bloque F) */
+.sevCritical {
+  background: var(--red);
+}
+.sevHigh {
+  background: #d97706;
+}
+.sevMedium {
+  background: #f59e0b;
+}
+.sevLow {
+  background: var(--t3);
+}
+
+.domSec {
+  background: var(--red);
+}
+.domCond {
+  background: #d97706;
+}
+
+.bdValue {
+  font-family: var(--m);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--tx);
+}
+
+.bdPct {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-left: 4px;
+}

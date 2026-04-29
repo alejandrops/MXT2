@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════════════════════════
+   GlobalFilterBar · banda de filtros activos
+   · solo se ve cuando hay filtros
+   · pills con radius mínimo · color como excepción (sutil)
+   ═══════════════════════════════════════════════════════════════ */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 20px;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  font-family: var(--f);
+  font-size: 11px;
+}
+
+.label {
+  color: #1e40af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  background: #fff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--r-sm);
+  color: var(--tx);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pillLabel {
+  color: var(--t3);
+  font-weight: 500;
+}
+
+.pillValue {
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.pillRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--t3);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.pillRemove:hover {
+  background: #fee2e2;
+  color: var(--red);
+}
+
+.clearAll {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #1e40af;
+  font-family: var(--f);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.clearAll:hover {
+  text-decoration: underline;
+}

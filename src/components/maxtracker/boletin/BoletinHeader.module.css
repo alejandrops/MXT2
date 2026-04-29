@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════
+   BoletinHeader · header editorial
+   ═══════════════════════════════════════════════════════════════ */
+
+.header {
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--brd);
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t2);
+}
+
+.crumb {
+  color: var(--t3);
+}
+
+.barRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  text-decoration: none;
+  color: var(--t1);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+}
+.nav:hover {
+  background: var(--bg);
+  color: var(--tx);
+}
+
+.navDisabled {
+  color: var(--t3);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--t1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.printBtn:hover {
+  background: var(--bg);
+}
+.printBtn svg {
+  color: var(--t3);
+}
+
+.title {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 32px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.titleMain {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+  margin: 0;
+}
+
+.titlePeriod {
+  font-family: var(--f);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 2px 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+/* Print · solo título · oculta navigator y botones */
+@media print {
+  .header {
+    border-bottom: 2px solid var(--brd);
+  }
+  .bar {
+    display: none;
+  }
+  .title {
+    padding: 0 0 18px;
+  }
+}

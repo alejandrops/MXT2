@@ -1,0 +1,199 @@
+/* ═══════════════════════════════════════════════════════════════
+   VistaEjecutivaClient · L1.C
+   · Header, KPIs y rankings vienen de componentes compartidos
+   · solo conserva: layout, daily bars, anomalías inline
+   ═══════════════════════════════════════════════════════════════ */
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: var(--bg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  flex: 1;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+.headerLink {
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--blu);
+  text-decoration: none;
+  font-weight: 500;
+}
+.headerLink:hover {
+  text-decoration: underline;
+}
+
+/* ── KPI grid ───────────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Section · sin sombras · radius mínimo ─────────── */
+
+.section {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sectionTitle {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t1);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.seeAll {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--blu);
+  text-decoration: none;
+  font-weight: 500;
+}
+.seeAll:hover {
+  text-decoration: underline;
+}
+
+/* ── Daily bars · SVG ──────────────────────────────── */
+
+.barsSvg {
+  display: block;
+  width: 100%;
+  height: 100px;
+  font-family: var(--f);
+}
+.bar {
+  fill: #1e40af;
+}
+.barLbl {
+  font-size: 10px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+/* ── Dual grid ─────────────────────────────────────── */
+
+.dualGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 900px) {
+  .dualGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Score chip inline · radius mínimo ─────────────── */
+
+.scoreInline {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.scoreHigh {
+  background: #d1fae5;
+  color: #065f46;
+}
+.scoreMid {
+  background: #fef3c7;
+  color: #92400e;
+}
+.scoreLow {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Anomalías ─────────────────────────────────────── */
+
+.anomalies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.anomalyItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border-left: 3px solid #d97706;
+  font-family: var(--f);
+  font-size: 12px;
+}
+.anomalyDir {
+  flex-shrink: 0;
+  display: inline-flex;
+}
+.anomHigh {
+  color: var(--red);
+}
+.anomLow {
+  color: var(--blu);
+}
+.anomalyName {
+  color: var(--tx);
+  font-weight: 600;
+  text-decoration: none;
+}
+.anomalyName:hover {
+  color: var(--blu);
+  text-decoration: underline;
+}
+.anomalyDesc {
+  flex: 1;
+  color: var(--t1);
+}
+.anomalyZ {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: 16px;
+  text-align: center;
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t3);
+  font-style: italic;
+}

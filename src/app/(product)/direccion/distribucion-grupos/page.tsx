@@ -1,0 +1,92 @@
+import {
+  getFleetAnalysis,
+  type AnalysisGranularity,
+  type ActivityMetric,
+  type ScopeFilters,
+} from "@/lib/queries";
+import { DistribucionGruposClient } from "./DistribucionGruposClient";
+
+// ═══════════════════════════════════════════════════════════════
+//  /direccion/distribucion-grupos
+//  ─────────────────────────────────────────────────────────────
+//  Movido desde /actividad/analisis?v=box.
+//  Box plot por grupo · vista analítica para entender la
+//  heterogeneidad operativa de la flota. Detectar grupos con
+//  alta varianza intragrupal · perfil ejecutivo · no operativo.
+// ═══════════════════════════════════════════════════════════════
+
+export const dynamic = "force-dynamic";
+
+const VALID_G: AnalysisGranularity[] = [
+  "day-hours",
+  "week-days",
+  "month-days",
+  "year-weeks",
+  "year-months",
+];
+
+const VALID_M: ActivityMetric[] = [
+  "distanceKm",
+  "activeMin",
+  "idleMin",
+  "tripCount",
+  "eventCount",
+  "highEventCount",
+  "speedingCount",
+  "maxSpeedKmh",
+  "fuelLiters",
+];
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function DistribucionGruposPage({
+  searchParams,
+}: PageProps) {
+  const sp = await searchParams;
+  const get = (k: string): string | null => {
+    const v = sp[k];
+    if (Array.isArray(v)) return v[0] ?? null;
+    return typeof v === "string" && v.length > 0 ? v : null;
+  };
+  const csv = (k: string): string[] | undefined => {
+    const v = get(k);
+    if (!v) return undefined;
+    return v.split(",").filter(Boolean);
+  };
+
+  const gRaw = get("g");
+  const granularity: AnalysisGranularity =
+    gRaw && (VALID_G as string[]).includes(gRaw)
+      ? (gRaw as AnalysisGranularity)
+      : "month-days";
+
+  const mRaw = get("m");
+  const metric: ActivityMetric =
+    mRaw && (VALID_M as string[]).includes(mRaw)
+      ? (mRaw as ActivityMetric)
+      : "distanceKm";
+
+  const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const todayIso = `${todayLocal.getUTCFullYear()}-${String(
+    todayLocal.getUTCMonth() + 1,
+  ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
+  const anchor = get("d") ?? todayIso;
+
+  const scope: ScopeFilters = {
+    groupIds: csv("grp"),
+    vehicleTypes: csv("type"),
+    personIds: csv("driver"),
+    search: get("q") ?? undefined,
+  };
+
+  const data = await getFleetAnalysis({
+    granularity,
+    anchor,
+    metric,
+    scope,
+  });
+
+  return <DistribucionGruposClient data={data} />;
+}

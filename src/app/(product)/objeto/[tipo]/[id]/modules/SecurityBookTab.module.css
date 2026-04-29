@@ -1,0 +1,272 @@
+/* ═══════════════════════════════════════════════════════════════
+   SecurityBookTab · Tufte
+   ═══════════════════════════════════════════════════════════════ */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  flex: 1;
+}
+
+/* ── KPI grid ───────────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Section ────────────────────────────────────────── */
+
+.section {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t1);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sectionHint {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Trend bars ─────────────────────────────────────── */
+
+.barsSvg {
+  display: block;
+  width: 100%;
+  height: 96px;
+  font-family: var(--f);
+}
+.axis {
+  stroke: var(--brd);
+  stroke-width: 1;
+}
+.barTotal {
+  fill: #93c5fd;
+}
+.barCritical {
+  fill: var(--red);
+}
+.barLbl {
+  font-size: 10px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+/* ── Lifecycle breakdown ────────────────────────────── */
+
+.lcGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lcRow {
+  display: grid;
+  grid-template-columns: 130px 1fr 100px;
+  gap: 12px;
+  align-items: center;
+  font-family: var(--f);
+  font-size: 12px;
+}
+
+.lcLabel {
+  color: var(--t1);
+  font-weight: 500;
+}
+
+.lcBarTrack {
+  position: relative;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.lcBarFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.lcOpen {
+  background: var(--red);
+}
+.lcAttended {
+  background: #d97706;
+}
+.lcClosed {
+  background: #16a34a;
+}
+.lcDismissed {
+  background: var(--t3);
+}
+
+.lcValue {
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx);
+  text-align: right;
+}
+
+.lcPct {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--t3);
+  margin-left: 4px;
+}
+
+/* ── Alarm list ─────────────────────────────────────── */
+
+.alarmList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.alarmRow {
+  display: grid;
+  grid-template-columns: 90px 60px 1fr 100px 160px;
+  gap: 12px;
+  align-items: center;
+  padding: 7px 0;
+  font-family: var(--f);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.alarmRow:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 700px) {
+  .alarmRow {
+    grid-template-columns: 80px 50px 1fr;
+    gap: 8px;
+  }
+  .alarmDomain,
+  .alarmStatus {
+    display: none;
+  }
+}
+
+.alarmTime {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Severity chip · color como excepción */
+.alarmSev {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+}
+.sevCritical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.sevHigh {
+  background: #fed7aa;
+  color: #9a3412;
+}
+.sevMedium {
+  background: #fef3c7;
+  color: #92400e;
+}
+.sevLow {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--t2);
+}
+
+.alarmType {
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.alarmDomain {
+  font-size: 10.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alarmStatus {
+  font-size: 11px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.alarmDuration {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status colors */
+.statusOpen {
+  color: var(--red);
+  font-weight: 600;
+}
+.statusAttended {
+  color: #b45309;
+}
+.statusClosed {
+  color: #16a34a;
+}
+.statusDismissed {
+  color: var(--t3);
+}

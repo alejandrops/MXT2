@@ -79,14 +79,24 @@ const MODULES: ModuleDef[] = [
     enabled: true,
     pages: [
       { label: "Mapa", href: "/seguimiento/mapa" },
-      { label: "Viajes", href: "/seguimiento/viajes" },
       { label: "Historial", href: "/seguimiento/historial" },
       {
         label: "Torre de control",
         href: "/seguimiento/torre-de-control",
       },
-      { label: "Análisis", href: "/seguimiento/analisis" },
-      { label: "Reportes", href: "/seguimiento/reportes" },
+    ],
+  },
+  {
+    key: "act",
+    label: "Actividad",
+    icon: <BarChart3 size={16} />,
+    pathPrefix: "/actividad",
+    enabled: true,
+    pages: [
+      { label: "Reportes", href: "/actividad/reportes" },
+      { label: "Scorecard", href: "/actividad/scorecard" },
+      { label: "Viajes", href: "/actividad/viajes" },
+      { label: "API", href: "/actividad/api" },
     ],
   },
   {
@@ -156,12 +166,16 @@ const MODULES: ModuleDef[] = [
     label: "Dirección",
     icon: <BarChart3 size={16} />,
     pathPrefix: "/direccion",
-    enabled: false,
-    pages: [],
+    enabled: true,
+    pages: [
+      { label: "Vista ejecutiva", href: "/direccion/vista-ejecutiva" },
+      { label: "Distribución por grupo", href: "/direccion/distribucion-grupos" },
+      { label: "Boletín", href: "/direccion/boletin" },
+    ],
   },
   {
     key: "gest",
-    label: "Gestión",
+    label: "Catálogos",
     icon: <Building2 size={16} />,
     pathPrefix: "/gestion",
     enabled: true,

@@ -1,0 +1,164 @@
+/* ═══════════════════════════════════════════════════════════════
+   LiveStatus · información en tiempo real del vehículo
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  margin: 0 20px 12px;
+  font-family: var(--f);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+/* ── Banner de alarmas activas ──────────────────────────── */
+
+.alarmBanner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  font-family: var(--f);
+  font-size: 12px;
+  color: #991b1b;
+}
+
+.alarmTitle {
+  font-weight: 600;
+}
+
+.alarmHint {
+  color: #7f1d1d;
+  opacity: 0.8;
+}
+
+.alarmAction {
+  margin-left: auto;
+  color: #991b1b;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.alarmAction:hover {
+  text-decoration: underline;
+}
+
+/* ── Fila de estado actual ──────────────────────────────── */
+
+.stateRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+.stateCell {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-right: 1px solid var(--brd);
+}
+.stateCell:last-child {
+  border-right: 0;
+}
+
+.stateCellGrow {
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.stateLabel {
+  font-family: var(--f);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+}
+
+.stateValueWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stateValue {
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--m);
+  font-size: 12px;
+}
+
+/* Status dots · binarios · solo donde aportan */
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_on {
+  background: #16a34a;
+}
+.dot_warn {
+  background: #d97706;
+}
+.dot_neutral {
+  background: var(--t3);
+}
+.dot_off {
+  background: #cbd5e1;
+}
+
+/* ── Fila de datos del vehículo ─────────────────────────── */
+
+.dataRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--brd);
+}
+
+.dataCell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--f);
+  font-size: 11.5px;
+}
+
+.dataLabel {
+  color: var(--t3);
+  text-transform: uppercase;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.dataSep {
+  color: var(--t3);
+}
+
+.dataValue {
+  color: var(--t1);
+  font-weight: 500;
+}

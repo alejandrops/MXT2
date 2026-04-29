@@ -1,0 +1,127 @@
+/* ═══════════════════════════════════════════════════════════════
+   FleetBoxPlot
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  background: var(--sf);
+}
+
+.header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--brd);
+  margin-bottom: 12px;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sub {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  margin: 0;
+}
+
+.svgWrap {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--f);
+}
+
+.grid {
+  stroke: rgba(0, 0, 0, 0.04);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: rgba(0, 0, 0, 0.30);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  font-size: 9.5px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+.groupLabel {
+  font-size: 11px;
+  fill: var(--tx);
+  font-weight: 500;
+  font-family: var(--f);
+}
+
+.groupCount {
+  font-size: 9px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+.whisker {
+  stroke: var(--t1);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.box {
+  fill: rgba(37, 99, 235, 0.18);
+  stroke: var(--blu);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.median {
+  stroke: #1e40af;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.outlier {
+  fill: var(--red);
+  fill-opacity: 0.85;
+  stroke: var(--sf);
+  stroke-width: 0.8;
+  cursor: pointer;
+}
+
+.outlier:hover {
+  fill-opacity: 1;
+  r: 4;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #1f2937;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  font-style: italic;
+  color: var(--t3);
+}

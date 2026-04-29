@@ -1,0 +1,222 @@
+/* ═══════════════════════════════════════════════════════════════
+   FleetScatter · scatter plot 2 métricas
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--sf);
+}
+
+.header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--brd);
+  margin-bottom: 12px;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0 0 2px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sub {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  margin: 0;
+}
+
+.invertHint {
+  color: #b45309;
+  font-weight: 600;
+}
+
+/* ── Plot area ───────────────────────────────────────────── */
+
+.plotWrap {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--f);
+}
+
+.plotBg {
+  fill: var(--bg);
+  stroke: none;
+}
+
+.gridLine {
+  stroke: rgba(0, 0, 0, 0.05);
+  stroke-width: 1;
+}
+
+.axisLine {
+  stroke: rgba(0, 0, 0, 0.30);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  font-size: 9.5px;
+  fill: var(--t3);
+  font-family: var(--m);
+}
+
+.axisTitle {
+  font-size: 11px;
+  fill: var(--t2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.avgLine {
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.avgLabel {
+  font-size: 10px;
+  fill: var(--t1);
+  font-family: var(--m);
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.quadLabel {
+  font-size: 9.5px;
+  fill: var(--t3);
+  font-family: var(--f);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* ── Points ──────────────────────────────────────────────── */
+
+.point {
+  fill: var(--blu);
+  fill-opacity: 0.6;
+  stroke: var(--blu);
+  stroke-width: 0.5;
+  cursor: pointer;
+  transition: r 0.08s, fill-opacity 0.08s;
+}
+
+.point:hover {
+  fill-opacity: 1;
+}
+
+.pointAnomaly {
+  fill: var(--red);
+  fill-opacity: 0.85;
+  stroke: var(--sf);
+  stroke-width: 1.2;
+  cursor: pointer;
+}
+
+.pointAnomaly:hover {
+  fill-opacity: 1;
+}
+
+/* ── Outlier labels ──────────────────────────────────────── */
+
+.outlierLabel {
+  font-size: 9.5px;
+  font-family: var(--f);
+  fill: var(--tx);
+  font-weight: 500;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #1f2937;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  max-width: 240px;
+}
+
+.tooltipName {
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+.tooltipPlate {
+  font-family: var(--m);
+  font-size: 10.5px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.tooltipMetric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.tooltipLabel {
+  font-size: 10px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltipValue {
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipAnomaly {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: rgb(252, 165, 165);
+  font-style: italic;
+}
+
+/* ── Empty ───────────────────────────────────────────────── */
+
+.empty {
+  padding: 32px 12px;
+  text-align: center;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--t3);
+}

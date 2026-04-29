@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════
+   DataTable · estilo unificado
+   ═══════════════════════════════════════════════════════════════ */
+
+.tableWrap {
+  width: 100%;
+  overflow: auto;
+  background: var(--sf);
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-family: var(--f);
+  font-size: 12px;
+}
+
+/* ── Density ────────────────────────────────────────── */
+
+.compact .th {
+  padding: 8px 10px;
+}
+.compact .td,
+.compact .tdFoot {
+  padding: 6px 10px;
+}
+
+.normal .th {
+  padding: 10px 12px;
+}
+.normal .td,
+.normal .tdFoot {
+  padding: 9px 12px;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t2);
+  border-bottom: 1px solid var(--brd);
+  white-space: nowrap;
+  text-align: left;
+  user-select: none;
+}
+
+.thInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.thSticky {
+  left: 0;
+  z-index: 4;
+  border-right: 1px solid var(--brd);
+}
+
+.thSortable {
+  cursor: pointer;
+}
+.thSortable:hover {
+  color: var(--tx);
+}
+
+.sortIcon {
+  display: inline-flex;
+  color: var(--blu);
+}
+
+/* ── Body ───────────────────────────────────────────── */
+
+.row {
+  background: var(--sf);
+}
+
+.hoverable .row:hover {
+  background: var(--bg);
+}
+.hoverable .row:hover .tdSticky {
+  background: var(--bg);
+}
+
+.td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tdSticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sf);
+  border-right: 1px solid var(--brd);
+}
+
+.numeric {
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+}
+
+.alignRight {
+  text-align: right;
+}
+.alignCenter {
+  text-align: center;
+}
+
+.empty {
+  padding: 32px;
+  text-align: center;
+  font-style: italic;
+  color: var(--t3);
+  font-size: 12.5px;
+}
+
+/* ── Footer ─────────────────────────────────────────── */
+
+.footRow {
+  background: var(--bg);
+}
+
+.tdFoot {
+  background: var(--bg);
+  border-top: 1px solid var(--brd);
+  border-bottom: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tdFoot.tdSticky {
+  background: var(--bg);
+}

@@ -1,0 +1,123 @@
+/* ═══════════════════════════════════════════════════════════════
+   ScorecardClient · L1.C
+   · sin tabla custom (usa <DataTable>)
+   · score chip con radius mínimo (era pill)
+   · sin medallas oro/plata/bronce (Tufte)
+   · sin icono User (Tufte)
+   ═══════════════════════════════════════════════════════════════ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--brd);
+}
+
+.exportBtn {
+  height: 30px;
+  padding: 0 12px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+}
+.exportBtn:hover {
+  background: var(--bg);
+}
+
+.tableContainer {
+  flex: 1;
+  overflow: auto;
+}
+
+/* ── Position number · sin medalla ─────────────────── */
+
+.posNum {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Person link · sin icono · solo texto ──────────── */
+
+.personLink {
+  color: var(--tx);
+  text-decoration: none;
+  font-weight: 500;
+}
+.personLink:hover {
+  color: var(--blu);
+  text-decoration: underline;
+}
+
+/* ── Score chip · radius mínimo · color como excepción */
+
+.scoreChip {
+  display: inline-block;
+  min-width: 42px;
+  padding: 3px 9px;
+  border-radius: var(--r-sm); /* era var(--r-pill) · Tufte */
+  font-family: var(--m);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.scoreHigh {
+  background: #d1fae5;
+  color: #065f46;
+}
+.scoreMid {
+  background: #fef3c7;
+  color: #92400e;
+}
+.scoreLow {
+  background: #fed7aa;
+  color: #9a3412;
+}
+.scoreCritical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Breakdown · pills inline · radius mínimo ──────── */
+
+.dim {
+  color: var(--t3);
+}
+
+.breakdownList {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.breakdownItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+  font-size: 10.5px;
+  color: var(--t1);
+  white-space: nowrap;
+}
+.breakdownItem svg {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.breakdownPts {
+  font-family: var(--m);
+  font-weight: 600;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}

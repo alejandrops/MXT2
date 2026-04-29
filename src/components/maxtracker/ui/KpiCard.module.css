@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════
+   KpiCard · Tufte
+   · sin box-shadow
+   · border 1px sólido
+   · radius mínimo (var(--r-sm))
+   · color solo en delta · excepción graduada
+   ═══════════════════════════════════════════════════════════════ */
+
+.kpi {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--f);
+}
+
+/* ── Size variants ──────────────────────────────────── */
+
+.sm {
+  padding: 10px 12px;
+  gap: 3px;
+}
+.sm .label {
+  font-size: 9.5px;
+}
+.sm .value {
+  font-size: 18px;
+}
+.sm .unit {
+  font-size: 10.5px;
+}
+.sm .meta,
+.sm .metaEmpty {
+  font-size: 10px;
+}
+
+.md {
+  padding: 12px 14px;
+  gap: 4px;
+}
+.md .label {
+  font-size: 10.5px;
+}
+.md .value {
+  font-size: 22px;
+}
+.md .unit {
+  font-size: 12px;
+}
+.md .meta,
+.md .metaEmpty {
+  font-size: 11px;
+}
+
+.lg {
+  padding: 14px 16px;
+  gap: 4px;
+}
+.lg .label {
+  font-size: 10.5px;
+}
+.lg .value {
+  font-size: 26px;
+}
+.lg .unit {
+  font-size: 12px;
+}
+.lg .meta,
+.lg .metaEmpty {
+  font-size: 11px;
+}
+
+/* ── Common parts ───────────────────────────────────── */
+
+.label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+}
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.value {
+  font-family: var(--m);
+  font-weight: 700;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.unit {
+  font-weight: 500;
+  color: var(--t3);
+}
+
+/* ── Meta line · delta o peer ───────────────────────── */
+
+.meta {
+  font-family: var(--m);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--t3);
+}
+
+.metaEmpty {
+  color: var(--t3);
+}
+
+.peerValue {
+  color: var(--tx);
+}
+
+/* ── Delta colors · color como excepción · Tufte ────── */
+
+/* default neutral (sin signo) */
+.flat {
+  color: var(--t3);
+}
+
+/* aumentos · contexto positivo (más km, más actividad) */
+.up {
+  color: #1e40af;
+}
+/* descensos · contexto neutro */
+.down {
+  color: #b45309;
+}
+
+/* aumentos · contexto NEGATIVO (más eventos = peor) */
+.bad {
+  color: var(--red);
+}
+/* descensos · contexto POSITIVO (menos eventos = mejor) */
+.good {
+  color: #16a34a;
+}

@@ -121,7 +121,7 @@ export function buildTripsHref(
   if (merged.sortDir !== "desc") {
     params.set("dir", merged.sortDir);
   }
-  return `/seguimiento/viajes?${params.toString()}`;
+  return `/actividad/viajes?${params.toString()}`;
 }
 
 /**

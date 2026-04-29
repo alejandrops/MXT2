@@ -1,0 +1,348 @@
+/* ═══════════════════════════════════════════════════════════════
+   PrintReport · CSS unificado para 3 períodos (semanal/mensual/anual)
+   ═══════════════════════════════════════════════════════════════ */
+
+.report {
+  background: #f3f4f6;
+  min-height: 100vh;
+  padding: 24px 0;
+  font-family: var(--f);
+  color: #111827;
+}
+
+.floatActions {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+}
+
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #1e40af;
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.printBtn:hover {
+  background: #1e3a8a;
+}
+
+.page {
+  background: #fff;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 14mm 16mm;
+  margin: 0 auto 16px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 8mm;
+  page-break-after: always;
+  position: relative;
+}
+.page:last-child {
+  page-break-after: auto;
+  margin-bottom: 0;
+}
+
+.docHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #111827;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.brandWord {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+.brandSubtitle {
+  font-size: 9px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 3px;
+}
+
+.docMeta {
+  text-align: right;
+}
+.docTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px;
+  line-height: 1.1;
+}
+.docPeriod {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e40af;
+  text-transform: capitalize;
+}
+.docSub {
+  font-size: 10.5px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.docHeaderSmall {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #d1d5db;
+}
+.brandWordSmall {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+.docTitleSmall {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.subTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.kpiTile {
+  padding: 10px 14px;
+  border-right: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+.kpiTile:last-child {
+  border-right: 0;
+}
+
+.kpiLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.kpiValue {
+  font-family: var(--m);
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpiUnit {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.kpiDelta {
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.kpiUp {
+  color: #1e40af;
+}
+.kpiDown {
+  color: #b45309;
+}
+.kpiFlat {
+  color: #9ca3af;
+}
+.kpiGood {
+  color: #16a34a;
+}
+.kpiBad {
+  color: #dc2626;
+}
+
+.dailyTrend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.barsSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.bar {
+  fill: #1e40af;
+}
+.barLbl {
+  font-size: 8.5px;
+  fill: #6b7280;
+  font-family: var(--m);
+}
+
+.empty {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.topSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.topList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topItem {
+  display: grid;
+  grid-template-columns: 18px 1fr 80px;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.topIdx {
+  font-family: var(--m);
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.topName {
+  font-weight: 500;
+  color: #111827;
+}
+
+.topValue {
+  font-family: var(--m);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5px;
+}
+
+.th {
+  text-align: left;
+  padding: 5px 6px;
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  border-bottom: 1.5px solid #111827;
+  background: #f9fafb;
+  white-space: nowrap;
+}
+
+.td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.alignRight {
+  text-align: right;
+}
+.alignCenter {
+  text-align: center;
+}
+.num {
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+}
+.plate {
+  font-family: var(--m);
+  font-size: 9px;
+  color: #6b7280;
+}
+
+.pageFooter {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 4mm;
+  border-top: 1px solid #e5e7eb;
+  font-size: 9px;
+  color: #9ca3af;
+}
+
+@media print {
+  .report {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .floatActions {
+    display: none !important;
+  }
+  .page {
+    border: 0 !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    overflow: hidden;
+  }
+}
