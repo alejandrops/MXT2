@@ -8,6 +8,7 @@ import { BlockD_TopVehiculos } from "@/components/maxtracker/boletin/BlockD_TopV
 import { BlockE_TopConductores } from "@/components/maxtracker/boletin/BlockE_TopConductores";
 import { BlockF_Seguridad } from "@/components/maxtracker/boletin/BlockF_Seguridad";
 import { BlockG_Conduccion } from "@/components/maxtracker/boletin/BlockG_Conduccion";
+import { BlockH_AnomaliasEstadisticas } from "@/components/maxtracker/boletin/BlockH_AnomaliasEstadisticas";
 import styles from "./BoletinPage.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -107,12 +108,9 @@ export default async function BoletinPage({ params }: PageProps) {
         <BlockF_Seguridad data={data} />
         <BlockG_Conduccion data={data} />
 
-        {/* Placeholders para bloques H-J · entregados en próximos lotes */}
-        <BlockPlaceholder
-          letter="H"
-          title="Anomalías estadísticas"
-          hint="Vehículos con desvío >2σ del baseline · próximo lote"
-        />
+        <BlockH_AnomaliasEstadisticas data={data} />
+
+        {/* Placeholders para bloques I-J · entregados en próximos lotes */}
         <BlockPlaceholder
           letter="I"
           title="Sostenibilidad · combustible"
@@ -204,6 +202,10 @@ export interface VehicleRow {
   plate: string | null;
   groupName: string | null;
   distanceKm: number;
+  /** Minutos en marcha · útil para Bloque H (anomalías) */
+  activeMin: number;
+  /** Cantidad de viajes · útil para Bloque H (anomalías) */
+  tripCount: number;
   eventCount: number;
   /** Eventos por cada 100 km · ranking se hace por esto */
   eventsPer100km: number;
@@ -424,6 +426,8 @@ async function loadBoletinData(args: {
       plate: a.plate,
       groupName: a.groupName,
       distanceKm: a.distanceKm,
+      activeMin: a.activeMin,
+      tripCount: a.tripCount,
       eventCount,
       eventsPer100km,
     };

@@ -1,19 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════
-   DaysList · listado vertical de tarjetas Día · Tufte
+   DaysList · tabla densa Tufte
    ─────────────────────────────────────────────────────────────
-   Reescrito con variables CONFIRMADAS de tu globals.css:
-     --tx, --t2, --t3, --bg, --sf, --brd
-     --blu, --red, --f, --m, --r-sm
-   Sin --t1 (no existía y dejaba texto invisible).
+   Colores hex hardcoded. Sin var(--xx). Si más adelante hay un
+   sistema de theming bien resuelto, reagregamos variables. Por
+   ahora la robustez gana.
    ═══════════════════════════════════════════════════════════════ */
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0 16px 16px;
+.tableWrap {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  height: 100%;
+  overflow-x: auto;
 }
 
 /* ── Empty state ────────────────────────────────────────── */
@@ -26,197 +23,145 @@
   padding: 48px 24px;
   text-align: center;
   font-family: var(--f);
-  color: var(--t3);
+  color: #9CA3AF;
   gap: 6px;
+  flex: 1;
 }
 
 .empty p {
   margin: 0;
   font-size: 13px;
-  color: var(--t2);
+  color: #6B7280;
 }
 
 .emptyHint {
   font-size: 12px !important;
   font-style: italic;
-  color: var(--t3) !important;
+  color: #9CA3AF !important;
 }
 
-/* ── Card ───────────────────────────────────────────────── */
+/* ── Table ──────────────────────────────────────────────── */
 
-.card {
-  background: var(--sf);
-  border: 1px solid var(--brd);
-  border-radius: var(--r-sm);
-  overflow: hidden;
-}
-
-.cardHeader {
-  padding: 10px 14px 9px;
-  border-bottom: 1px solid var(--brd);
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.headerLine {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
+.table {
+  width: 100%;
+  border-collapse: collapse;
   font-family: var(--f);
   font-size: 12px;
-  color: var(--tx);
 }
 
-.dayLabel {
-  font-weight: 700;
+/* ── Header sticky ──────────────────────────────────────── */
+
+.thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #F9FAFB;
+}
+
+.thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-size: 11px;
-  color: var(--tx);
+  color: #6B7280;
+  padding: 10px 12px;
+  border-bottom: 1px solid #D1D5DB;
+  white-space: nowrap;
+  background: #F9FAFB;
+}
+
+.thNum {
+  text-align: right !important;
+}
+
+.thDay { width: 90px; }
+.thAsset { min-width: 180px; }
+.thDriver { min-width: 130px; }
+
+/* ── Body rows ──────────────────────────────────────────── */
+
+.row {
+  cursor: pointer;
+  transition: background-color 60ms;
+}
+
+.row:hover {
+  background: #F9FAFB;
+}
+
+.row:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: -2px;
+}
+
+.rowSelected {
+  background: #EFF6FF;
+}
+
+.rowSelected:hover {
+  background: #DBEAFE;
+}
+
+.row td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #111827;
+  vertical-align: middle;
+}
+
+.tdDay {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10.5px;
+  white-space: nowrap;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdAsset {
+  color: #111827;
+  white-space: nowrap;
 }
 
 .assetName {
-  font-weight: 600;
-  color: var(--tx);
+  font-weight: 500;
+  color: #111827;
 }
 
 .plate {
   font-family: var(--m);
+  color: #6B7280;
   font-size: 11px;
-  color: var(--t2);
 }
 
-.driver {
-  color: var(--t2);
-}
-
-.summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  font-family: var(--f);
-  font-size: 11px;
-  color: var(--t3);
-}
-
-.metric {
-  font-variant-numeric: tabular-nums;
-  color: var(--t2);
-}
-
-.dot {
-  color: var(--t3);
-  opacity: 0.6;
-}
-
-/* ── Items list ─────────────────────────────────────────── */
-
-.items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 14px;
-  font-family: var(--f);
-  font-size: 12px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  transition: background-color 60ms;
-  color: var(--tx);
-}
-
-.item:last-child {
-  border-bottom: 0;
-}
-
-.item:hover {
-  background: rgba(0, 0, 0, 0.025);
-}
-
-.itemSelected {
-  background: rgba(37, 99, 235, 0.08);
-  border-left: 3px solid var(--blu);
-  padding-left: 11px;
-}
-
-.itemSelected:hover {
-  background: rgba(37, 99, 235, 0.12);
-}
-
-.glyph {
-  font-size: 9px;
-  width: 10px;
-  display: inline-block;
-}
-
-.itemTrip .glyph {
-  color: var(--tx);
-}
-
-.itemStop .glyph {
-  color: var(--t3);
-}
-
-.timeRange {
-  font-family: var(--m);
-  font-variant-numeric: tabular-nums;
-  font-size: 11.5px;
-  color: var(--tx);
+.tdDriver {
+  color: #4B5563;
   white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.value {
+.tdNum {
+  text-align: right;
   font-variant-numeric: tabular-nums;
-  color: var(--tx);
-  font-weight: 500;
+  white-space: nowrap;
+  color: #111827;
+}
+
+.unit {
+  color: #9CA3AF;
+  font-size: 11px;
+  margin-left: 1px;
 }
 
 .dim {
-  color: var(--t3);
-  font-size: 11.5px;
+  color: #9CA3AF;
 }
 
-/* ── Stops · texto en gris (son "huecos") ──────────────── */
-
-.itemStop {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.itemStop .timeRange,
-.itemStop .stopLabel {
-  color: var(--t2);
-}
-
-.stopLabel {
-  font-size: 11.5px;
-  font-style: italic;
-}
-
-/* ── Stops largas · sutilmente distintas ────────────────── */
-
-.itemStopLong .stopLabel {
-  color: var(--tx);
-  font-style: normal;
-  font-weight: 500;
-}
-
-.itemStopLong {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-/* ── Eventos del viaje ──────────────────────────────────── */
-
-.eventHot {
-  color: var(--red);
+.critical {
+  color: #DC2626;
   font-weight: 500;
 }

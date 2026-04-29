@@ -96,7 +96,6 @@ const MODULES: ModuleDef[] = [
       { label: "Reportes", href: "/actividad/reportes" },
       { label: "Scorecard", href: "/actividad/scorecard" },
       { label: "Viajes", href: "/actividad/viajes" },
-      { label: "API", href: "/actividad/api" },
     ],
   },
   {
@@ -110,7 +109,6 @@ const MODULES: ModuleDef[] = [
       { label: "Alarmas", href: "/seguridad/alarmas", badge: 7 },
       // Cross-module shortcut to the same screen as Seguimiento>Historial
       { label: "Seguimiento", href: "/seguimiento/historial" },
-      { label: "Reporte", href: null }, // not built yet
     ],
   },
   {
@@ -170,6 +168,7 @@ const MODULES: ModuleDef[] = [
     pages: [
       { label: "Vista ejecutiva", href: "/direccion/vista-ejecutiva" },
       { label: "Distribución por grupo", href: "/direccion/distribucion-grupos" },
+      { label: "Correlaciones", href: "/direccion/correlaciones" },
       { label: "Boletín", href: "/direccion/boletin" },
     ],
   },

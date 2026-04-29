@@ -13,18 +13,17 @@ import { TripDetailPanel } from "./TripDetailPanel";
 import styles from "./TripsClient.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  TripsClient · vista "Día por día" del rework de Viajes
+//  TripsClient · vista B1 · tabla 60% + mapa/panel 40%
 //  ─────────────────────────────────────────────────────────────
-//  Layout invertido · listado protagonista a la izquierda (60%),
-//  mapa subordinado a la derecha (40%).
+//  Click en fila de la tabla → setSelectedDayId → el mapa se
+//  reemplaza por el TripDetailPanel con timeline cronológica.
+//  En el panel, click en un trip de la timeline → setSelectedItemId
+//  → el item se highlightea (seguirá al mapa cuando se cierre el
+//  panel, vía highlightedTripId).
 //
-//  Selección por click · NO hover. Click en un item del listado:
-//    1. Resalta la polyline en el mapa (los demás se oscurecen)
-//    2. Abre el TripDetailPanel sobre el mapa
-//
-//  CAP · cuando totalDays > days.length, mostramos un banner con
-//  "Viendo 20 de 161" + botón "Ver más" que actualiza ?cap= en
-//  la URL · suma 20 cada click.
+//  Layout:
+//   - Sin selección: lista | mapa con todas las rutas
+//   - Con día seleccionado: lista | panel con timeline + detalle
 // ═══════════════════════════════════════════════════════════════
 
 const TripsRoutesMap = dynamic(
@@ -42,15 +41,16 @@ interface Props {
   days: Day[];
   totalDays: number;
   currentCap: number;
+  capStep: number;
 }
 
-const CAP_STEP = 20;
-
-export function TripsClient({ days, totalDays, currentCap }: Props) {
+export function TripsClient({ days, totalDays, currentCap, capStep }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
   const [mapLayer, setMapLayer] = useState<MapLayer>(() => {
     if (typeof window === "undefined") return "BW";
     const saved = window.localStorage.getItem("trips-map-layer");
@@ -68,27 +68,24 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
   }
 
   function loadMore() {
-    const nextCap = currentCap + CAP_STEP;
+    const nextCap = currentCap + capStep;
     const params = new URLSearchParams(searchParams.toString());
     params.set("cap", String(nextCap));
     router.push(`/actividad/viajes?${params.toString()}`);
   }
 
-  // Encontrar el día y el item seleccionado
-  const selection = useMemo(() => {
-    if (!selectedItemId) return null;
-    for (const day of days) {
-      const item = day.items.find((i) => i.id === selectedItemId);
-      if (item) return { day, item };
-    }
-    return null;
-  }, [selectedItemId, days]);
+  // El día seleccionado (si existe)
+  const selectedDay = useMemo(() => {
+    if (!selectedDayId) return null;
+    return days.find((d) => d.id === selectedDayId) ?? null;
+  }, [selectedDayId, days]);
 
-  // Construir las "rutas" para el mapa
+  // Construir las "rutas" para el mapa · una entrada por trip
   const routes = useMemo(() => {
     const list: {
       tripId: string;
       assetId: string;
+      assetName: string;
       points: { lat: number; lng: number }[];
     }[] = [];
     for (const day of days) {
@@ -97,6 +94,7 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
           list.push({
             tripId: item.id,
             assetId: day.assetId,
+            assetName: day.assetName,
             points: [
               { lat: item.startLat, lng: item.startLng },
               { lat: item.endLat, lng: item.endLng },
@@ -108,19 +106,17 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
     return list;
   }, [days]);
 
-  const highlightedTripId =
-    selection?.item.kind === "trip" ? selection.item.id : null;
-
   const showCapBanner = totalDays > days.length;
+  const remaining = totalDays - days.length;
 
   return (
     <div className={styles.layout}>
-      {/* ── Lista (protagonista · 60%) ────────────────────────── */}
+      {/* ── Tabla (protagonista · 60%) ────────────────────────── */}
       <div className={styles.listColumn}>
         {showCapBanner && (
           <div className={styles.capBanner}>
             <span className={styles.capLabel}>
-              Viendo {days.length} de {totalDays} tarjetas
+              Viendo {days.length} de {totalDays} filas
             </span>
             <span className={styles.capHint}>
               · refiná filtros para ver lo que te interesa
@@ -130,34 +126,49 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
               className={styles.capButton}
               onClick={loadMore}
             >
-              Ver {Math.min(CAP_STEP, totalDays - days.length)} más
+              Ver {Math.min(capStep, remaining)} más
             </button>
           </div>
         )}
         <DaysList
           days={days}
-          selectedItemId={selectedItemId}
-          onSelectItem={(id) =>
-            setSelectedItemId(id === selectedItemId ? null : id)
-          }
+          selectedDayId={selectedDayId}
+          onSelectDay={(id) => {
+            setSelectedDayId(id);
+            setSelectedItemId(null);
+          }}
         />
       </div>
 
-      {/* ── Mapa + panel (subordinado · 40%) ──────────────────── */}
+      {/* ── Mapa o Panel detalle (subordinado · 40%) ──────────── */}
       <div className={styles.mapColumn}>
-        {selection ? (
+        {selectedDay ? (
           <TripDetailPanel
-            day={selection.day}
-            item={selection.item}
-            onClose={() => setSelectedItemId(null)}
+            day={selectedDay}
+            selectedItemId={selectedItemId}
+            onSelectItem={setSelectedItemId}
+            onClose={() => {
+              setSelectedDayId(null);
+              setSelectedItemId(null);
+            }}
           />
         ) : (
           <div className={styles.mapWrap}>
             <TripsRoutesMap
               routes={routes}
-              highlightedTripId={highlightedTripId}
+              highlightedTripId={null}
               onHoverTrip={() => {}}
-              onClickTrip={(route) => setSelectedItemId(route.tripId)}
+              onClickTrip={(route) => {
+                // Buscar el día al que pertenece el trip y seleccionarlo
+                for (const day of days) {
+                  const item = day.items.find((i) => i.id === route.tripId);
+                  if (item) {
+                    setSelectedDayId(day.id);
+                    setSelectedItemId(item.id);
+                    return;
+                  }
+                }
+              }}
               layer={mapLayer}
             />
             <div className={styles.mapControls}>

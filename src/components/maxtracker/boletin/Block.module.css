@@ -501,3 +501,92 @@
   color: var(--t3);
   margin-left: 4px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Bloque H · Tabla de anomalías estadísticas
+   ═══════════════════════════════════════════════════════════════ */
+
+.anomTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--f);
+  font-size: 12.5px;
+}
+
+.anomTable thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--t3);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--brd);
+  background: var(--bg);
+  white-space: nowrap;
+}
+
+.anomTable tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  color: var(--tx);
+  vertical-align: middle;
+}
+
+.anomTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.anomNumCell {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.anomVehCell {
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+}
+
+.anomMetricCell {
+  color: var(--t2);
+  white-space: nowrap;
+}
+
+.anomValue {
+  font-family: var(--m);
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.anomValueBad {
+  font-family: var(--m);
+  color: var(--red);
+  font-weight: 600;
+}
+
+.anomBandCell {
+  font-family: var(--m);
+  color: var(--t3);
+  font-size: 11.5px;
+}
+
+.anomDeviation {
+  font-family: var(--m);
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.anomArrowBad {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.anomArrowNeutral {
+  color: var(--t2);
+  font-weight: 700;
+}

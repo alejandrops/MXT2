@@ -1,27 +1,28 @@
 "use client";
 
-import type { Day, DayItem } from "@/lib/queries/trips-by-day";
+import type { Day } from "@/lib/queries/trips-by-day";
 import styles from "./DaysList.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  DaysList · listado vertical de tarjetas Día
+//  DaysList · tabla densa Tufte · una fila por (día, asset)
 //  ─────────────────────────────────────────────────────────────
-//  Cada tarjeta tiene un header (asset, conductor, fecha, métricas
-//  resumen) y una lista de items intercalados (trips + paradas
-//  ordenados cronológicamente).
+//  Reemplaza al approach de cards anidadas (frágil, fallaba con
+//  CSS scoping). HTML <table> nativa = robusta, ordenable mental-
+//  mente, copy-paste friendly a Excel.
 //
-//  Click en cualquier item · resalta en el mapa + abre el panel
-//  lateral. La selección es persistente · solo se cambia con otro
-//  click.
+//  Click en fila → onSelectDay(dayId) → abre panel lateral con
+//  timeline cronológica del día. Click otra vez = deselecciona.
+//
+//  Header sticky para que las columnas siempre se vean al scroll.
 // ═══════════════════════════════════════════════════════════════
 
 interface Props {
   days: Day[];
-  selectedItemId: string | null;
-  onSelectItem: (id: string | null) => void;
+  selectedDayId: string | null;
+  onSelectDay: (id: string | null) => void;
 }
 
-export function DaysList({ days, selectedItemId, onSelectItem }: Props) {
+export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
   if (days.length === 0) {
     return (
       <div className={styles.empty}>
@@ -34,141 +35,63 @@ export function DaysList({ days, selectedItemId, onSelectItem }: Props) {
   }
 
   return (
-    <div className={styles.list}>
-      {days.map((day) => (
-        <DayCard
-          key={day.id}
-          day={day}
-          selectedItemId={selectedItemId}
-          onSelectItem={onSelectItem}
-        />
-      ))}
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead className={styles.thead}>
+          <tr>
+            <th className={styles.thDay}>Día</th>
+            <th className={styles.thAsset}>Vehículo</th>
+            <th className={styles.thDriver}>Conductor</th>
+            <th className={styles.thNum}>Distancia</th>
+            <th className={styles.thNum}>Viajes</th>
+            <th className={styles.thNum}>Paradas</th>
+            <th className={styles.thNum}>En ruta</th>
+            <th className={styles.thNum}>Eventos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((day) => (
+            <Row
+              key={day.id}
+              day={day}
+              isSelected={selectedDayId === day.id}
+              onSelect={() =>
+                onSelectDay(day.id === selectedDayId ? null : day.id)
+              }
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Subcomponents
+//  Row · una fila por (día, asset)
 // ═══════════════════════════════════════════════════════════════
 
-function DayCard({
+function Row({
   day,
-  selectedItemId,
-  onSelectItem,
-}: {
-  day: Day;
-  selectedItemId: string | null;
-  onSelectItem: (id: string | null) => void;
-}) {
-  return (
-    <article className={styles.card}>
-      <header className={styles.cardHeader}>
-        <div className={styles.headerLine}>
-          <span className={styles.dayLabel}>{formatDay(day.dayIso)}</span>
-          <span className={styles.dot}>·</span>
-          <span className={styles.assetName}>{day.assetName}</span>
-          {day.assetPlate && (
-            <>
-              <span className={styles.dot}>·</span>
-              <span className={styles.plate}>{day.assetPlate}</span>
-            </>
-          )}
-          {day.driverName && (
-            <>
-              <span className={styles.dot}>·</span>
-              <span className={styles.driver}>{day.driverName}</span>
-            </>
-          )}
-        </div>
-        <div className={styles.summary}>
-          <Metric value={`${formatKm(day.totalDistanceKm)} km`} />
-          <span className={styles.dot}>·</span>
-          <Metric
-            value={`${day.tripCount} ${day.tripCount === 1 ? "viaje" : "viajes"}`}
-          />
-          {day.stopCount > 0 && (
-            <>
-              <span className={styles.dot}>·</span>
-              <Metric
-                value={`${day.stopCount} ${day.stopCount === 1 ? "parada" : "paradas"}`}
-              />
-            </>
-          )}
-          <span className={styles.dot}>·</span>
-          <Metric value={`${formatDuration(day.totalDrivingMs)} en ruta`} />
-        </div>
-      </header>
-
-      <ol className={styles.items}>
-        {day.items.map((item) => (
-          <ItemRow
-            key={item.id}
-            item={item}
-            isSelected={selectedItemId === item.id}
-            onSelect={() => onSelectItem(item.id)}
-          />
-        ))}
-      </ol>
-    </article>
-  );
-}
-
-function ItemRow({
-  item,
   isSelected,
   onSelect,
 }: {
-  item: DayItem;
+  day: Day;
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  if (item.kind === "trip") {
-    return (
-      <li
-        className={`${styles.item} ${styles.itemTrip} ${isSelected ? styles.itemSelected : ""}`}
-        onClick={onSelect}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onSelect();
-          }
-        }}
-      >
-        <span className={styles.glyph} aria-hidden="true">▶</span>
-        <span className={styles.timeRange}>
-          {formatTime(item.startedAt)} → {formatTime(item.endedAt)}
-        </span>
-        <span className={styles.dot}>·</span>
-        <span className={styles.value}>{formatKm(item.distanceKm)} km</span>
-        <span className={styles.dot}>·</span>
-        <span className={styles.dim}>
-          {Math.round(item.avgSpeedKmh)} km/h prom
-        </span>
-        {item.eventCount > 0 && (
-          <>
-            <span className={styles.dot}>·</span>
-            <span
-              className={
-                item.highSeverityEventCount > 0
-                  ? styles.eventHot
-                  : styles.dim
-              }
-            >
-              {item.eventCount}{" "}
-              {item.eventCount === 1 ? "evento" : "eventos"}
-            </span>
-          </>
-        )}
-      </li>
-    );
+  // Calcular events totales y críticos del día (sumados de los trips)
+  let eventTotal = 0;
+  let eventCritical = 0;
+  for (const item of day.items) {
+    if (item.kind === "trip") {
+      eventTotal += item.eventCount;
+      eventCritical += item.highSeverityEventCount;
+    }
   }
 
-  // Stop
   return (
-    <li
-      className={`${styles.item} ${styles.itemStop} ${item.isLong ? styles.itemStopLong : ""} ${isSelected ? styles.itemSelected : ""}`}
+    <tr
+      className={`${styles.row} ${isSelected ? styles.rowSelected : ""}`}
       onClick={onSelect}
       role="button"
       tabIndex={0}
@@ -179,22 +102,46 @@ function ItemRow({
         }
       }}
     >
-      <span className={styles.glyph} aria-hidden="true">⏸</span>
-      <span className={styles.timeRange}>
-        {formatTime(item.startedAt)} → {formatTime(item.endedAt)}
-      </span>
-      <span className={styles.dot}>·</span>
-      <span className={styles.stopLabel}>
-        {item.isLong ? "Parada larga" : "Parada"}
-      </span>
-      <span className={styles.dot}>·</span>
-      <span className={styles.dim}>{formatDuration(item.durationMs)}</span>
-    </li>
+      <td className={styles.tdDay}>{formatDay(day.dayIso)}</td>
+      <td className={styles.tdAsset}>
+        <span className={styles.assetName}>{day.assetName}</span>
+        {day.assetPlate && (
+          <span className={styles.plate}> · {day.assetPlate}</span>
+        )}
+      </td>
+      <td className={styles.tdDriver}>
+        {day.driverName ?? <span className={styles.dim}>—</span>}
+      </td>
+      <td className={styles.tdNum}>
+        {formatKm(day.totalDistanceKm)}
+        <span className={styles.unit}> km</span>
+      </td>
+      <td className={styles.tdNum}>{day.tripCount}</td>
+      <td className={styles.tdNum}>
+        {day.stopCount === 0 ? (
+          <span className={styles.dim}>—</span>
+        ) : (
+          day.stopCount
+        )}
+      </td>
+      <td className={styles.tdNum}>{formatDuration(day.totalDrivingMs)}</td>
+      <td className={styles.tdNum}>
+        {eventTotal === 0 ? (
+          <span className={styles.dim}>—</span>
+        ) : (
+          <>
+            <span>{eventTotal}</span>
+            {eventCritical > 0 && (
+              <span className={styles.critical}>
+                {" "}
+                ({eventCritical}!)
+              </span>
+            )}
+          </>
+        )}
+      </td>
+    </tr>
   );
-}
-
-function Metric({ value }: { value: string }) {
-  return <span className={styles.metric}>{value}</span>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -212,14 +159,6 @@ function formatDay(ymd: string): string {
   if (!y || !m || !d) return ymd;
   const date = new Date(Date.UTC(y, m - 1, d));
   return `${DOW[date.getUTCDay()]} ${String(d).padStart(2, "0")} ${MES[m - 1]}`;
-}
-
-function formatTime(d: Date): string {
-  return d.toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }
 
 function formatDuration(ms: number): string {

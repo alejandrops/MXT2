@@ -13,27 +13,20 @@ import { TripsClient } from "./TripsClient";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  /actividad/viajes · vista "Día por día"
+//  /actividad/viajes · vista B1 · tabla densa por (día, asset)
 //  ─────────────────────────────────────────────────────────────
-//  Listado protagonista agrupado por (asset, día) · cada día con
-//  trips y paradas intercalados. Mapa subordinado a la derecha,
-//  panel lateral con detalle al hacer click.
+//  Una fila por (asset, día). Click en fila abre panel lateral
+//  con timeline cronológica de trips y paradas.
 //
 //  Default range · últimos 7 días.
+//  Cap default · 100 filas (con tabla son livianas).
 //  Filtros · vehículos, grupos, conductores.
-//
-//  CAP · para evitar render gigante cuando se filtra "todos los
-//  vehículos · 7 días" (puede dar 100+ tarjetas), aplicamos un
-//  cap de 20 por defecto. El usuario puede pedir "Ver más" con
-//  ?cap=N (la URL se actualiza · es shareable).
-//
-//  Mantenemos también listTrips() para alimentar el TripsKpiStrip
-//  (mismas métricas agregadas que antes · totales del período).
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_CAP = 20;
+const DEFAULT_CAP = 100;
+const CAP_STEP = 100;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -43,7 +36,7 @@ export default async function ViajesPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const params = parseTripsParams(raw);
 
-  // Cap de tarjetas · viene de ?cap= o default 20
+  // Cap de filas · viene de ?cap= o default 100
   const capRaw = raw.cap;
   const capFirst = Array.isArray(capRaw) ? capRaw[0] : capRaw;
   const capParsed = capFirst ? parseInt(capFirst, 10) : DEFAULT_CAP;
@@ -92,6 +85,7 @@ export default async function ViajesPage({ searchParams }: PageProps) {
           days={days}
           totalDays={totalDays}
           currentCap={cap}
+          capStep={CAP_STEP}
         />
       </div>
     </div>
