@@ -207,7 +207,8 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
       <aside
         className={styles.drawer}
         role="dialog"
-        aria-label="Detalle del conductor"
+        aria-modal="true"
+        aria-label="Editar conductor"
       >
         <header className={styles.header}>
           <div className={styles.headerInfo}>
@@ -249,6 +250,8 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
                   onChange={(e) => setFirstName(e.target.value)}
                   disabled={isPending}
                   maxLength={60}
+                  placeholder="Juan"
+                  autoFocus
                 />
               </FormField>
               <FormField label="Apellido" required error={errors.lastName}>
@@ -259,6 +262,7 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
                   onChange={(e) => setLastName(e.target.value)}
                   disabled={isPending}
                   maxLength={60}
+                  placeholder="Pérez"
                 />
               </FormField>
             </FieldRow>
@@ -274,6 +278,7 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
                 onChange={(e) => setDocumentNumber(e.target.value)}
                 disabled={isPending}
                 maxLength={30}
+                placeholder="20-12345678-3"
               />
             </FormField>
           </Section>

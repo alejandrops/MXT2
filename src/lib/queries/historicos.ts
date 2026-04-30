@@ -20,9 +20,14 @@ export interface AssetForFilter {
   model: string | null;
 }
 
-export async function listMobileAssetsForFilter(): Promise<AssetForFilter[]> {
+export async function listMobileAssetsForFilter(
+  accountId?: string | null,
+): Promise<AssetForFilter[]> {
   return db.asset.findMany({
-    where: { mobilityType: "MOBILE" },
+    where: {
+      mobilityType: "MOBILE",
+      ...(accountId ? { accountId } : {}),
+    },
     select: {
       id: true,
       name: true,

@@ -297,7 +297,12 @@ export function AdminAssetDrawer({
   return (
     <>
       <div className={styles.overlay} onClick={onClose} />
-      <aside className={styles.drawer} role="dialog" aria-label="Detalle técnico">
+      <aside
+        className={styles.drawer}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEdit ? "Editar vehículo" : "Nuevo vehículo"}
+      >
         <header className={styles.header}>
           <div className={styles.headerInfo}>
             <span className={styles.headerLabel}>
@@ -369,6 +374,8 @@ export function AdminAssetDrawer({
                     onChange={(e) => setName(e.target.value)}
                     disabled={isPending}
                     maxLength={80}
+                    placeholder="Ej · Volvo FH540 #1"
+                    autoFocus
                   />
                 </EditField>
                 <FieldRow>
@@ -391,6 +398,7 @@ export function AdminAssetDrawer({
                       onChange={(e) => setVin(e.target.value.toUpperCase())}
                       disabled={isPending}
                       maxLength={30}
+                      placeholder="17 caracteres alfanuméricos"
                     />
                   </EditField>
                 </FieldRow>
@@ -403,6 +411,7 @@ export function AdminAssetDrawer({
                       onChange={(e) => setMake(e.target.value)}
                       disabled={isPending}
                       maxLength={60}
+                      placeholder="Volvo, Scania, Mercedes…"
                     />
                   </EditField>
                   <EditField label="Modelo" error={errors.model}>
@@ -413,6 +422,7 @@ export function AdminAssetDrawer({
                       onChange={(e) => setModel(e.target.value)}
                       disabled={isPending}
                       maxLength={60}
+                      placeholder="FH540, R450…"
                     />
                   </EditField>
                   <EditField label="Año" error={errors.year}>
@@ -424,6 +434,7 @@ export function AdminAssetDrawer({
                       disabled={isPending}
                       min={1900}
                       max={2100}
+                      placeholder="2024"
                     />
                   </EditField>
                 </FieldRow>
@@ -467,6 +478,7 @@ export function AdminAssetDrawer({
                       disabled={isPending}
                       min={0}
                       max={9999999}
+                      placeholder="0"
                     />
                   </EditField>
                 </FieldRow>

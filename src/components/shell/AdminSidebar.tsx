@@ -14,6 +14,7 @@ import {
   Shield,
   UserCog,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 import styles from "./AdminSidebar.module.css";
 
@@ -59,6 +60,11 @@ const NAV: NavItem[] = [
     href: "/admin/dispositivos",
     label: "Dispositivos",
     icon: <Smartphone size={15} />,
+  },
+  {
+    href: "/admin/ingestion-status",
+    label: "Estado ingestion",
+    icon: <Activity size={15} />,
   },
   {
     href: "/admin/sims",

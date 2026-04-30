@@ -140,12 +140,14 @@ export function AlarmFilterBar({ current, accounts }: AlarmFilterBarProps) {
       />
 
       {/* ── Account ────────────────────────────────────────── */}
-      <Select
+      {accounts.length > 1 && (
+        <Select
         label="Cuenta"
         value={current.accountId}
         options={accounts.map((a) => ({ value: a.id, label: a.name }))}
         onChange={(v) => nav({ accountId: v })}
       />
+      )}
 
       {/* ── Clear all ──────────────────────────────────────── */}
       {hasActiveAlarmFilters(current) && (

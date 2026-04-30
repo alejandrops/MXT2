@@ -1,6 +1,18 @@
-.wrap {
+/* ═══════════════════════════════════════════════════════════════
+   Reportes (top-level page wrapper)
+   ─────────────────────────────────────────────────────────────
+   Bug fix (post-U1c): el CSS declaraba .wrap pero el page.tsx
+   usaba styles.page · resultado: la clase no se aplicaba y el
+   layout perdía flex column · el toolbar de modo/sujeto/vista
+   quedaba pegado al borde izquierdo sin contenedor estructurado.
+   Renombrado a .page para que matchee con el JSX. Shape igual al
+   de actividad/scorecard que sí funciona.
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: var(--bg);
 }

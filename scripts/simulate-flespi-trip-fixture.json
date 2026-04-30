@@ -1,0 +1,92 @@
+[
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900000.0,
+    "position.latitude": -34.6037,
+    "position.longitude": -58.3816,
+    "position.speed": 0.0,
+    "position.direction": 0,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900060.0,
+    "position.latitude": -34.6045,
+    "position.longitude": -58.3825,
+    "position.speed": 25.5,
+    "position.direction": 175,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900120.0,
+    "position.latitude": -34.6080,
+    "position.longitude": -58.3860,
+    "position.speed": 45.0,
+    "position.direction": 180,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900180.0,
+    "position.latitude": -34.6130,
+    "position.longitude": -58.3920,
+    "position.speed": 60.2,
+    "position.direction": 195,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900240.0,
+    "position.latitude": -34.6190,
+    "position.longitude": -58.3990,
+    "position.speed": 72.8,
+    "position.direction": 210,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900300.0,
+    "position.latitude": -34.6250,
+    "position.longitude": -58.4040,
+    "position.speed": 55.0,
+    "position.direction": 225,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900360.0,
+    "position.latitude": -34.6280,
+    "position.longitude": -58.4080,
+    "position.speed": 30.5,
+    "position.direction": 240,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900420.0,
+    "position.latitude": -34.6295,
+    "position.longitude": -58.4100,
+    "position.speed": 5.0,
+    "position.direction": 250,
+    "position.valid": true,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719900480.0,
+    "position.latitude": -34.6300,
+    "position.longitude": -58.4105,
+    "position.speed": 0.0,
+    "position.direction": 0,
+    "position.valid": true,
+    "engine.ignition.status": false
+  }
+]

@@ -194,6 +194,7 @@ export function SimEditDrawer({ initialSim, deviceOptions }: Props) {
       <aside
         className={styles.drawer}
         role="dialog"
+        aria-modal="true"
         aria-label={isEdit ? "Editar SIM" : "Nueva SIM"}
       >
         <header className={styles.header}>

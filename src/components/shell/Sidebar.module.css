@@ -80,6 +80,9 @@
   border: 1px solid var(--brd);
   border-radius: var(--r-sm);
   font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  width: calc(100% - 20px);
   color: var(--t3);
   cursor: pointer;
   flex-shrink: 0;
@@ -392,18 +395,4 @@
 .collapsed .configBtn {
   padding: 0;
   justify-content: center;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Fix · configBtn como Link (no más button disabled)
-   ═══════════════════════════════════════════════════════════════ */
-
-a.configBtn {
-  text-decoration: none;
-}
-
-.configBtnActive {
-  color: var(--tx);
-  background: var(--bg);
-  font-weight: 500;
 }

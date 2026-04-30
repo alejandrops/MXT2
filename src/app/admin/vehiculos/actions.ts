@@ -152,7 +152,7 @@ export async function updateAdminAsset(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_vehiculos")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para editar vehículos" };
   }
 
   const existing = await db.asset.findUnique({
@@ -257,7 +257,7 @@ export async function deleteAdminAsset(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_vehiculos")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para eliminar vehículos" };
   }
 
   const existing = await db.asset.findUnique({
@@ -312,7 +312,7 @@ export async function bulkDeleteAdminAssets(
       deleted: 0,
       failed: assetIds.length,
       errors: [],
-      message: "No tenés permiso.",
+      message: "No tenés permiso para eliminar vehículos",
     };
   }
 
@@ -374,3 +374,129 @@ export async function bulkDeleteAdminAssets(
   };
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+//  Delete all matching · "eliminar todo lo filtrado" (H5b)
+//  ─────────────────────────────────────────────────────────────
+//  Recibe los mismos filtros que listAssetsForAdmin · construye
+//  la query, obtiene los IDs y los borra uno a uno reusando
+//  deleteAdminAsset.
+//
+//  Performance: si el filtro matchea 10k items, va a hacer 10k
+//  llamadas. Para esta primera versión es OK · más adelante
+//  podemos optimizar con un único transaction.
+// ═══════════════════════════════════════════════════════════════
+
+import type { Prisma } from "@prisma/client";
+
+export interface DeleteAllMatchingAssetsFilters {
+  search: string | null;
+  accountId: string | null;
+  vehicleType: string | null;
+  deviceVendor: string | null;
+  deviceStatus: string | null;
+  withoutDevice: boolean;
+}
+
+export async function deleteAllMatchingAssets(
+  filters: DeleteAllMatchingAssetsFilters,
+): Promise<{
+  ok: boolean;
+  deleted: number;
+  failed: number;
+  errors: { id: string; name: string; message: string }[];
+  message?: string;
+}> {
+  const session = await getSession();
+  if (!canWrite(session, "backoffice_vehiculos")) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No tenés permiso para eliminar vehículos",
+    };
+  }
+
+  // Construir el where igual que listAssetsForAdmin
+  const where: Prisma.AssetWhereInput = {};
+  if (filters.search) {
+    where.OR = [
+      { name: { contains: filters.search } },
+      { plate: { contains: filters.search } },
+      { vin: { contains: filters.search } },
+    ];
+  }
+  if (filters.accountId) where.accountId = filters.accountId;
+  if (filters.vehicleType) where.vehicleType = filters.vehicleType as any;
+
+  if (filters.withoutDevice) {
+    where.devices = { none: {} };
+  } else if (filters.deviceVendor || filters.deviceStatus) {
+    where.devices = {
+      some: {
+        ...(filters.deviceVendor ? { vendor: filters.deviceVendor as any } : {}),
+        ...(filters.deviceStatus
+          ? { status: filters.deviceStatus as any }
+          : {}),
+      },
+    };
+  }
+
+  const matching = await db.asset.findMany({
+    where,
+    select: { id: true, name: true },
+  });
+
+  if (matching.length === 0) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No hay vehículos que coincidan con los filtros.",
+    };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+  const errors: { id: string; name: string; message: string }[] = [];
+
+  for (const a of matching) {
+    try {
+      const result = await deleteAdminAsset(a.id);
+      if (result.ok) {
+        deleted++;
+      } else {
+        failed++;
+        errors.push({
+          id: a.id,
+          name: a.name,
+          message: result.message ?? "Error desconocido",
+        });
+      }
+    } catch (err) {
+      failed++;
+      errors.push({
+        id: a.id,
+        name: a.name,
+        message: err instanceof Error ? err.message : "Error inesperado",
+      });
+    }
+  }
+
+  revalidatePath("/admin/vehiculos");
+  revalidatePath("/catalogos/vehiculos");
+  return {
+    ok: deleted > 0,
+    deleted,
+    failed,
+    errors,
+    message:
+      failed === 0
+        ? `${deleted} ${deleted === 1 ? "vehículo eliminado" : "vehículos eliminados"}`
+        : deleted === 0
+          ? `Ningún vehículo se pudo eliminar`
+          : `${deleted} ${deleted === 1 ? "eliminado" : "eliminados"} · ${failed} ${failed === 1 ? "falló" : "fallaron"}`,
+  };
+}

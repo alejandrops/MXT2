@@ -12,9 +12,10 @@ import {
 import { getSession } from "@/lib/session";
 import { canRead, canWrite } from "@/lib/permissions";
 import { SimEditDrawer } from "./SimEditDrawer";
-import { SimActionsKebab } from "./SimActionsKebab";
+import { AdminSimsBulkContainer } from "./AdminSimsBulkContainer";
 import { AdminSimsHeaderActions } from "./AdminSimsHeaderActions";
 import { AdminSimsImporter } from "./AdminSimsImporter";
+import { DeleteAllSimsDialog } from "./DeleteAllSimsDialog";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -185,6 +186,42 @@ export default async function SimsPage({ searchParams }: PageProps) {
         )}
       </form>
 
+      {/* ── Delete-all-matching · solo SA/MA y solo si hay filtros activos ── */}
+      {userCanWrite &&
+        (search || status || carrier) &&
+        listResult.total > 0 && (
+          <div className={styles.bulkBar}>
+            <span className={styles.bulkBarLabel}>
+              {listResult.total.toLocaleString("es-AR")}{" "}
+              {listResult.total === 1 ? "resultado" : "resultados"} con los
+              filtros aplicados
+            </span>
+            <DeleteAllSimsDialog
+              count={listResult.total}
+              filters={{ search, status, carrier }}
+              activeFilterChips={[
+                ...(search ? [{ label: "Búsqueda", value: search }] : []),
+                ...(status
+                  ? [
+                      {
+                        label: "Estado",
+                        value: STATUS_LABELS[status] ?? status,
+                      },
+                    ]
+                  : []),
+                ...(carrier
+                  ? [
+                      {
+                        label: "Carrier",
+                        value: CARRIER_LABELS[carrier] ?? carrier,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </div>
+        )}
+
       {/* ── Table ──────────────────────────────────────────── */}
       {listResult.rows.length === 0 ? (
         <div className={styles.empty}>
@@ -193,85 +230,10 @@ export default async function SimsPage({ searchParams }: PageProps) {
             : "No hay SIMs cargadas."}
         </div>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>ICCID · Carrier</th>
-                <th className={styles.th}>Plan</th>
-                <th className={styles.th}>Estado</th>
-                <th className={styles.th}>Dispositivo</th>
-                <th className={styles.th}>APN</th>
-                {userCanWrite && (
-                  <th className={styles.thAction} aria-hidden="true" />
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {listResult.rows.map((s) => (
-                <tr
-                  key={s.id}
-                  className={`${styles.row} ${
-                    s.status === "CANCELLED" ? styles.rowMuted : ""
-                  }`}
-                >
-                  <td className={styles.td}>
-                    <div className={styles.iccidCell}>
-                      <span className={`${styles.iccid} ${styles.mono}`}>
-                        {s.iccid}
-                      </span>
-                      <span className={styles.iccidSub}>
-                        {CARRIER_LABELS[s.carrier]}
-                        {s.phoneNumber && ` · ${s.phoneNumber}`}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.planValue}>
-                      {formatPlan(s.dataPlanMb)}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <StatusPill status={s.status} />
-                  </td>
-                  <td className={styles.td}>
-                    {s.device ? (
-                      <div className={styles.deviceCell}>
-                        <span
-                          className={`${styles.deviceImei} ${styles.mono}`}
-                        >
-                          {s.device.imei}
-                        </span>
-                        {(s.device.assetName || s.device.accountName) && (
-                          <span className={styles.deviceSub}>
-                            {s.device.assetName ?? "(sin vehículo)"}
-                            {s.device.accountName && ` · ${s.device.accountName}`}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className={styles.placeholder}>—</span>
-                    )}
-                  </td>
-                  <td className={styles.td}>
-                    <span className={`${styles.dim} ${styles.mono}`}>
-                      {s.apn}
-                    </span>
-                  </td>
-                  {userCanWrite && (
-                    <td className={`${styles.td} ${styles.tdAction}`}>
-                      <SimActionsKebab
-                        simId={s.id}
-                        iccid={s.iccid}
-                        status={s.status}
-                      />
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminSimsBulkContainer
+          rows={listResult.rows}
+          userCanWrite={userCanWrite}
+        />
       )}
 
       {/* ── Drawer ────────────────────────────────────────── */}

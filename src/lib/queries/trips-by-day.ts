@@ -26,6 +26,8 @@ export interface TripsByDayFilters {
   assetIds?: string[];
   groupIds?: string[];
   personIds?: string[];
+  /** Multi-tenant scope (U1b). Ver TripFilters.accountId para semántica. */
+  accountId?: string | null;
 }
 
 export interface DayItem_Trip {
@@ -125,6 +127,10 @@ export async function listTripsAndStopsByDay(
   const where: any = {
     startedAt: { gte: startUtc, lt: endUtc },
   };
+  // Multi-tenant scope (U1b)
+  if (filters.accountId) {
+    where.asset = { accountId: filters.accountId };
+  }
   if (assetFilter !== null) {
     if (assetFilter.length === 0) return [];
     where.assetId = { in: assetFilter };

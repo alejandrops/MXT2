@@ -27,13 +27,6 @@ export interface AssetListParams {
   pageSize?: number;
   sortBy?: "name" | "status" | "speedKmh";
   sortDir?: "asc" | "desc";
-  /** Tenant scope · derivado de getScopedAccountIds(session, "catalogos").
-   *  - null/undefined  → no filtrar (Super admin · Admin Maxtracker)
-   *  - []              → sin acceso (devuelve 0 rows)
-   *  - [id1, id2, ...] → solo ese subset de accounts
-   *  Es ortogonal al filtro UI accountId · si ambos están seteados,
-   *  se aplican ambos via AND. */
-  scopedAccountIds?: string[] | null;
 }
 
 export interface AssetListResult {
@@ -57,41 +50,22 @@ export async function listAssets(
     pageSize = 25,
     sortBy = "name",
     sortDir = "asc",
-    scopedAccountIds,
   } = params;
 
-  // Tenant scoping · si scopedAccountIds === [], devolver vacío
-  // sin pegarle a la DB. Caso defensivo (no debería pasar si los
-  // permisos están bien seteados pero por las dudas).
-  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
-    return {
-      rows: [],
-      total: 0,
-      page,
-      pageSize,
-      pageCount: 1,
-    };
-  }
-
-  const conditions: Prisma.AssetWhereInput[] = [];
-  if (Array.isArray(scopedAccountIds)) {
-    conditions.push({ accountId: { in: scopedAccountIds } });
-  }
-  if (status) conditions.push({ status });
-  if (mobility) conditions.push({ mobilityType: mobility });
-  if (accountId) conditions.push({ accountId });
-  if (groupId) conditions.push({ groupId });
-  if (search) {
-    conditions.push({
-      OR: [
-        { name: { contains: search } },
-        { plate: { contains: search } },
-      ],
-    });
-  }
-
-  const where: Prisma.AssetWhereInput =
-    conditions.length === 0 ? {} : { AND: conditions };
+  const where: Prisma.AssetWhereInput = {
+    ...(status ? { status } : {}),
+    ...(mobility ? { mobilityType: mobility } : {}),
+    ...(accountId ? { accountId } : {}),
+    ...(groupId ? { groupId } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search } },
+            { plate: { contains: search } },
+          ],
+        }
+      : {}),
+  };
 
   // Sort:
   //  · "name" / "status"  · plain Asset columns
@@ -170,25 +144,11 @@ export async function listAssets(
 // ═══════════════════════════════════════════════════════════════
 
 export async function getAssetStatusCounts(
-  filters: { accountId?: string | null; scopedAccountIds?: string[] | null } = {},
+  filters: { accountId?: string | null } = {},
 ): Promise<Record<AssetStatus, number>> {
-  // Tenant scoping
-  if (Array.isArray(filters.scopedAccountIds) && filters.scopedAccountIds.length === 0) {
-    return { MOVING: 0, IDLE: 0, STOPPED: 0, OFFLINE: 0, MAINTENANCE: 0 };
-  }
-
-  const conditions: Prisma.AssetWhereInput[] = [];
-  if (Array.isArray(filters.scopedAccountIds)) {
-    conditions.push({ accountId: { in: filters.scopedAccountIds } });
-  }
-  if (filters.accountId) conditions.push({ accountId: filters.accountId });
-
-  const where: Prisma.AssetWhereInput | undefined =
-    conditions.length === 0 ? undefined : { AND: conditions };
-
   const groups = await db.asset.groupBy({
     by: ["status"],
-    where,
+    where: filters.accountId ? { accountId: filters.accountId } : undefined,
     _count: { _all: true },
   });
   const result: Record<AssetStatus, number> = {
@@ -383,18 +343,23 @@ function computeTripCount(positions: PositionLite[]): number {
 // ═══════════════════════════════════════════════════════════════
 
 export async function getAccountsForFilter(
-  scopedAccountIds?: string[] | null,
+  /**
+   * Scope opcional · si se provee un accountId, devuelve solo esa
+   * account (caso CA y OP, que solo ven su propia). Sin scope,
+   * devuelve todas (caso SA y MA cross-account).
+   *
+   * La página llamadora debería computarlo así:
+   *
+   *     const scopedAccountId = resolveAccountScope(session, mod, null);
+   *     const accounts = await getAccountsForFilter(scopedAccountId);
+   *
+   * Para SA y MA, scopedAccountId será null → devuelve todas.
+   * Para CA y OP, scopedAccountId será su accountId → devuelve [esa].
+   */
+  accountId?: string | null,
 ): Promise<{ id: string; name: string }[]> {
-  // Tenant scoping
-  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
-    return [];
-  }
-  const where = Array.isArray(scopedAccountIds)
-    ? { id: { in: scopedAccountIds } }
-    : undefined;
-
   return db.account.findMany({
-    where,
+    where: accountId ? { id: accountId } : undefined,
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
@@ -402,94 +367,10 @@ export async function getAccountsForFilter(
 
 export async function getGroupsForFilter(
   accountId?: string | null,
-  scopedAccountIds?: string[] | null,
 ): Promise<{ id: string; name: string; accountId: string }[]> {
-  // Tenant scoping
-  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
-    return [];
-  }
-
-  const conditions: Prisma.GroupWhereInput[] = [];
-  if (Array.isArray(scopedAccountIds)) {
-    conditions.push({ accountId: { in: scopedAccountIds } });
-  }
-  if (accountId) conditions.push({ accountId });
-
-  const where = conditions.length === 0 ? undefined : { AND: conditions };
-
   return db.group.findMany({
-    where,
+    where: accountId ? { accountId } : undefined,
     select: { id: true, name: true, accountId: true },
     orderBy: { name: "asc" },
   });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Helpers para selectboxes del drawer · A3
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Lista de conductores filtrable por account · usado por el
- * selectbox "Conductor" del drawer de edit.
- */
-export async function getDriversForSelect(
-  accountId: string,
-): Promise<{ id: string; firstName: string; lastName: string }[]> {
-  return db.person.findMany({
-    where: { accountId },
-    select: { id: true, firstName: true, lastName: true },
-    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-  });
-}
-
-/**
- * Detalle completo de un asset · usado por el drawer de edit.
- * Devuelve null si no existe o si está fuera del scope.
- */
-export async function getAssetForEdit(
-  assetId: string,
-  scopedAccountIds: string[] | null,
-): Promise<{
-  id: string;
-  accountId: string;
-  groupId: string | null;
-  currentDriverId: string | null;
-  name: string;
-  plate: string | null;
-  vin: string | null;
-  make: string | null;
-  model: string | null;
-  year: number | null;
-  initialOdometerKm: number | null;
-  vehicleType: string;
-  mobilityType: string;
-  status: string;
-} | null> {
-  if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
-    return null;
-  }
-  const conditions: Prisma.AssetWhereInput[] = [{ id: assetId }];
-  if (Array.isArray(scopedAccountIds)) {
-    conditions.push({ accountId: { in: scopedAccountIds } });
-  }
-  const asset = await db.asset.findFirst({
-    where: { AND: conditions },
-    select: {
-      id: true,
-      accountId: true,
-      groupId: true,
-      currentDriverId: true,
-      name: true,
-      plate: true,
-      vin: true,
-      make: true,
-      model: true,
-      year: true,
-      initialOdometerKm: true,
-      vehicleType: true,
-      mobilityType: true,
-      status: true,
-    },
-  });
-  return asset;
 }

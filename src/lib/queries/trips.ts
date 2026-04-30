@@ -75,6 +75,13 @@ export interface TripFilters {
   groupIds?: string[];
   /** Asset's currentDriver must be one of these persons */
   personIds?: string[];
+  /**
+   * Multi-tenant scope (U1b). Limita la consulta a trips de assets
+   * de este account. Calculado por la página vía resolveAccountScope.
+   * - undefined / null → cross-account (solo SA, MA)
+   * - string → restringe a ese account
+   */
+  accountId?: string | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -283,6 +290,12 @@ export async function listTrips(filters: TripFilters): Promise<TripRow[]> {
   const where: any = {
     startedAt: { gte: startUtc, lte: endUtc },
   };
+
+  // Multi-tenant scope (U1b) · restringir a trips de assets del account.
+  // Trip no tiene accountId directo · llegamos vía Asset.accountId.
+  if (filters.accountId) {
+    where.asset = { accountId: filters.accountId };
+  }
 
   // Asset filter (direct + via group). We resolve groupIds to
   // assetIds first so the Trip query stays narrow on assetId.

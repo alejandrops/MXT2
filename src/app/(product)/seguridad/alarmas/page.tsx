@@ -3,6 +3,8 @@ import {
   getAlarmCountsByStatus,
   listAlarms,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import { AlarmCard, AlarmFilterBar, KpiTile, Pagination } from "@/components/maxtracker";
 import { parseAlarmsParams, buildAlarmsHref } from "@/lib/url-alarms";
 import { formatNumber } from "@/lib/format";
@@ -24,6 +26,10 @@ import styles from "./page.module.css";
 //  All state lives in URL searchParams (ADR-003). The KPI strip
 //  reflects the **current account filter** (if any) so the
 //  totals are coherent with what's visible below.
+//
+//  Multi-tenant scope (U1b): el accountId que va a las queries
+//  pasa por resolveAccountScope. Para CA y OP fuerza al accountId
+//  del session, ignorando el filtro de UI.
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -36,20 +42,28 @@ export default async function AlarmasInboxPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const params = parseAlarmsParams(raw);
 
+  // Multi-tenant scope (U1b)
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(
+    session,
+    "seguridad",
+    params.accountId,
+  );
+
   const [listResult, statusCounts, accounts] = await Promise.all([
     listAlarms({
       search: params.search,
       status: params.status,
       severity: params.severity,
       type: params.type,
-      accountId: params.accountId,
+      accountId: scopedAccountId,
       page: params.page,
       pageSize: 25,
       sortBy: params.sort,
       sortDir: params.dir,
     }),
-    getAlarmCountsByStatus({ accountId: params.accountId }),
-    getAccountsForFilter(),
+    getAlarmCountsByStatus({ accountId: scopedAccountId }),
+    getAccountsForFilter(scopedAccountId),
   ]);
 
   const totalAll =

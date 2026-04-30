@@ -103,7 +103,8 @@ export function AssetFilterBar({
       </form>
 
       {/* ── Account ────────────────────────────────────────── */}
-      <Select
+      {accounts.length > 1 && (
+        <Select
         label="Cuenta"
         value={current.accountId}
         options={accounts.map((a) => ({ value: a.id, label: a.name }))}
@@ -112,6 +113,7 @@ export function AssetFilterBar({
           nav({ accountId: v, groupId: null })
         }
       />
+      )}
 
       {/* ── Group ──────────────────────────────────────────── */}
       <Select
@@ -146,7 +148,7 @@ export function AssetFilterBar({
       {/* ── Clear all ──────────────────────────────────────── */}
       {hasActiveFilters(current) && (
         <Link
-          href="/catalogos/vehiculos"
+          href="/gestion/vehiculos"
           className={styles.clearAll}
           scroll={false}
         >

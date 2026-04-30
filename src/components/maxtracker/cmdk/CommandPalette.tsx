@@ -81,16 +81,14 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [open]);
 
-  // ── Listener custom event · permite abrir el palette desde
-  //    cualquier botón del shell sin acoplar refs ni context.
-  //    Disparar con: window.dispatchEvent(new Event("open-command-palette"))
+  // ── Custom event para que otros componentes puedan abrir el palette
+  // ── sin prop drilling. Lo dispara el botón "Buscar" del Sidebar.
   useEffect(() => {
-    function handleOpenEvent() {
+    function handleOpen() {
       setOpen(true);
     }
-    window.addEventListener("open-command-palette", handleOpenEvent);
-    return () =>
-      window.removeEventListener("open-command-palette", handleOpenEvent);
+    window.addEventListener("mxt:cmdk:open", handleOpen);
+    return () => window.removeEventListener("mxt:cmdk:open", handleOpen);
   }, []);
 
   // ── Focus input cuando abre · resetear estado ─────────────

@@ -3,12 +3,19 @@ import {
   getAlarmQueueKpis,
   listAlarmQueue,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import { parseTorreUrl } from "@/lib/url-torre";
 import { TorreClient } from "./TorreClient";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
 //  Torre de Control · alarm queue + detail (Opción C)
+//
+//  Multi-tenant scope (U1d): la cola y los KPIs se restringen al
+//  account del user · y getAlarmDetail hace IDOR check evitando
+//  que un CA pueda ver detalle de alarmas de otro cliente
+//  conociendo el id.
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -21,14 +28,19 @@ export default async function TorreDeControlPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const urlState = parseTorreUrl(raw);
 
+  // Multi-tenant scope (U1d)
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "seguridad", null);
+
   const [queue, kpis] = await Promise.all([
     listAlarmQueue({
       severity: urlState.severity,
       domain: urlState.domain,
       time: urlState.time,
       attendingOnly: urlState.attendingOnly,
+      accountId: scopedAccountId,
     }),
-    getAlarmQueueKpis(),
+    getAlarmQueueKpis(scopedAccountId),
   ]);
 
   let activeAlarmId = urlState.alarmId;
@@ -38,7 +50,11 @@ export default async function TorreDeControlPage({ searchParams }: PageProps) {
   if (!activeAlarmId && queue.length > 0) {
     activeAlarmId = queue[0]!.id;
   }
-  const detail = activeAlarmId ? await getAlarmDetail(activeAlarmId) : null;
+  // IDOR check vía scopedAccountId · getAlarmDetail devuelve null si la
+  // alarma no es del account del user (ver ADR-005)
+  const detail = activeAlarmId
+    ? await getAlarmDetail(activeAlarmId, scopedAccountId)
+    : null;
 
   return (
     <div className={styles.page}>

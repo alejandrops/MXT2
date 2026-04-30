@@ -4,6 +4,8 @@ import {
   getLatestDateWithData,
   listMobileAssetsForFilter,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import {
   defaultDate,
   parseHistoricosParams,
@@ -38,7 +40,11 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const params = parseHistoricosParams(raw);
 
-  const assets = await listMobileAssetsForFilter();
+  // Multi-tenant scoping (U1) · CA y OP solo ven assets de su cuenta
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "seguimiento", null);
+
+  const assets = await listMobileAssetsForFilter(scopedAccountId);
 
   // Resolve effective asset:
   //   1. URL param wins

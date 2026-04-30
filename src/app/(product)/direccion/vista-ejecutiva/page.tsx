@@ -4,6 +4,8 @@ import {
   getDriversMultiMetric,
   type ScopeFilters,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import { VistaEjecutivaClient } from "./VistaEjecutivaClient";
 
 // ═══════════════════════════════════════════════════════════════
@@ -14,6 +16,11 @@ import { VistaEjecutivaClient } from "./VistaEjecutivaClient";
 //  top performers, anomalías destacadas. Pensada para director
 //  que entra una vez por semana a tener un pulse general · NO
 //  para operador que ve datos a diario.
+//
+//  Multi-tenant scope (U1b): el scope.accountId pasa por
+//  resolveAccountScope. Para CA y OP, los KPIs de la vista
+//  ejecutiva representan SOLO su cuenta. Para SA y MA, la flota
+//  completa cross-account.
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -36,7 +43,13 @@ export default async function VistaEjecutivaPage({ searchParams }: PageProps) {
   ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
   const anchor = get("d") ?? todayIso;
 
-  const scope: ScopeFilters = {};
+  // Multi-tenant scope (U1b)
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "direccion", null);
+
+  const scope: ScopeFilters = {
+    accountId: scopedAccountId,
+  };
 
   const [analysis, fleetMulti, driversMulti] = await Promise.all([
     getFleetAnalysis({

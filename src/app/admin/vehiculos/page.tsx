@@ -15,6 +15,7 @@ import { AdminAssetDrawer } from "./AdminAssetDrawer";
 import { AdminVehiclesImporter } from "./AdminVehiclesImporter";
 import { AdminVehiclesHeaderActions } from "./AdminVehiclesHeaderActions";
 import { AdminVehiclesBulkContainer } from "./AdminVehiclesBulkContainer";
+import { DeleteAllAssetsDialog } from "./DeleteAllAssetsDialog";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -256,6 +257,70 @@ export default async function AdminVehiculosPage({ searchParams }: PageProps) {
         )}
       </form>
 
+      {/* ── Delete-all-matching · solo SA/MA y solo si hay filtros activos ── */}
+      {userCanWrite &&
+        (search || accountId || vehicleType || deviceVendor || deviceStatus || withoutDevice) &&
+        listResult.total > 0 && (
+          <div className={styles.bulkBar}>
+            <span className={styles.bulkBarLabel}>
+              {listResult.total.toLocaleString("es-AR")}{" "}
+              {listResult.total === 1 ? "resultado" : "resultados"} con los
+              filtros aplicados
+            </span>
+            <DeleteAllAssetsDialog
+              count={listResult.total}
+              filters={{
+                search,
+                accountId,
+                vehicleType,
+                deviceVendor,
+                deviceStatus,
+                withoutDevice,
+              }}
+              activeFilterChips={[
+                ...(search ? [{ label: "Búsqueda", value: search }] : []),
+                ...(accountId
+                  ? [
+                      {
+                        label: "Cliente",
+                        value:
+                          accounts.find((a) => a.id === accountId)?.name ??
+                          accountId,
+                      },
+                    ]
+                  : []),
+                ...(vehicleType
+                  ? [
+                      {
+                        label: "Tipo",
+                        value: VEHICLE_TYPE_LABELS[vehicleType],
+                      },
+                    ]
+                  : []),
+                ...(deviceVendor
+                  ? [
+                      {
+                        label: "Vendor",
+                        value: VENDOR_LABELS[deviceVendor] ?? deviceVendor,
+                      },
+                    ]
+                  : []),
+                ...(deviceStatus
+                  ? [
+                      {
+                        label: "Estado device",
+                        value: STATUS_LABELS[deviceStatus] ?? deviceStatus,
+                      },
+                    ]
+                  : []),
+                ...(withoutDevice
+                  ? [{ label: "Sin device", value: "sí" }]
+                  : []),
+              ]}
+            />
+          </div>
+        )}
+
       {/* ── Table ──────────────────────────────────────────── */}
       {listResult.rows.length === 0 ? (
         <div className={styles.empty}>
@@ -263,87 +328,11 @@ export default async function AdminVehiculosPage({ searchParams }: PageProps) {
             ? "No hay vehículos que coincidan con los filtros."
             : "No hay vehículos cargados."}
         </div>
-      ) : userCanWrite ? (
+      ) : (
         <AdminVehiclesBulkContainer
           rows={listResult.rows}
           userCanWrite={userCanWrite}
         />
-      ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>Vehículo · Patente</th>
-                <th className={styles.th}>Cliente</th>
-                <th className={styles.th}>Tipo</th>
-                <th className={styles.th}>Device</th>
-                <th className={styles.th}>SIM</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listResult.rows.map((a) => (
-                <tr key={a.id} className={styles.row}>
-                  <td className={styles.td}>
-                    <div className={styles.assetCell}>
-                      <span className={styles.assetName}>{a.name}</span>
-                      <span className={styles.assetSub}>
-                        {a.plate ? (
-                          <span className={styles.mono}>{a.plate}</span>
-                        ) : (
-                          <span className={styles.placeholder}>sin patente</span>
-                        )}
-                        {a.make && ` · ${a.make}${a.model ? ` ${a.model}` : ""}`}
-                        {a.year && ` · ${a.year}`}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.dim}>{a.account.name}</span>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.typeChip}>
-                      {VEHICLE_TYPE_LABELS[a.vehicleType]}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    {a.device ? (
-                      <div className={styles.deviceCell}>
-                        <span className={`${styles.mono} ${styles.deviceImei}`}>
-                          {a.device.imei}
-                        </span>
-                        <span className={styles.deviceSub}>
-                          {VENDOR_LABELS[a.device.vendor] ?? a.device.vendor}{" "}
-                          · {a.device.model}
-                          {a.device.firmwareVersion &&
-                            ` · fw ${a.device.firmwareVersion}`}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className={styles.warningChip}>Sin device</span>
-                    )}
-                  </td>
-                  <td className={styles.td}>
-                    {a.sim ? (
-                      <div className={styles.simCell}>
-                        <span className={`${styles.mono} ${styles.simIccid}`}>
-                          {a.sim.iccid.slice(-8)}
-                        </span>
-                        <span className={styles.simSub}>
-                          {a.sim.carrier}
-                          {a.sim.phoneNumber && ` · ${a.sim.phoneNumber}`}
-                        </span>
-                      </div>
-                    ) : a.device ? (
-                      <span className={styles.warningChip}>Sin SIM</span>
-                    ) : (
-                      <span className={styles.placeholder}>—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
       {/* ── Pagination ─────────────────────────────────────── */}

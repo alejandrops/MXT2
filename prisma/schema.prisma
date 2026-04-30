@@ -510,6 +510,7 @@ model Position {
   ignition   Boolean  @default(true)
 
   @@index([assetId, recordedAt])
+  @@unique([assetId, recordedAt])
 }
 
 /// Discrete observation derived from telemetry (harsh braking,

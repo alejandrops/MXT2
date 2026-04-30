@@ -4,6 +4,8 @@ import {
   type ActivityMetric,
   type ScopeFilters,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import { CorrelacionesClient } from "./CorrelacionesClient";
 
 // ═══════════════════════════════════════════════════════════════
@@ -72,7 +74,13 @@ export default async function CorrelacionesPage({ searchParams }: PageProps) {
   ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
   const anchor = get("d") ?? todayIso;
 
+  // Multi-tenant scope (U1c)
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "direccion", null);
+
+
   const scope: ScopeFilters = {
+    accountId: scopedAccountId,
     groupIds: csv("grp"),
     vehicleTypes: csv("type"),
     personIds: csv("driver"),

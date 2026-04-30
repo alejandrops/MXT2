@@ -51,7 +51,7 @@ export interface AlarmQueueRow {
 
 export interface AlarmDetail {
   id: string;
-  /** Asset · linked to /catalogos/vehiculos/[id] from the page */
+  /** Asset · linked to /gestion/vehiculos/[id] from the page */
   assetId: string;
   assetName: string;
   assetPlate: string | null;
@@ -112,6 +112,9 @@ interface ListAlarmQueueParams {
   /** Include alarms that have been attended (still OPEN, attendedAt != null) */
   attendingOnly?: boolean;
   limit?: number;
+  /** Multi-tenant scope (U1d). Si se pasa, filtra alarmas a las de assets
+   *  de ese account. Calculado por la página vía resolveAccountScope. */
+  accountId?: string | null;
 }
 
 export async function listAlarmQueue(
@@ -123,9 +126,12 @@ export async function listAlarmQueue(
     time = "all",
     attendingOnly = false,
     limit = 200,
+    accountId,
   } = params;
 
   const where: any = { status: "OPEN" };
+  // Multi-tenant scope (U1d) · alarma se filtra vía relación con asset
+  if (accountId) where.asset = { accountId };
   if (severity === "critical") where.severity = "CRITICAL";
   else if (severity === "high+")
     where.severity = { in: ["HIGH", "CRITICAL"] };
@@ -208,6 +214,7 @@ export async function listAlarmQueue(
 
 export async function getAlarmDetail(
   alarmId: string,
+  scopedAccountId?: string | null,
 ): Promise<AlarmDetail | null> {
   const alarm = await db.alarm.findUnique({
     where: { id: alarmId },
@@ -226,6 +233,7 @@ export async function getAlarmDetail(
       notes: true,
       asset: {
         select: {
+          accountId: true,
           name: true,
           plate: true,
           vehicleType: true,
@@ -251,6 +259,12 @@ export async function getAlarmDetail(
   });
 
   if (!alarm) return null;
+
+  // IDOR check (U1d) · si el user tiene scope, la alarma debe ser de
+  // un asset de SU account · si no, devolvemos null como si no existiera
+  if (scopedAccountId && alarm.asset?.accountId !== scopedAccountId) {
+    return null;
+  }
 
   // Up to 5 events in the 2 hours before triggeredAt
   const lookbackStart = new Date(
@@ -336,21 +350,27 @@ export async function getAlarmDetail(
 //  getAlarmQueueKpis
 // ═══════════════════════════════════════════════════════════════
 
-export async function getAlarmQueueKpis(): Promise<AlarmQueueKpis> {
+export async function getAlarmQueueKpis(
+  accountId?: string | null,
+): Promise<AlarmQueueKpis> {
   const AR_OFFSET = 3 * 60 * 60_000;
   const startOfToday = new Date(
     Math.floor((Date.now() - AR_OFFSET) / 86_400_000) * 86_400_000 + AR_OFFSET,
   );
 
+  // Multi-tenant scope (U1d) · alarmas filtradas por asset.accountId
+  const scopeFilter = accountId ? { asset: { accountId } } : {};
+
   const [openRows, closedTodayCount] = await Promise.all([
     db.alarm.findMany({
-      where: { status: "OPEN" },
+      where: { status: "OPEN", ...scopeFilter },
       select: { severity: true, attendedAt: true },
     }),
     db.alarm.count({
       where: {
         status: "CLOSED",
         closedAt: { gte: startOfToday },
+        ...scopeFilter,
       },
     }),
   ]);

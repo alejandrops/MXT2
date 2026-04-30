@@ -1,25 +1,32 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote H5a-2 · Importers de Dispositivos + SIMs
+#  apply.sh · Lote O1 · /admin/ingestion-status
 #  ─────────────────────────────────────────────────────────────
-#  Agrega bulk-import CSV a /admin/dispositivos y /admin/sims:
+#  Pantalla de monitoreo en tiempo real del endpoint flespi.
+#  Reemplaza el `curl /api/ingest/flespi/metrics | jq` con una UI.
 #
-#   · Botón "Importar CSV" en el header de cada page (al lado
-#     del botón "Nuevo dispositivo" / "Nueva SIM" existente).
-#   · Drawer dark theme con preview, validación y bulk insert.
-#   · Todos los items importados arrancan en status = STOCK,
-#     sin asset/device asignado · el operador los asigna luego
-#     desde el drawer de edición existente.
+#  Lo que muestra:
+#   · KPI strip con totales acumulados (received/ok/skipped/
+#     errores/duplicados) + porcentajes
+#   · Card · Detección de viajes (trips creados / descartados)
+#   · Card · Razones de descarte (skip reasons desglosados)
+#   · Card · Devices silenciosos (5min / 1h / 24h / nunca)
+#   · Auto-refresh cada 30s con toggle
 #
-#  Permisos requeridos:
-#   · canWrite("backoffice_dispositivos") · solo SA/MA
-#   · canWrite("backoffice_sims")          · solo SA/MA
-#  (sin cambios al sistema de permisos · ya existían)
+#  Archivos nuevos:
+#   · src/app/admin/ingestion-status/page.tsx · Server Component
+#     con permission check (solo SA y MA)
+#   · src/app/admin/ingestion-status/IngestionStatusClient.tsx ·
+#     Client Component con UI + auto-refresh
+#   · src/app/admin/ingestion-status/page.module.css
 #
-#  Idempotente: solo escribe archivos que cambian (cmp -s).
-#  No borra nada · NewDeviceButton.tsx y NewSimButton.tsx
-#  pueden quedar huérfanos (ya no se importan en page.tsx)
-#  pero no rompen nada.
+#  Archivos modificados:
+#   · src/components/shell/AdminSidebar.tsx · agrega link
+#     "Estado ingestion" debajo de "Dispositivos"
+#
+#  Pre-requisitos:
+#   · I1 · endpoint /api/ingest/flespi
+#   · I4 · endpoint /api/ingest/flespi/metrics
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -30,18 +37,22 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="H5a-2 · Importers Dispositivos + SIMs"
+LOTE_NAME="O1 · /admin/ingestion-status"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SRC_DIR="$SCRIPT_DIR/src"
 
-if [ ! -d "$SRC_DIR" ]; then
-  echo "ERROR · No encuentro el directorio 'src' del lote en $SRC_DIR"
+if [ ! -d "$SCRIPT_DIR/src" ]; then
+  echo "ERROR · No encuentro 'src' en $SCRIPT_DIR/src"
   exit 1
 fi
 
 if [ ! -d "src" ] || [ ! -f "package.json" ]; then
   echo "ERROR · No encuentro la raíz del proyecto Next.js."
-  echo "Tenés que estar parado en ~/Downloads/maxtracker-functional al correr esto."
+  exit 1
+fi
+
+if [ ! -f "src/app/api/ingest/flespi/metrics/route.ts" ]; then
+  echo "ERROR · No encuentro src/app/api/ingest/flespi/metrics/route.ts"
+  echo "        · Aplicá primero el lote I4."
   exit 1
 fi
 
@@ -54,11 +65,11 @@ created=0
 
 apply_file() {
   local rel="$1"
-  local src="$SRC_DIR/$rel"
-  local dst="src/$rel"
+  local src="$SCRIPT_DIR/$rel"
+  local dst="$rel"
 
   if [ ! -f "$src" ]; then
-    echo -e "  ${YELLOW}skip${NC}  $rel · no en el lote"
+    echo -e "  ${YELLOW}skip${NC}  $rel"
     return
   fi
 
@@ -81,22 +92,14 @@ apply_file() {
   fi
 }
 
-echo -e "${CYAN}── Dispositivos ──${NC}"
-
-apply_file "app/admin/dispositivos/import-actions.ts"
-apply_file "app/admin/dispositivos/AdminDevicesImporter.tsx"
-apply_file "app/admin/dispositivos/AdminDevicesHeaderActions.tsx"
-apply_file "app/admin/dispositivos/AdminDevicesHeaderActions.module.css"
-apply_file "app/admin/dispositivos/page.tsx"
+echo -e "${CYAN}── Pantalla nueva ──${NC}"
+apply_file "src/app/admin/ingestion-status/page.tsx"
+apply_file "src/app/admin/ingestion-status/IngestionStatusClient.tsx"
+apply_file "src/app/admin/ingestion-status/page.module.css"
 
 echo
-echo -e "${CYAN}── SIMs ──${NC}"
-
-apply_file "app/admin/sims/import-actions.ts"
-apply_file "app/admin/sims/AdminSimsImporter.tsx"
-apply_file "app/admin/sims/AdminSimsHeaderActions.tsx"
-apply_file "app/admin/sims/AdminSimsHeaderActions.module.css"
-apply_file "app/admin/sims/page.tsx"
+echo -e "${CYAN}── Sidebar admin · agregar link ──${NC}"
+apply_file "src/components/shell/AdminSidebar.tsx"
 
 echo
 echo -e "${CYAN}─── Resumen ───${NC}"
@@ -113,21 +116,18 @@ fi
 
 echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
-echo "Probá esto:"
-echo "  npm run dev  →  loguate como sa@maxtracker.io"
+echo -e "${YELLOW}══ TESTING ══${NC}"
 echo
-echo "Qué validar:"
-echo "  • /admin/dispositivos · botón 'Importar CSV' (gris) al lado de"
-echo "    'Nuevo dispositivo' (violeta)"
-echo "  • Click → drawer dark con plantilla descargable y preview"
-echo "  • Subí un CSV con columnas: imei, vendor, modelo, serial,"
-echo "    firmware. Validación: IMEI 15 dígitos, vendor enum,"
-echo "    duplicados detectados contra DB y dentro del archivo"
-echo "  • Tras importar, los devices aparecen en status STOCK"
+echo "  1. Como SUPER_ADMIN o MAXTRACKER_ADMIN, ir a:"
+echo "       /admin → debería verse 'Estado ingestion' en el sidebar"
+echo "       /admin/ingestion-status → la pantalla"
 echo
-echo "  • /admin/sims · mismo patrón"
-echo "  • Columnas: iccid, carrier, apn, telefono, imsi, plan_mb"
-echo "  • Validación: ICCID 19-20 dígitos, carrier enum, APN required"
+echo "  2. Como CLIENT_ADMIN o OPERATOR, navegar manualmente a"
+echo "     /admin/ingestion-status → redirect a /admin (acceso negado)"
 echo
-echo "  • Como Diego (CA) o Pablo (OP): no ven el botón Importar"
-echo "    (no tienen permiso backoffice_dispositivos / backoffice_sims)"
+echo "  3. Para ver datos, simular un batch:"
+echo "       bash scripts/simulate-flespi-trip.sh"
+echo "     Esperar 30s o apretar 'Refrescar' · los counters deben subir"
+echo
+echo "  4. Apagar el toggle 'Auto-refresh 30s' · debería dejar de"
+echo "     actualizarse hasta que apretes el botón manual"

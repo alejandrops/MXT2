@@ -13,9 +13,10 @@ import {
 import { getSession } from "@/lib/session";
 import { canRead, canWrite } from "@/lib/permissions";
 import { DeviceEditDrawer } from "./DeviceEditDrawer";
-import { DeviceActionsKebab } from "./DeviceActionsKebab";
+import { AdminDevicesBulkContainer } from "./AdminDevicesBulkContainer";
 import { AdminDevicesHeaderActions } from "./AdminDevicesHeaderActions";
 import { AdminDevicesImporter } from "./AdminDevicesImporter";
+import { DeleteAllDevicesDialog } from "./DeleteAllDevicesDialog";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -75,6 +76,14 @@ const STATUS_LABELS: Record<DeviceLifecycleStatus, string> = {
   INSTALLED: "Instalado",
   IN_REPAIR: "Reparación",
   DECOMMISSIONED: "Baja",
+};
+
+const COMM_STATE_LABELS: Record<DeviceCommState, string> = {
+  ONLINE: "Online",
+  RECENT: "Reciente",
+  STALE: "Demorado",
+  LONG: "Lejano",
+  OFFLINE: "Offline",
 };
 
 export default async function DispositivosPage({ searchParams }: PageProps) {
@@ -219,6 +228,59 @@ export default async function DispositivosPage({ searchParams }: PageProps) {
         )}
       </form>
 
+      {/* ── Delete-all-matching · solo SA/MA y solo si hay filtros activos ── */}
+      {userCanWrite &&
+        (search || commState || status || vendor || primaryOnly) &&
+        listResult.total > 0 && (
+          <div className={styles.bulkBar}>
+            <span className={styles.bulkBarLabel}>
+              {listResult.total.toLocaleString("es-AR")}{" "}
+              {listResult.total === 1 ? "resultado" : "resultados"} con los
+              filtros aplicados
+            </span>
+            <DeleteAllDevicesDialog
+              count={listResult.total}
+              filters={{
+                search,
+                state: commState,
+                status,
+                vendor,
+                primaryOnly,
+              }}
+              activeFilterChips={[
+                ...(search ? [{ label: "Búsqueda", value: search }] : []),
+                ...(status
+                  ? [
+                      {
+                        label: "Estado",
+                        value: STATUS_LABELS[status] ?? status,
+                      },
+                    ]
+                  : []),
+                ...(vendor
+                  ? [
+                      {
+                        label: "Vendor",
+                        value: VENDOR_LABELS[vendor] ?? vendor,
+                      },
+                    ]
+                  : []),
+                ...(commState
+                  ? [
+                      {
+                        label: "Señal",
+                        value: COMM_STATE_LABELS[commState] ?? commState,
+                      },
+                    ]
+                  : []),
+                ...(primaryOnly
+                  ? [{ label: "Solo primarios", value: "sí" }]
+                  : []),
+              ]}
+            />
+          </div>
+        )}
+
       {/* ── Table ──────────────────────────────────────────── */}
       {listResult.rows.length === 0 ? (
         <div className={styles.empty}>
@@ -227,88 +289,10 @@ export default async function DispositivosPage({ searchParams }: PageProps) {
             : "No hay dispositivos cargados."}
         </div>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>IMEI · Modelo</th>
-                <th className={styles.th}>Estado</th>
-                <th className={styles.th}>Vehículo</th>
-                <th className={styles.th}>Señal</th>
-                <th className={styles.th}>Última conexión</th>
-                {userCanWrite && (
-                  <th className={styles.thAction} aria-hidden="true" />
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {listResult.rows.map((d) => (
-                <tr
-                  key={d.id}
-                  className={`${styles.row} ${
-                    d.status === "DECOMMISSIONED" ? styles.rowMuted : ""
-                  }`}
-                >
-                  <td className={styles.td}>
-                    <div className={styles.imeiCell}>
-                      <span className={`${styles.imei} ${styles.mono}`}>
-                        {d.imei}
-                      </span>
-                      <span className={styles.imeiSub}>
-                        {VENDOR_LABELS[d.vendor]} · {d.model}
-                        {d.firmwareVersion && ` · fw ${d.firmwareVersion}`}
-                      </span>
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <StatusPill status={d.status} />
-                  </td>
-                  <td className={styles.td}>
-                    {d.asset ? (
-                      <div className={styles.assetCell}>
-                        <span className={styles.assetName}>
-                          {d.asset.name}
-                          {d.isPrimary && (
-                            <span className={styles.primaryBadge}>★</span>
-                          )}
-                        </span>
-                        <span className={styles.assetSub}>
-                          {d.asset.accountName}
-                          {d.asset.plate && ` · ${d.asset.plate}`}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className={styles.placeholder}>—</span>
-                    )}
-                  </td>
-                  <td className={styles.td}>
-                    {d.status === "INSTALLED" ? (
-                      <CommPill state={d.commState} />
-                    ) : (
-                      <span className={styles.placeholder}>—</span>
-                    )}
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.dim}>
-                      {d.lastSeenAt
-                        ? formatRelative(d.lastSeenAt)
-                        : "Nunca"}
-                    </span>
-                  </td>
-                  {userCanWrite && (
-                    <td className={`${styles.td} ${styles.tdAction}`}>
-                      <DeviceActionsKebab
-                        deviceId={d.id}
-                        imei={d.imei}
-                        status={d.status}
-                      />
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminDevicesBulkContainer
+          rows={listResult.rows}
+          userCanWrite={userCanWrite}
+        />
       )}
 
       {/* ── Drawer ────────────────────────────────────────── */}

@@ -10,6 +10,8 @@ import type { AnalysisGranularity } from "@/lib/queries";
 import { getAssetLiveStatus } from "@/lib/queries/asset-live-status";
 import { getDriverProfile } from "@/lib/queries/driver-profile";
 import { getGroupProfile } from "@/lib/queries/group-profile";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import { ObjectBook } from "@/components/maxtracker/objeto/ObjectBook";
 import { LiveStatus } from "@/components/maxtracker/objeto/LiveStatus";
 import { DriverProfile } from "@/components/maxtracker/objeto/DriverProfile";
@@ -97,7 +99,14 @@ export default async function ObjectBookPage({
   ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
   const anchorIso = get("d") ?? todayIso;
 
-  const meta = await loadObjectMeta(type, id);
+  // Multi-tenant scope (U1d) · IDOR prevention
+  // Si el user tiene scope OWN_ACCOUNT, scopedAccountId será su accountId
+  // y loadObjectMeta verifica que el objeto pertenezca a ese account.
+  // Para SA y MA es null · pueden acceder a cualquier objeto.
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "catalogos", null);
+
+  const meta = await loadObjectMeta(type, id, scopedAccountId);
   if (!meta) {
     notFound();
   }
@@ -183,6 +192,7 @@ interface ObjectMeta {
 async function loadObjectMeta(
   type: ObjectType,
   id: string,
+  scopedAccountId: string | null,
 ): Promise<ObjectMeta | null> {
   if (type === "vehiculo") {
     const asset = await db.asset.findUnique({
@@ -193,6 +203,12 @@ async function loadObjectMeta(
       },
     });
     if (!asset) return null;
+    // IDOR check (U1d) · si el user tiene scope OWN_ACCOUNT, el objeto
+    // debe pertenecer a SU account · si no, devolvemos null para que
+    // el page.tsx haga notFound() · indistinguible de "no existe"
+    if (scopedAccountId && asset.accountId !== scopedAccountId) {
+      return null;
+    }
 
     const subtitleParts: string[] = [];
     if (asset.make) subtitleParts.push(asset.make);
@@ -225,6 +241,10 @@ async function loadObjectMeta(
       where: { id },
     });
     if (!person) return null;
+    // IDOR check (U1d)
+    if (scopedAccountId && person.accountId !== scopedAccountId) {
+      return null;
+    }
 
     const fullName = `${person.firstName} ${person.lastName}`.trim();
     const metaParts: string[] = [];
@@ -248,6 +268,10 @@ async function loadObjectMeta(
       where: { id },
     });
     if (!group) return null;
+    // IDOR check (U1d)
+    if (scopedAccountId && group.accountId !== scopedAccountId) {
+      return null;
+    }
 
     const assetCount = await db.asset.count({
       where: { groupId: id },

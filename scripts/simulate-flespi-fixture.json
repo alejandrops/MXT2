@@ -1,0 +1,66 @@
+[
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719831234.123,
+    "server.timestamp": 1719831234.456,
+    "position.latitude": -34.6037,
+    "position.longitude": -58.3816,
+    "position.speed": 45.2,
+    "position.direction": 180,
+    "position.altitude": 25,
+    "position.satellites": 12,
+    "position.valid": true,
+    "position.hdop": 0.9,
+    "engine.ignition.status": true,
+    "movement.status": true,
+    "external.powersource.voltage": 12.6,
+    "battery.voltage": 4.1,
+    "battery.level": 85
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719831264.234,
+    "server.timestamp": 1719831264.567,
+    "position.latitude": -34.6045,
+    "position.longitude": -58.3825,
+    "position.speed": 52.7,
+    "position.direction": 175,
+    "position.altitude": 24,
+    "position.satellites": 13,
+    "position.valid": true,
+    "position.hdop": 0.8,
+    "engine.ignition.status": true,
+    "movement.status": true,
+    "external.powersource.voltage": 12.6,
+    "battery.level": 85
+  },
+  {
+    "ident": "350612073987002",
+    "timestamp": 1719831240.0,
+    "server.timestamp": 1719831240.123,
+    "position.latitude": -33.4489,
+    "position.longitude": -70.6693,
+    "position.speed": 0,
+    "position.direction": 0,
+    "position.satellites": 10,
+    "position.valid": true,
+    "engine.ignition.status": false,
+    "movement.status": false,
+    "external.powersource.voltage": 12.4,
+    "battery.level": 78
+  },
+  {
+    "ident": "999999999999999",
+    "timestamp": 1719831250.0,
+    "position.latitude": -34.6,
+    "position.longitude": -58.4,
+    "position.speed": 30,
+    "engine.ignition.status": true
+  },
+  {
+    "ident": "350612073987001",
+    "timestamp": 1719831294.0,
+    "position.valid": false,
+    "position.satellites": 2
+  }
+]

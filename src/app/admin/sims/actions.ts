@@ -149,7 +149,7 @@ function validate(input: SimInput): {
 export async function createSim(input: SimInput): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_sims")) {
-    return { ok: false, message: "No tenés permiso para crear SIMs." };
+    return { ok: false, message: "No tenés permiso para crear SIMs" };
   }
 
   const { errors, data } = validate(input);
@@ -220,7 +220,7 @@ export async function updateSim(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_sims")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para editar SIMs" };
   }
 
   const existing = await db.sim.findUnique({
@@ -324,7 +324,7 @@ export async function updateSim(
 export async function deleteSim(simId: string): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_sims")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para eliminar SIMs" };
   }
 
   const existing = await db.sim.findUnique({
@@ -360,4 +360,181 @@ export async function deleteSim(simId: string): Promise<ActionResult> {
   revalidatePath("/admin/sims");
   revalidatePath("/admin/dispositivos");
   return { ok: true, message: `SIM ${existing.iccid} eliminada` };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Bulk delete + Delete all matching · H5b
+// ═══════════════════════════════════════════════════════════════
+
+import type { Prisma } from "@prisma/client";
+
+export async function bulkDeleteAdminSims(
+  simIds: string[],
+): Promise<{
+  ok: boolean;
+  deleted: number;
+  failed: number;
+  errors: { id: string; name: string; message: string }[];
+  message?: string;
+}> {
+  const session = await getSession();
+  if (!canWrite(session, "backoffice_sims")) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: simIds.length,
+      errors: [],
+      message: "No tenés permiso para eliminar SIMs",
+    };
+  }
+
+  if (simIds.length === 0) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "Seleccioná al menos una SIM.",
+    };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+  const errors: { id: string; name: string; message: string }[] = [];
+
+  for (const id of simIds) {
+    const s = await db.sim.findUnique({
+      where: { id },
+      select: { iccid: true },
+    });
+    const name = s?.iccid ?? id;
+    try {
+      const result = await deleteSim(id);
+      if (result.ok) {
+        deleted++;
+      } else {
+        failed++;
+        errors.push({
+          id,
+          name,
+          message: result.message ?? "Error desconocido",
+        });
+      }
+    } catch (err) {
+      failed++;
+      errors.push({
+        id,
+        name,
+        message: err instanceof Error ? err.message : "Error inesperado",
+      });
+    }
+  }
+
+  revalidatePath("/admin/sims");
+  return {
+    ok: deleted > 0,
+    deleted,
+    failed,
+    errors,
+    message:
+      failed === 0
+        ? `${deleted} ${deleted === 1 ? "SIM eliminada" : "SIMs eliminadas"}`
+        : deleted === 0
+          ? `Ninguna SIM se pudo eliminar`
+          : `${deleted} ${deleted === 1 ? "eliminada" : "eliminadas"} · ${failed} ${failed === 1 ? "falló" : "fallaron"}`,
+  };
+}
+
+export interface DeleteAllMatchingSimsFilters {
+  search: string | null;
+  status: string | null;
+  carrier: string | null;
+}
+
+export async function deleteAllMatchingSims(
+  filters: DeleteAllMatchingSimsFilters,
+): Promise<{
+  ok: boolean;
+  deleted: number;
+  failed: number;
+  errors: { id: string; name: string; message: string }[];
+  message?: string;
+}> {
+  const session = await getSession();
+  if (!canWrite(session, "backoffice_sims")) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No tenés permiso para eliminar SIMs",
+    };
+  }
+
+  const where: Prisma.SimWhereInput = {};
+  if (filters.search) {
+    where.OR = [
+      { iccid: { contains: filters.search } },
+      { phoneNumber: { contains: filters.search } },
+      { imsi: { contains: filters.search } },
+    ];
+  }
+  if (filters.status) where.status = filters.status as any;
+  if (filters.carrier) where.carrier = filters.carrier as any;
+
+  const matching = await db.sim.findMany({
+    where,
+    select: { id: true, iccid: true },
+  });
+
+  if (matching.length === 0) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No hay SIMs que coincidan con los filtros.",
+    };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+  const errors: { id: string; name: string; message: string }[] = [];
+
+  for (const s of matching) {
+    try {
+      const result = await deleteSim(s.id);
+      if (result.ok) {
+        deleted++;
+      } else {
+        failed++;
+        errors.push({
+          id: s.id,
+          name: s.iccid,
+          message: result.message ?? "Error desconocido",
+        });
+      }
+    } catch (err) {
+      failed++;
+      errors.push({
+        id: s.id,
+        name: s.iccid,
+        message: err instanceof Error ? err.message : "Error inesperado",
+      });
+    }
+  }
+
+  revalidatePath("/admin/sims");
+  return {
+    ok: deleted > 0,
+    deleted,
+    failed,
+    errors,
+    message:
+      failed === 0
+        ? `${deleted} ${deleted === 1 ? "SIM eliminada" : "SIMs eliminadas"}`
+        : deleted === 0
+          ? `Ninguna SIM se pudo eliminar`
+          : `${deleted} ${deleted === 1 ? "eliminada" : "eliminadas"} · ${failed} ${failed === 1 ? "falló" : "fallaron"}`,
+  };
 }

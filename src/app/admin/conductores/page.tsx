@@ -13,6 +13,7 @@ import { AdminDriverDrawer } from "./AdminDriverDrawer";
 import { AdminDriversImporter } from "./AdminDriversImporter";
 import { AdminDriversHeaderActions } from "./AdminDriversHeaderActions";
 import { AdminDriversBulkContainer } from "./AdminDriversBulkContainer";
+import { DeleteAllDriversDialog } from "./DeleteAllDriversDialog";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -200,6 +201,57 @@ export default async function AdminConductoresPage({ searchParams }: PageProps) 
           </Link>
         )}
       </form>
+
+      {/* ── Delete-all-matching · solo SA/MA y solo si hay filtros activos ── */}
+      {userCanWrite &&
+        (search || accountId || assignmentFilter || licenseFilter) &&
+        listResult.total > 0 && (
+          <div className={styles.bulkBar}>
+            <span className={styles.bulkBarLabel}>
+              {listResult.total.toLocaleString("es-AR")}{" "}
+              {listResult.total === 1 ? "resultado" : "resultados"} con los
+              filtros aplicados
+            </span>
+            <DeleteAllDriversDialog
+              count={listResult.total}
+              filters={{
+                search,
+                accountId,
+                assignmentFilter,
+                licenseFilter,
+              }}
+              activeFilterChips={[
+                ...(search ? [{ label: "Búsqueda", value: search }] : []),
+                ...(accountId
+                  ? [
+                      {
+                        label: "Cliente",
+                        value:
+                          accounts.find((a) => a.id === accountId)?.name ??
+                          accountId,
+                      },
+                    ]
+                  : []),
+                ...(assignmentFilter
+                  ? [
+                      {
+                        label: "Asignación",
+                        value: ASSIGNMENT_LABELS[assignmentFilter],
+                      },
+                    ]
+                  : []),
+                ...(licenseFilter
+                  ? [
+                      {
+                        label: "Licencia",
+                        value: LICENSE_LABELS[licenseFilter],
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </div>
+        )}
 
       {/* ── Table ──────────────────────────────────────────── */}
       {listResult.rows.length === 0 ? (

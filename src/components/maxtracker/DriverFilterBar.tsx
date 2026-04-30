@@ -13,7 +13,7 @@ import styles from "./DriverFilterBar.module.css";
 // ═══════════════════════════════════════════════════════════════
 //  DriverFilterBar
 //  ─────────────────────────────────────────────────────────────
-//  Twin of AssetFilterBar adapted for /catalogos/conductores:
+//  Twin of AssetFilterBar adapted for /gestion/conductores:
 //    · Search by name or document
 //    · Account select
 //    · Status pill: Todos / Activos / Inactivos
@@ -81,12 +81,14 @@ export function DriverFilterBar({ current, accounts }: DriverFilterBarProps) {
       </form>
 
       {/* ── Account ────────────────────────────────────────── */}
-      <Select
+      {accounts.length > 1 && (
+        <Select
         label="Cuenta"
         value={current.accountId}
         options={accounts.map((a) => ({ value: a.id, label: a.name }))}
         onChange={(v) => nav({ accountId: v })}
       />
+      )}
 
       {/* ── Status pills ───────────────────────────────────── */}
       <div className={styles.pillsGroup}>
@@ -108,7 +110,7 @@ export function DriverFilterBar({ current, accounts }: DriverFilterBarProps) {
       {/* ── Clear all ──────────────────────────────────────── */}
       {hasFilters && (
         <Link
-          href="/catalogos/conductores"
+          href="/gestion/conductores"
           className={styles.clearAll}
           scroll={false}
         >

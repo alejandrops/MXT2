@@ -123,7 +123,7 @@ export async function updateAdminDriver(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_conductores")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para editar conductores" };
   }
 
   const existing = await db.person.findUnique({
@@ -189,7 +189,7 @@ export async function deleteAdminDriver(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!canWrite(session, "backoffice_conductores")) {
-    return { ok: false, message: "No tenés permiso." };
+    return { ok: false, message: "No tenés permiso para eliminar conductores" };
   }
 
   const existing = await db.person.findUnique({
@@ -254,7 +254,7 @@ export async function bulkDeleteAdminDrivers(
       deleted: 0,
       failed: driverIds.length,
       errors: [],
-      message: "No tenés permiso.",
+      message: "No tenés permiso para eliminar conductores",
     };
   }
 
@@ -298,6 +298,126 @@ export async function bulkDeleteAdminDrivers(
       errors.push({
         id,
         name: driverName,
+        message: err instanceof Error ? err.message : "Error inesperado",
+      });
+    }
+  }
+
+  revalidatePath("/admin/conductores");
+  return {
+    ok: deleted > 0,
+    deleted,
+    failed,
+    errors,
+    message:
+      failed === 0
+        ? `${deleted} ${deleted === 1 ? "conductor eliminado" : "conductores eliminados"}`
+        : deleted === 0
+          ? `Ningún conductor se pudo eliminar`
+          : `${deleted} ${deleted === 1 ? "eliminado" : "eliminados"} · ${failed} ${failed === 1 ? "falló" : "fallaron"}`,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Delete all matching · "eliminar todo lo filtrado" (H5b)
+// ═══════════════════════════════════════════════════════════════
+
+import type { Prisma } from "@prisma/client";
+
+const MS_30D = 30 * 24 * 60 * 60 * 1000;
+
+export interface DeleteAllMatchingDriversFilters {
+  search: string | null;
+  accountId: string | null;
+  assignmentFilter: "with" | "without" | null;
+  licenseFilter: "ok" | "expiring_soon" | "expired" | "unknown" | null;
+}
+
+export async function deleteAllMatchingDrivers(
+  filters: DeleteAllMatchingDriversFilters,
+): Promise<{
+  ok: boolean;
+  deleted: number;
+  failed: number;
+  errors: { id: string; name: string; message: string }[];
+  message?: string;
+}> {
+  const session = await getSession();
+  if (!canWrite(session, "backoffice_conductores")) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No tenés permiso para eliminar conductores",
+    };
+  }
+
+  const now = new Date();
+  const soon = new Date(now.getTime() + MS_30D);
+
+  const where: Prisma.PersonWhereInput = {};
+  if (filters.search) {
+    where.OR = [
+      { firstName: { contains: filters.search } },
+      { lastName: { contains: filters.search } },
+      { document: { contains: filters.search } },
+    ];
+  }
+  if (filters.accountId) where.accountId = filters.accountId;
+  if (filters.assignmentFilter === "with") {
+    where.drivenAssets = { some: {} };
+  } else if (filters.assignmentFilter === "without") {
+    where.drivenAssets = { none: {} };
+  }
+  if (filters.licenseFilter === "expired") {
+    where.licenseExpiresAt = { lt: now };
+  } else if (filters.licenseFilter === "expiring_soon") {
+    where.licenseExpiresAt = { gte: now, lte: soon };
+  } else if (filters.licenseFilter === "ok") {
+    where.licenseExpiresAt = { gt: soon };
+  } else if (filters.licenseFilter === "unknown") {
+    where.licenseExpiresAt = null;
+  }
+
+  const matching = await db.person.findMany({
+    where,
+    select: { id: true, firstName: true, lastName: true },
+  });
+
+  if (matching.length === 0) {
+    return {
+      ok: false,
+      deleted: 0,
+      failed: 0,
+      errors: [],
+      message: "No hay conductores que coincidan con los filtros.",
+    };
+  }
+
+  let deleted = 0;
+  let failed = 0;
+  const errors: { id: string; name: string; message: string }[] = [];
+
+  for (const p of matching) {
+    const fullName = `${p.firstName} ${p.lastName}`;
+    try {
+      const result = await deleteAdminDriver(p.id);
+      if (result.ok) {
+        deleted++;
+      } else {
+        failed++;
+        errors.push({
+          id: p.id,
+          name: fullName,
+          message: result.message ?? "Error desconocido",
+        });
+      }
+    } catch (err) {
+      failed++;
+      errors.push({
+        id: p.id,
+        name: fullName,
         message: err instanceof Error ? err.message : "Error inesperado",
       });
     }

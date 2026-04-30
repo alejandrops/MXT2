@@ -498,7 +498,16 @@ function RowSparkline({
   max: number;
   isAnomaly: boolean;
 }) {
-  if (cells.length === 0 || max <= 0) {
+  // Defensa contra NaN/Infinity (post-U1c).
+  //
+  // Con scope OWN_ACCOUNT, una cuenta sin trips/datos en el período
+  // puede tener todos los `cells.value` en 0 → max=0 → división por
+  // cero → "NaN" literal en el atributo points del polyline → SVG
+  // tira un error de runtime y rompe el árbol React.
+  //
+  // `max <= 0` solo NO alcanza porque NaN <= 0 evalúa a false en JS.
+  // Hay que verificar finitude explícitamente.
+  if (cells.length === 0 || !Number.isFinite(max) || max <= 0) {
     return <span className={styles.dim}>—</span>;
   }
   const w = 80;
@@ -507,7 +516,11 @@ function RowSparkline({
   const points = cells
     .map((c, i) => {
       const x = i * stepX;
-      const y = h - (c.value / max) * h;
+      // Defensa secundaria · si algún cell.value viene undefined/NaN
+      // por algún glitch de datos, lo tratamos como 0 (línea al
+      // bottom) en vez de propagar NaN al SVG.
+      const v = Number.isFinite(c.value) ? c.value : 0;
+      const y = h - (v / max) * h;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");

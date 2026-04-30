@@ -45,6 +45,13 @@ export interface ScopeFilters {
   vehicleTypes?: string[];
   personIds?: string[];
   search?: string;
+  /**
+   * Multi-tenant scope (U1b). Si está seteado, restringe la
+   * consulta a los assets de este account · usado para enforcement
+   * de scope OWN_ACCOUNT en CA y OP. Calculado por la página vía
+   * resolveAccountScope.
+   */
+  accountId?: string | null;
 }
 
 export interface FleetCell {
@@ -182,10 +189,12 @@ export async function getFleetAnalysis(
   // 2 · Cargar opciones disponibles para los filtros (independiente del scope)
   const [allGroups, allDrivers] = await Promise.all([
     db.group.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.person.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
@@ -650,6 +659,10 @@ function drillTargetFor(g: AnalysisGranularity): AnalysisGranularity | null {
 
 async function loadAssets(scope: ScopeFilters): Promise<any[]> {
   const where: any = { mobilityType: "MOBILE" };
+  // Multi-tenant scope (U1b)
+  if (scope.accountId) {
+    where.accountId = scope.accountId;
+  }
   if (scope.groupIds && scope.groupIds.length > 0) {
     where.groupId = { in: scope.groupIds };
   }
@@ -1305,10 +1318,12 @@ export async function getFleetMultiMetric(
 
   const [allGroups, allDrivers] = await Promise.all([
     db.group.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.person.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
@@ -1490,10 +1505,12 @@ export async function getDriversMultiMetric(
 
   const [allGroups, allDrivers] = await Promise.all([
     db.group.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.person.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
@@ -1851,10 +1868,12 @@ export async function getDriversAnalysis(
 
   const [allGroups, allDrivers] = await Promise.all([
     db.group.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     db.person.findMany({
+      where: scope.accountId ? { accountId: scope.accountId } : undefined,
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),

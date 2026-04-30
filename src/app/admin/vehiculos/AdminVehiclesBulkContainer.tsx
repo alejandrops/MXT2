@@ -249,7 +249,7 @@ export function AdminVehiclesBulkContainer({ rows, userCanWrite }: Props) {
                           <span className={styles.mono}>{a.plate}</span>
                         ) : (
                           <span className={styles.placeholder}>
-                            sin patente
+                            Sin patente
                           </span>
                         )}
                         {a.make &&

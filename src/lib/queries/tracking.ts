@@ -120,12 +120,18 @@ function colorForGroup(groupId: string | null): string {
  * assets, then fetch the latest Position per asset. For ~80
  * assets this is cheap and avoids RAW SQL.
  */
-export async function getFleetLive(now: Date = new Date()): Promise<{
+export async function getFleetLive(
+  now: Date = new Date(),
+  accountId?: string | null,
+): Promise<{
   assets: FleetAssetLive[];
   groups: FleetGroup[];
 }> {
   const assetsRaw = await db.asset.findMany({
-    where: { mobilityType: "MOBILE" },
+    where: {
+      mobilityType: "MOBILE",
+      ...(accountId ? { accountId } : {}),
+    },
     select: {
       id: true,
       name: true,
@@ -326,14 +332,23 @@ function localArMidnight(utcMs: number): number {
  * Loads a replay-mode payload: every mobile asset's full latest
  * day of positions + a time offset to map "now" → "replay day".
  *
+ * Multi-tenant scoping (U1): accepts an optional `accountId`. The
+ * caller (page.tsx) computes it via `resolveAccountScope` from the
+ * session and passes it here. When set, the query restricts the
+ * fleet to that account's assets only.
+ *
  * Performance: we do one query per asset (~80) which is fine at
  * SQLite scale but should be batched for production Postgres.
  */
 export async function getFleetReplay(
   now: Date = new Date(),
+  accountId?: string | null,
 ): Promise<ReplayPayload> {
   const assetsRaw = await db.asset.findMany({
-    where: { mobilityType: "MOBILE" },
+    where: {
+      mobilityType: "MOBILE",
+      ...(accountId ? { accountId } : {}),
+    },
     select: {
       id: true,
       name: true,

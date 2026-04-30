@@ -22,9 +22,6 @@ import {
   Building2,
   Radio,
 } from "lucide-react";
-import type { SessionData } from "@/lib/session";
-import type { ModuleKey } from "@/lib/permissions";
-import { canRead } from "@/lib/permissions";
 import styles from "./Sidebar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -71,10 +68,6 @@ interface ModuleDef {
   pathPrefix: string;
   pages: PageDef[];
   enabled: boolean;
-  /** Mapa al ModuleKey de permissions.ts. Si presente, el módulo
-   *  se filtra por canRead(session, moduleKey). Si null (módulos
-   *  futuros sin tabla de permisos), siempre se muestra. */
-  moduleKey?: ModuleKey | null;
 }
 
 const MODULES: ModuleDef[] = [
@@ -84,7 +77,6 @@ const MODULES: ModuleDef[] = [
     icon: <MapPin size={16} />,
     pathPrefix: "/seguimiento",
     enabled: true,
-    moduleKey: "seguimiento",
     pages: [
       { label: "Mapa", href: "/seguimiento/mapa" },
       { label: "Historial", href: "/seguimiento/historial" },
@@ -100,7 +92,6 @@ const MODULES: ModuleDef[] = [
     icon: <BarChart3 size={16} />,
     pathPrefix: "/actividad",
     enabled: true,
-    moduleKey: "actividad",
     pages: [
       { label: "Reportes", href: "/actividad/reportes" },
       { label: "Scorecard", href: "/actividad/scorecard" },
@@ -114,7 +105,6 @@ const MODULES: ModuleDef[] = [
     icon: <Shield size={16} />,
     pathPrefix: "/seguridad",
     enabled: true,
-    moduleKey: "seguridad",
     pages: [
       { label: "Dashboard", href: "/seguridad/dashboard" },
       { label: "Alarmas", href: "/seguridad/alarmas", badge: 7 },
@@ -177,7 +167,6 @@ const MODULES: ModuleDef[] = [
     icon: <BarChart3 size={16} />,
     pathPrefix: "/direccion",
     enabled: true,
-    moduleKey: "direccion",
     pages: [
       { label: "Vista ejecutiva", href: "/direccion/vista-ejecutiva" },
       { label: "Distribución por grupo", href: "/direccion/distribucion-grupos" },
@@ -190,7 +179,6 @@ const MODULES: ModuleDef[] = [
     icon: <Building2 size={16} />,
     pathPrefix: "/catalogos",
     enabled: true,
-    moduleKey: "catalogos",
     pages: [
       { label: "Vehículos", href: "/catalogos/vehiculos" },
       { label: "Conductores", href: "/catalogos/conductores" },
@@ -203,28 +191,13 @@ const MODULES: ModuleDef[] = [
 //  Component
 // ═══════════════════════════════════════════════════════════════
 
-interface SidebarProps {
-  session: SessionData;
-}
-
-export function Sidebar({ session }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Filtrar módulos por permisos · si moduleKey está y canRead
-  // devuelve false, omitir. Si moduleKey no está (módulos futuros
-  // sin tabla de permisos: Conducción, Logística, Combustible,
-  // Mantenimiento, Documentación, Sostenibilidad), siempre se
-  // muestran (en gris si están deshabilitados).
-  const visibleModules = MODULES.filter(
-    (m) => m.moduleKey == null || canRead(session, m.moduleKey),
-  );
-
-  // Detect active module from pathname (sobre los visibles)
+  // Detect active module from pathname
   const activeModule =
-    visibleModules.find((m) => pathname.startsWith(m.pathPrefix))?.key ??
-    visibleModules.find((m) => m.enabled)?.key ??
-    "";
+    MODULES.find((m) => pathname.startsWith(m.pathPrefix))?.key ?? "secu";
 
   const [expandedKey, setExpandedKey] = useState<string>(activeModule);
 
@@ -239,15 +212,15 @@ export function Sidebar({ session }: SidebarProps) {
   if (
     typeof window !== "undefined" &&
     activeModule !== expandedKey &&
-    !visibleModules.find((m) => m.key === expandedKey)?.pathPrefix.startsWith(
-      visibleModules.find((mm) => mm.key === activeModule)?.pathPrefix ?? "",
+    !MODULES.find((m) => m.key === expandedKey)?.pathPrefix.startsWith(
+      MODULES.find((mm) => mm.key === activeModule)?.pathPrefix ?? "",
     )
   ) {
     // No-op — left intentionally simple. Manual override allowed.
   }
 
   function handleToggle(key: string) {
-    const m = visibleModules.find((mm) => mm.key === key);
+    const m = MODULES.find((mm) => mm.key === key);
     if (!m || !m.enabled) return; // can't expand disabled modules
     setExpandedKey((curr) => (curr === key ? "" : key));
   }
@@ -269,24 +242,28 @@ export function Sidebar({ session }: SidebarProps) {
         )}
       </Link>
 
-      {/* ── Search shortcut · disabled placeholder ──────────────
-          Visible but inactive while a real command palette is built.
-          Tooltip indicates upcoming feature. */}
+      {/* ── Search shortcut · abre el CommandPalette ──────────
+          Conectado vía custom event 'mxt:cmdk:open' que escucha
+          el componente CommandPalette montado en el layout.
+          También responde al atajo Cmd+K / Ctrl+K. */}
       {!collapsed && (
-        <div
-          className={`${styles.search} ${styles.searchDisabled}`}
-          title="Búsqueda global · próximamente"
-          aria-disabled="true"
+        <button
+          type="button"
+          className={styles.search}
+          title="Búsqueda global · Cmd+K / Ctrl+K"
+          onClick={() => {
+            window.dispatchEvent(new Event("mxt:cmdk:open"));
+          }}
         >
           <Search size={13} />
           <span>Buscar</span>
           <kbd className={styles.kbd}>⌘K</kbd>
-        </div>
+        </button>
       )}
 
       {/* ── Modules accordion ─────────────────────────────────── */}
       <nav className={styles.nav}>
-        {visibleModules.map((mod) => (
+        {MODULES.map((mod) => (
           <ModuleAccordion
             key={mod.key}
             module={mod}
@@ -309,14 +286,10 @@ export function Sidebar({ session }: SidebarProps) {
           {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           {!collapsed && <span>Colapsar</span>}
         </button>
-        <Link
-          href="/configuracion"
-          className={`${styles.configBtn} ${pathname.startsWith("/configuracion") ? styles.configBtnActive : ""}`}
-          title="Configuración"
-        >
+        <button className={styles.configBtn} disabled>
           <Settings size={15} />
           {!collapsed && <span>Configuración</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );

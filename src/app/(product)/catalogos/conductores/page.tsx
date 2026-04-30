@@ -1,9 +1,10 @@
 import {
   getAccountsForFilter,
   getDriverCounts,
-  getPersonForEdit,
   listDrivers,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import {
   DriverFilterBar,
   DriverTable,
@@ -15,25 +16,17 @@ import {
   parseDriversParams,
 } from "@/lib/url-drivers";
 import { formatNumber } from "@/lib/format";
-import { getSession } from "@/lib/session";
-import {
-  canCreateEntity,
-  canUpdateEntity,
-  canDeleteEntity,
-  getScopedAccountIds,
-} from "@/lib/permissions";
-import { PersonEditDrawer } from "./PersonEditDrawer";
-import { NewPersonButton } from "./NewPersonButton";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  /catalogos/conductores · Lista + CRUD
+//  /catalogos/conductores · driver listing
 //  ─────────────────────────────────────────────────────────────
-//  Lote A4 · gemelo de A3 sobre Person:
-//    · Tenant scoping en queries
-//    · Botón "+ Nuevo conductor" si canWrite
-//    · Kebab Editar/Eliminar por fila
-//    · Drawer ?new=1 / ?edit=<id>
+//  Server Component · twin of /catalogos/vehiculos:
+//    · KPI strip (Total / Activos / Inactivos / Score promedio /
+//      Licencias por vencer)
+//    · Filter bar (search, account, status pills)
+//    · Sortable table with clickable rows → conductor detail
+//    · Pagination
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -46,60 +39,27 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const params = parseDriversParams(raw);
 
-  // Drawer flags
-  const isNew = raw.new === "1";
-  const editIdRaw = raw.edit;
-  const editId = Array.isArray(editIdRaw) ? editIdRaw[0] : editIdRaw;
-  const drawerMode: "new" | "edit" | "closed" = editId
-    ? "edit"
-    : isNew
-      ? "new"
-      : "closed";
-
-  // Sesión y permisos
+  // Multi-tenant scope (U1c)
   const session = await getSession();
-  const scopedAccountIds = getScopedAccountIds(session, "catalogos");
-  const canCreatePerson = canCreateEntity(session, "catalogos", "conductores");
-  const canUpdatePerson = canUpdateEntity(session, "catalogos", "conductores");
-  const canDeletePerson = canDeleteEntity(session, "catalogos", "conductores");
+  const scopedAccountId = resolveAccountScope(session, "catalogos", params.accountId);
+
 
   const [listResult, counts, accounts] = await Promise.all([
     listDrivers({
       search: params.search,
-      accountId: params.accountId,
+      accountId: scopedAccountId,
       status: params.status,
       page: params.page,
       pageSize: 25,
       sortBy: params.sort,
       sortDir: params.dir,
-      scopedAccountIds,
     }),
-    getDriverCounts({ accountId: params.accountId, scopedAccountIds }),
-    getAccountsForFilter(scopedAccountIds),
+    getDriverCounts({ accountId: scopedAccountId }),
+    getAccountsForFilter(scopedAccountId),
   ]);
-
-  // Drawer data
-  let drawerInitial: Awaited<ReturnType<typeof getPersonForEdit>> = null;
-  if (drawerMode === "edit" && editId && canUpdatePerson) {
-    drawerInitial = await getPersonForEdit(editId, scopedAccountIds);
-  }
 
   return (
     <div className={styles.page}>
-      {/* ── Header con título y botón "+ Nuevo" ─────────────── */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Conductores</h1>
-          <p className={styles.subtitle}>
-            Catálogo del personal operativo
-            {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
-              ? ` · ${accounts[0].name}`
-              : ""}
-          </p>
-        </div>
-        {canCreatePerson && <NewPersonButton />}
-      </div>
-
       {/* ── KPI strip ─────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile label="Total" value={formatNumber(counts.total)} />
@@ -135,14 +95,9 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
       <DriverFilterBar current={params} accounts={accounts} />
 
       {/* ── Table ──────────────────────────────────────────── */}
-      <DriverTable
-        rows={listResult.rows}
-        current={params}
-        showActions={canUpdatePerson || canDeletePerson}
-        canEdit={canUpdatePerson}
-        canDelete={canDeletePerson}
-      />
+      <DriverTable rows={listResult.rows} current={params} />
 
+      {/* ── Pagination ─────────────────────────────────────── */}
       <Pagination
         total={listResult.total}
         page={listResult.page}
@@ -150,20 +105,6 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
         pageCount={listResult.pageCount}
         buildHref={(page) => buildDriversHref(params, { page })}
       />
-
-      {/* ── Drawer ────────────────────────────────────────── */}
-      {drawerMode === "new" && canCreatePerson && (
-        <PersonEditDrawer
-          initialPerson={null}
-          accountOptions={accounts}
-        />
-      )}
-      {drawerMode === "edit" && canUpdatePerson && drawerInitial && (
-        <PersonEditDrawer
-          initialPerson={drawerInitial}
-          accountOptions={accounts}
-        />
-      )}
     </div>
   );
 }

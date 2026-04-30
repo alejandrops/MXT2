@@ -517,3 +517,22 @@
   border-color: #6366F1;
   color: #C7D2FE;
 }
+
+/* ─── H5b · barra de delete-all-matching ──────────────── */
+
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.20);
+  border-radius: 4px;
+  margin: 0;
+}
+
+.bulkBarLabel {
+  flex: 1;
+  font-size: 12px;
+  color: #9CA3AF;
+}
