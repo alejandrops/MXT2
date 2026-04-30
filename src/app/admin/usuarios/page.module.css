@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════════
+   /admin/usuarios · variant oscura (admin shell)
+   ─────────────────────────────────────────────────────────────
+   El shell de admin (.app-content-admin) tiene fondo oscuro.
+   Esta página usa colores adaptados a ese fondo:
+     · cards/tiles con fondo #1A1F2E + tinte sutil
+     · text principal blanco/light gray
+     · accents en azul y violeta
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1280px;
+  font-family: var(--f);
+  color: #E5E7EB;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #F9FAFB;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: #9CA3AF;
+}
+
+.newBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #6366F1;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+  white-space: nowrap;
+}
+
+.newBtn:hover {
+  background: #4F46E5;
+}
+
+/* ── KPI strip ──────────────────────────────────────── */
+
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 1100px) {
+  .kpiStrip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kpiTile {
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpiLabel {
+  font-size: 11px;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.kpiValue {
+  font-family: var(--m);
+  font-size: 22px;
+  font-weight: 700;
+  color: #F9FAFB;
+  line-height: 1.1;
+}
+
+.kpiAccentGrn { color: #34D399; }
+.kpiAccentAmb { color: #FBBF24; }
+.kpiAccentRed { color: #F87171; }
+
+/* ── Filter bar ─────────────────────────────────────── */
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 8px 10px;
+  flex-wrap: wrap;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6B7280;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  font-family: var(--f);
+  font-size: 13px;
+  color: #F9FAFB;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 7px 10px 7px 30px;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #6366F1;
+}
+
+.searchInput::placeholder {
+  color: #6B7280;
+}
+
+.select {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #F9FAFB;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.select:focus {
+  border-color: #6366F1;
+}
+
+.applyBtn {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: #FFFFFF;
+  background: #6366F1;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.applyBtn:hover {
+  background: #4F46E5;
+}
+
+.clearLink {
+  font-family: var(--f);
+  font-size: 12px;
+  color: #9CA3AF;
+  text-decoration: none;
+  padding: 7px 10px;
+}
+
+.clearLink:hover {
+  color: #F9FAFB;
+}
+
+/* ── Pagination ─────────────────────────────────────── */
+
+.pagination {
+  padding: 8px 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.paginationInfo {
+  font-size: 12px;
+}

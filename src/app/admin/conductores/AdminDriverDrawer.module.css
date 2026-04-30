@@ -1,0 +1,586 @@
+/* ═══════════════════════════════════════════════════════════════
+   AdminDriverDrawer · paleta dark consistente con vehículos
+   ═══════════════════════════════════════════════════════════════ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 60;
+  animation: fadeIn 100ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 600px;
+  max-width: 95vw;
+  background: #1A1F2E;
+  color: #E5E7EB;
+  border-left: 1px solid #2A3142;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 140ms ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(8px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Header ───────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid #2A3142;
+  background: #16192A;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.headerLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6366F1;
+}
+
+.headerName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #F9FAFB;
+}
+
+.headerDoc {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: #9CA3AF;
+}
+
+.closeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 60ms;
+}
+
+.closeBtn:hover {
+  background: #232938;
+  color: #E5E7EB;
+}
+
+/* ── Body ─────────────────────────────────────────────── */
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert {
+  padding: 10px 12px;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 4px;
+  color: #FECACA;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Section ──────────────────────────────────────────── */
+
+.section {
+  background: #14182A;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #1A1F2E;
+  border: 0;
+  color: #E5E7EB;
+  cursor: pointer;
+  transition: background-color 60ms;
+}
+
+.sectionHeader:hover {
+  background: #232938;
+}
+
+.sectionIcon {
+  display: inline-flex;
+  align-items: center;
+  color: #9CA3AF;
+}
+
+.sectionTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #F9FAFB;
+}
+
+.sectionBody {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid #2A3142;
+}
+
+/* ── Form fields ──────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9CA3AF;
+}
+
+.fieldRequired {
+  color: #FCA5A5;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 12px;
+}
+
+.input {
+  appearance: none;
+  background: #0F1320;
+  color: #F9FAFB;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  line-height: 1.4;
+  width: 100%;
+  transition: border-color 80ms;
+}
+
+.input.mono {
+  font-family: var(--m);
+  font-size: 12px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #6366F1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+}
+
+.input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.input::placeholder {
+  color: #4B5563;
+}
+
+select.input {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+input[type="date"].input {
+  font-family: var(--m);
+  font-size: 12px;
+  color-scheme: dark;
+}
+
+.fieldError {
+  font-size: 11px;
+  color: #FCA5A5;
+}
+
+.fieldHint {
+  font-size: 10.5px;
+  color: #9CA3AF;
+  font-style: italic;
+}
+
+/* ── Licencia chip ────────────────────────────────────── */
+
+.licenseChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.licenseLabel {
+  font-weight: 600;
+}
+
+.licenseDate {
+  font-family: var(--m);
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.licenseOk {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.30);
+}
+
+.licenseExpiring {
+  background: rgba(251, 191, 36, 0.12);
+  color: #FCD34D;
+  border: 1px solid rgba(251, 191, 36, 0.30);
+}
+
+.licenseExpired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.30);
+}
+
+/* ── Asset cards (vehículos asignados) ────────────────── */
+
+.assetList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.assetCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 80ms;
+}
+
+.assetCard:hover {
+  border-color: #6366F1;
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.assetCardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assetCardName {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #F9FAFB;
+}
+
+.assetCardSub {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.assetCardEmpty {
+  color: #4B5563;
+  font-style: italic;
+}
+
+.mono {
+  font-family: var(--m);
+}
+
+.assetCardLink {
+  color: #6366F1;
+  flex-shrink: 0;
+}
+
+/* ── Performance · stats grid ─────────────────────────── */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9CA3AF;
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #F9FAFB;
+  font-family: var(--m);
+}
+
+.statOk {
+  color: #6EE7B7;
+}
+
+.statWarn {
+  color: #FCD34D;
+}
+
+.statBad {
+  color: #FCA5A5;
+}
+
+.statHint {
+  font-size: 10px;
+  color: #4B5563;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+/* ── Placeholder vacío ────────────────────────────────── */
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #0F1320;
+  border: 1px dashed #2A3142;
+  border-radius: 4px;
+}
+
+.placeholderLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6366F1;
+}
+
+.placeholderHint {
+  font-size: 11.5px;
+  color: #9CA3AF;
+  line-height: 1.5;
+}
+
+/* ── Footer ───────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #2A3142;
+  background: #16192A;
+  position: relative;
+  z-index: 1;
+}
+
+.deleteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #FCA5A5;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 80ms;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.7);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  background: #232938;
+  color: #E5E7EB;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #2A3142;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submitBtn {
+  flex: 1;
+  padding: 8px 16px;
+  background: #6366F1;
+  color: #FFFFFF;
+  border: 1px solid #6366F1;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #4F46E5;
+  border-color: #4F46E5;
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Delete confirmation modal ────────────────────────── */
+
+.deleteOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 120ms ease-out;
+}
+
+.deleteDialog {
+  background: #1A1F2E;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 6px;
+  padding: 20px 22px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.deleteTitle {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #F9FAFB;
+}
+
+.deleteHint {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: #D1D5DB;
+  line-height: 1.55;
+}
+
+.deleteHint strong {
+  color: #FCA5A5;
+}
+
+.deleteHint em {
+  font-style: italic;
+  color: #C7D2FE;
+}
+
+.deleteActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.deleteConfirmBtn {
+  padding: 8px 16px;
+  background: #DC2626;
+  color: #FFFFFF;
+  border: 1px solid #DC2626;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.deleteConfirmBtn:hover:not(:disabled) {
+  background: #B91C1C;
+  border-color: #B91C1C;
+}
+
+.deleteConfirmBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

@@ -90,7 +90,7 @@ export function EventFilterBar({ assetId, current }: EventFilterBarProps) {
 
       {hasActiveAssetEventsFilters(current) && (
         <Link
-          href={`/gestion/vehiculos/${assetId}?tab=eventos`}
+          href={`/catalogos/vehiculos/${assetId}?tab=eventos`}
           className={styles.clearAll}
           scroll={false}
         >

@@ -23,12 +23,18 @@ interface DriverTableProps {
   current: DriversSearchParams;
   /** Si true, muestra kebab Editar/Eliminar. Si false, chevron a Libro. */
   showActions?: boolean;
+  /** H7b · permisos granulares · default true para no romper call sites
+   *  legacy que no los pasan */
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 export function DriverTable({
   rows,
   current,
   showActions = false,
+  canEdit = true,
+  canDelete = true,
 }: DriverTableProps) {
   if (rows.length === 0) {
     return (
@@ -69,7 +75,13 @@ export function DriverTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <DriverRow key={row.id} row={row} showActions={showActions} />
+            <DriverRow
+              key={row.id}
+              row={row}
+              showActions={showActions}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
           ))}
         </tbody>
       </table>
@@ -80,9 +92,13 @@ export function DriverTable({
 function DriverRow({
   row,
   showActions,
+  canEdit,
+  canDelete,
 }: {
   row: DriverListRow;
   showActions: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   const href = `/objeto/conductor/${row.id}`;
   const fullName = `${row.firstName} ${row.lastName}`;
@@ -164,6 +180,8 @@ function DriverRow({
           <PersonActionsKebab
             personId={row.id}
             fullName={`${row.firstName} ${row.lastName}`}
+            canEdit={canEdit}
+            canDelete={canDelete}
           />
         ) : (
           <Link href={href} className={styles.cellLink}>

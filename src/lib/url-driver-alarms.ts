@@ -104,7 +104,7 @@ export function buildDriverAlarmsHref(
   if (merged.driverAlarmPage !== 1)
     params.set("driverAlarmPage", String(merged.driverAlarmPage));
 
-  return `/gestion/conductores/${personId}?${params.toString()}`;
+  return `/catalogos/conductores/${personId}?${params.toString()}`;
 }
 
 export function hasActiveDriverAlarmsFilters(p: DriverAlarmsParams): boolean {

@@ -136,7 +136,7 @@ export function AeropuertoView({ assets }: Props) {
 }
 
 function Row({ asset: a, idx }: { asset: FleetAssetLive; idx: number }) {
-  const href = `/gestion/vehiculos/${a.id}`;
+  const href = `/catalogos/vehiculos/${a.id}`;
   const speed = Math.round(a.speedKmh);
   const speedClass =
     a.motorState !== "MOVING"

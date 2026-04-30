@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════════════════════════════════
+   UserActionsKebab · variant oscura
+   ═══════════════════════════════════════════════════════════════ */
+
+.wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #9CA3AF;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #232938;
+  color: #F9FAFB;
+}
+
+/* ── Menu ────────────────────────────────────────────── */
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 180px;
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: var(--f);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #E5E7EB;
+  text-align: left;
+  transition: background-color 60ms;
+}
+
+.menuItem:hover:not(:disabled) {
+  background: #232938;
+}
+
+.menuItem:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.menuItemWarn {
+  color: #FBBF24;
+}
+
+.menuItemWarn:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.menuItemOk {
+  color: #34D399;
+}
+
+.menuItemOk:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+/* ── Confirm popover ────────────────────────────────── */
+
+.confirmPopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  min-width: 320px;
+  max-width: 420px;
+  padding: 14px;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--f);
+}
+
+.confirmHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F9FAFB;
+}
+
+.confirmHint {
+  font-size: 11.5px;
+  color: #9CA3AF;
+  line-height: 1.5;
+}
+
+.confirmHint code {
+  font-family: var(--m);
+  font-size: 11px;
+  background: #0F1320;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #C7D2FE;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cancelBtn {
+  padding: 6px 12px;
+  background: transparent;
+  color: #D1D5DB;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #232938;
+}
+
+.cancelBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.confirmBtn {
+  padding: 6px 12px;
+  background: #6366F1;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #4F46E5;
+}
+
+.confirmBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.confirmBtnWarn {
+  background: #D97706;
+}
+
+.confirmBtnWarn:hover:not(:disabled) {
+  background: #B45309;
+}
+
+/* ── Cred box (post-reset) ──────────────────────────── */
+
+.credBox {
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.credRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.credLabel {
+  font-weight: 600;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10.5px;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.credValue {
+  color: #F9FAFB;
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.mono {
+  font-family: var(--m);
+}
+
+.copyBtn {
+  padding: 6px 12px;
+  background: #232938;
+  color: #F9FAFB;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copyBtn:hover {
+  background: #2A3142;
+  border-color: #6366F1;
+}
+
+/* ── Error popover ──────────────────────────────────── */
+
+.errorPopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #1A1F2E;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  min-width: 320px;
+  max-width: 420px;
+  padding: 14px;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--f);
+}
+
+.errorMsg {
+  font-size: 12px;
+  color: #FCA5A5;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   H1 · Variantes danger (delete)
+   ═══════════════════════════════════════════════════════════════ */
+
+.menuItemDanger {
+  color: #FCA5A5;
+}
+
+.menuItemDanger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.confirmBtnDanger {
+  background: #DC2626;
+}
+
+.confirmBtnDanger:hover:not(:disabled) {
+  background: #B91C1C;
+}
+
+.mono {
+  font-family: var(--m);
+}

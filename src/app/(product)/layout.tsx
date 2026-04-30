@@ -29,7 +29,7 @@ export default async function ProductLayout({
   return (
     <div className="app-root">
       <div className="app-body">
-        <Sidebar />
+        <Sidebar session={session} />
         <div className="app-main">
           <Topbar
             session={session}

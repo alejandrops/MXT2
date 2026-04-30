@@ -100,7 +100,7 @@ export function DriverAlarmFilterBar({
 
       {hasActiveDriverAlarmsFilters(current) && (
         <Link
-          href={`/gestion/conductores/${personId}?tab=alarmas`}
+          href={`/catalogos/conductores/${personId}?tab=alarmas`}
           className={styles.clearAll}
           scroll={false}
         >

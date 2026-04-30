@@ -16,7 +16,7 @@ import styles from "./DriverScoreCard.module.css";
 //  bands documented in project memory: <60 critical, <80 caution,
 //  ≥80 healthy.
 //
-//  Sub-lote 3.3: now a Link to /gestion/conductores/[id] (Libro
+//  Sub-lote 3.3: now a Link to /catalogos/conductores/[id] (Libro
 //  del Conductor).
 // ═══════════════════════════════════════════════════════════════
 
@@ -36,7 +36,7 @@ export function DriverScoreCard({ driver }: DriverScoreCardProps) {
   const fillPct = Math.max(2, Math.min(100, driver.safetyScore));
   return (
     <Link
-      href={`/gestion/conductores/${driver.id}`}
+      href={`/catalogos/conductores/${driver.id}`}
       className={styles.card}
     >
       <div className={styles.avatar}>

@@ -146,7 +146,7 @@ export function AssetFilterBar({
       {/* ── Clear all ──────────────────────────────────────── */}
       {hasActiveFilters(current) && (
         <Link
-          href="/gestion/vehiculos"
+          href="/catalogos/vehiculos"
           className={styles.clearAll}
           scroll={false}
         >

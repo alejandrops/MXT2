@@ -271,3 +271,45 @@
   background: #9CA3AF;
   cursor: not-allowed;
 }
+
+/* ── Hint adicional ─────────────────────────────────── */
+
+.fieldHint {
+  font-family: var(--f);
+  font-size: 11px;
+  color: #6B7280;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+/* ── Toggle / checkbox ──────────────────────────────── */
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: #F9FAFB;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 60ms;
+}
+
+.toggleRow:hover {
+  background: #F3F4F6;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #2563EB;
+  flex-shrink: 0;
+}
+
+.toggleLabel {
+  font-family: var(--f);
+  font-size: 13px;
+  color: #111827;
+}

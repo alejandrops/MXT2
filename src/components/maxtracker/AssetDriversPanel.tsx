@@ -64,7 +64,7 @@ export async function AssetDriversPanel({ assetId }: { assetId: string }) {
             </thead>
             <tbody>
               {drivers.map((d) => {
-                const href = `/gestion/conductores/${d.personId}`;
+                const href = `/catalogos/conductores/${d.personId}`;
                 return (
                   <tr key={d.personId} className={styles.row}>
                     <Cell href={href}>

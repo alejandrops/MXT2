@@ -16,7 +16,12 @@ import {
 } from "@/lib/url-drivers";
 import { formatNumber } from "@/lib/format";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import { PersonEditDrawer } from "./PersonEditDrawer";
 import { NewPersonButton } from "./NewPersonButton";
 import styles from "./page.module.css";
@@ -54,7 +59,9 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
   // Sesión y permisos
   const session = await getSession();
   const scopedAccountIds = getScopedAccountIds(session, "catalogos");
-  const userCanWrite = canWrite(session, "catalogos");
+  const canCreatePerson = canCreateEntity(session, "catalogos", "conductores");
+  const canUpdatePerson = canUpdateEntity(session, "catalogos", "conductores");
+  const canDeletePerson = canDeleteEntity(session, "catalogos", "conductores");
 
   const [listResult, counts, accounts] = await Promise.all([
     listDrivers({
@@ -73,27 +80,25 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
 
   // Drawer data
   let drawerInitial: Awaited<ReturnType<typeof getPersonForEdit>> = null;
-  if (drawerMode === "edit" && editId && userCanWrite) {
+  if (drawerMode === "edit" && editId && canUpdatePerson) {
     drawerInitial = await getPersonForEdit(editId, scopedAccountIds);
   }
 
   return (
     <div className={styles.page}>
       {/* ── Header con título y botón "+ Nuevo" ─────────────── */}
-      {userCanWrite && (
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1 className={styles.title}>Conductores</h1>
-            <p className={styles.subtitle}>
-              Catálogo del personal operativo
-              {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
-                ? ` · ${accounts[0].name}`
-                : ""}
-            </p>
-          </div>
-          <NewPersonButton />
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Conductores</h1>
+          <p className={styles.subtitle}>
+            Catálogo del personal operativo
+            {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
+              ? ` · ${accounts[0].name}`
+              : ""}
+          </p>
         </div>
-      )}
+        {canCreatePerson && <NewPersonButton />}
+      </div>
 
       {/* ── KPI strip ─────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
@@ -133,7 +138,9 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
       <DriverTable
         rows={listResult.rows}
         current={params}
-        showActions={userCanWrite}
+        showActions={canUpdatePerson || canDeletePerson}
+        canEdit={canUpdatePerson}
+        canDelete={canDeletePerson}
       />
 
       <Pagination
@@ -145,9 +152,15 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
       />
 
       {/* ── Drawer ────────────────────────────────────────── */}
-      {drawerMode !== "closed" && userCanWrite && (
+      {drawerMode === "new" && canCreatePerson && (
         <PersonEditDrawer
-          initialPerson={drawerMode === "edit" ? drawerInitial : null}
+          initialPerson={null}
+          accountOptions={accounts}
+        />
+      )}
+      {drawerMode === "edit" && canUpdatePerson && drawerInitial && (
+        <PersonEditDrawer
+          initialPerson={drawerInitial}
           accountOptions={accounts}
         />
       )}

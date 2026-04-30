@@ -97,7 +97,7 @@ export function FleetRanking({ data, formatValue }: Props) {
                 <span className={styles.rank}>{idx + 1}</span>
                 <div className={styles.assetCell}>
                   <Link
-                    href={`/gestion/vehiculos/${row.assetId}`}
+                    href={`/catalogos/vehiculos/${row.assetId}`}
                     className={styles.assetLink}
                   >
                     {row.assetName}

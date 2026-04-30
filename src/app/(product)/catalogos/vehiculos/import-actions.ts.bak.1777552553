@@ -1,0 +1,195 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import type { ImportResult } from "@/components/import-csv/types";
+
+// ═══════════════════════════════════════════════════════════════
+//  Bulk import de vehículos · server action (H5a-1)
+//  ─────────────────────────────────────────────────────────────
+//  Contrato:
+//    · Recibe filas YA validadas client-side (cada una con un
+//      objeto VehicleImportRow con datos parseados)
+//    · Pero validamos otra vez en server porque · client-side
+//      no puede saber si un cliente existe, una patente está
+//      duplicada en DB, etc.
+//    · NO es all-or-nothing · cada fila es una transacción
+//      independiente. Si fallan 3 de 50, igual creamos los 47
+//      buenos y devolvemos errores por fila.
+//
+//  Permisos:
+//    · canWrite("catalogos") requerido
+//    · Si CA · accountSlug debe matchear el del actor
+//    · Si SA/MA · accountSlug puede ser cualquier cliente
+// ═══════════════════════════════════════════════════════════════
+
+export interface VehicleImportRow {
+  rowNumber: number;
+  /** Nombre del vehículo · requerido */
+  name: string;
+  /** Slug del cliente · requerido. Validamos que exista en server */
+  accountSlug: string;
+  /** Patente */
+  plate: string | null;
+  /** VIN */
+  vin: string | null;
+  /** Marca */
+  make: string | null;
+  /** Modelo */
+  model: string | null;
+  /** Año · ya parseado a number o null */
+  year: number | null;
+  /** Tipo · enum string · validado client-side a uno válido */
+  vehicleType: string;
+  /** Movilidad · enum · validado client-side */
+  mobilityType: string;
+  /** Odómetro al alta · número o null */
+  initialOdometerKm: number | null;
+}
+
+export async function importVehicles(
+  rows: VehicleImportRow[],
+): Promise<ImportResult> {
+  const session = await getSession();
+  if (!canWrite(session, "catalogos")) {
+    return {
+      ok: false,
+      created: 0,
+      skipped: rows.length,
+      errors: [
+        {
+          rowNumber: 0,
+          message: "No tenés permiso para importar vehículos.",
+        },
+      ],
+    };
+  }
+
+  const scoped = getScopedAccountIds(session, "catalogos");
+
+  // Cargamos los accounts que vamos a necesitar · clave por slug
+  // para resolver rápido. Si scoped, solo los del scope.
+  const allAccountSlugs = Array.from(
+    new Set(rows.map((r) => r.accountSlug.toLowerCase())),
+  );
+  const accountsWhere: any = { slug: { in: allAccountSlugs } };
+  if (Array.isArray(scoped)) {
+    accountsWhere.id = { in: scoped };
+  }
+  const accounts = await db.account.findMany({
+    where: accountsWhere,
+    select: { id: true, slug: true },
+  });
+  const accountBySlug = new Map(
+    accounts.map((a) => [a.slug.toLowerCase(), a.id]),
+  );
+
+  // Patentes existentes (case-insensitive) · cache para evitar
+  // hits repetidos a DB
+  const existingPlates = await db.asset.findMany({
+    where: {
+      plate: {
+        in: rows
+          .map((r) => r.plate?.toUpperCase())
+          .filter((p): p is string => !!p),
+      },
+    },
+    select: { plate: true },
+  });
+  const plateSet = new Set(
+    existingPlates.map((a) => a.plate?.toUpperCase()).filter(Boolean),
+  );
+
+  // Conjunto de patentes vistas dentro del mismo CSV (para detectar
+  // duplicados en el mismo archivo)
+  const seenPlatesInCsv = new Set<string>();
+
+  const errors: ImportResult["errors"] = [];
+  let created = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    // Validar account
+    const accountId = accountBySlug.get(row.accountSlug.toLowerCase());
+    if (!accountId) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        column: "cliente",
+        message: `Cliente "${row.accountSlug}" no encontrado o fuera de tu alcance`,
+      });
+      skipped++;
+      continue;
+    }
+
+    // Validar patente única
+    const plateUpper = row.plate?.toUpperCase() ?? null;
+    if (plateUpper) {
+      if (plateSet.has(plateUpper)) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          column: "patente",
+          message: `La patente "${plateUpper}" ya existe en el sistema`,
+        });
+        skipped++;
+        continue;
+      }
+      if (seenPlatesInCsv.has(plateUpper)) {
+        errors.push({
+          rowNumber: row.rowNumber,
+          column: "patente",
+          message: `La patente "${plateUpper}" aparece más de una vez en el archivo`,
+        });
+        skipped++;
+        continue;
+      }
+      seenPlatesInCsv.add(plateUpper);
+    }
+
+    try {
+      await db.asset.create({
+        data: {
+          accountId,
+          name: row.name,
+          plate: plateUpper,
+          vin: row.vin?.toUpperCase() ?? null,
+          make: row.make,
+          model: row.model,
+          year: row.year,
+          initialOdometerKm: row.initialOdometerKm,
+          vehicleType: row.vehicleType as any,
+          mobilityType: row.mobilityType as any,
+          status: "IDLE",
+        },
+      });
+      created++;
+    } catch (err) {
+      errors.push({
+        rowNumber: row.rowNumber,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Error inesperado al crear el vehículo",
+      });
+      skipped++;
+    }
+  }
+
+  if (created > 0) {
+    revalidatePath("/catalogos/vehiculos");
+  }
+
+  return {
+    ok: created > 0,
+    created,
+    skipped,
+    errors,
+    message:
+      created === rows.length
+        ? `Importación completada · ${created} vehículos creados`
+        : created > 0
+          ? `${created} creados · ${skipped} omitidos por errores`
+          : `Ningún vehículo se pudo importar`,
+  };
+}

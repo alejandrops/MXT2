@@ -1,14 +1,29 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { getClientCounts, listClients, type ClientRow } from "@/lib/queries";
+import { redirect } from "next/navigation";
+import { Search } from "lucide-react";
+import {
+  getClientCounts,
+  getClientForEdit,
+  listClients,
+  type ClientRow,
+} from "@/lib/queries";
+import { getSession } from "@/lib/session";
+import { canRead, canWrite } from "@/lib/permissions";
+import { ClientEditDrawer } from "./ClientEditDrawer";
+import { ClientActionsKebab } from "./ClientActionsKebab";
+import { NewClientButton } from "./NewClientButton";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  /admin/clientes · Backoffice multi-tenant management
+//  /admin/clientes · Backoffice multi-tenant management (H1)
 //  ─────────────────────────────────────────────────────────────
-//  Maxtracker staff view of all client accounts. Each row is a
-//  customer organization with a glance at their fleet size and
-//  recent activity.
+//  CRUD completo de Accounts · Maxtracker staff puede crear,
+//  editar y eliminar clientes (con check de FK).
+//
+//  Permisos:
+//    SA → read + write
+//    MA → read + write
+//    CA, OP → redirect a /admin
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -17,6 +32,8 @@ interface PageProps {
   searchParams: Promise<{
     q?: string;
     tier?: string;
+    new?: string;
+    edit?: string | string[];
   }>;
 }
 
@@ -24,21 +41,54 @@ const ALLOWED_TIERS: ClientRow["tier"][] = ["BASE", "PRO", "ENTERPRISE"];
 
 export default async function ClientesPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const search =
-    typeof sp.q === "string" && sp.q.trim() ? sp.q.trim() : null;
+  const search = typeof sp.q === "string" && sp.q.trim() ? sp.q.trim() : null;
   const tier =
     typeof sp.tier === "string" &&
     ALLOWED_TIERS.includes(sp.tier as ClientRow["tier"])
       ? (sp.tier as ClientRow["tier"])
       : null;
 
+  // Drawer
+  const isNew = sp.new === "1";
+  const editIdRaw = sp.edit;
+  const editId = Array.isArray(editIdRaw) ? editIdRaw[0] : editIdRaw;
+  const drawerMode: "new" | "edit" | "closed" = editId
+    ? "edit"
+    : isNew
+      ? "new"
+      : "closed";
+
+  // Permisos
+  const session = await getSession();
+  if (!canRead(session, "backoffice_clientes")) {
+    redirect("/admin");
+  }
+  const userCanWrite = canWrite(session, "backoffice_clientes");
+
   const [counts, rows] = await Promise.all([
     getClientCounts(),
     listClients({ search, tier }),
   ]);
 
+  // Drawer data
+  let drawerInitial: Awaited<ReturnType<typeof getClientForEdit>> = null;
+  if (drawerMode === "edit" && editId && userCanWrite) {
+    drawerInitial = await getClientForEdit(editId);
+  }
+
   return (
     <div className={styles.page}>
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Clientes</h1>
+          <p className={styles.subtitle}>
+            Gestión de cuentas de la plataforma
+          </p>
+        </div>
+        {userCanWrite && <NewClientButton />}
+      </div>
+
       {/* ── Stats bar ──────────────────────────────────────── */}
       <div className={styles.statsBar}>
         <Stat value={counts.total} label="cuentas" />
@@ -49,19 +99,22 @@ export default async function ClientesPage({ searchParams }: PageProps) {
 
       {/* ── Filter bar ─────────────────────────────────────── */}
       <form className={styles.filterBar} action="/admin/clientes">
-        <input
-          name="q"
-          type="search"
-          defaultValue={search ?? ""}
-          placeholder="Buscar por nombre, slug, industria…"
-          className={styles.searchInput}
-        />
+        <div className={styles.searchWrap}>
+          <Search size={14} className={styles.searchIcon} />
+          <input
+            name="q"
+            type="search"
+            defaultValue={search ?? ""}
+            placeholder="Buscar por nombre, slug, industria…"
+            className={styles.searchInput}
+          />
+        </div>
         <select
           name="tier"
           defaultValue={tier ?? ""}
           className={styles.select}
         >
-          <option value="">Todos los tiers</option>
+          <option value="">Todos los planes</option>
           <option value="ENTERPRISE">Enterprise</option>
           <option value="PRO">Pro</option>
           <option value="BASE">Base</option>
@@ -90,13 +143,15 @@ export default async function ClientesPage({ searchParams }: PageProps) {
               <tr>
                 <th className={styles.th}>Cliente</th>
                 <th className={styles.th}>Industria</th>
-                <th className={styles.th}>Tier</th>
+                <th className={styles.th}>Plan</th>
                 <th className={styles.thRight}>Vehículos</th>
                 <th className={styles.thRight}>Dispositivos</th>
                 <th className={styles.thRight}>Personas</th>
                 <th className={styles.thRight}>Alarmas 30d</th>
                 <th className={styles.th}>Alta</th>
-                <th className={styles.thAction} aria-hidden="true" />
+                {userCanWrite && (
+                  <th className={styles.thAction} aria-hidden="true" />
+                )}
               </tr>
             </thead>
             <tbody>
@@ -141,14 +196,26 @@ export default async function ClientesPage({ searchParams }: PageProps) {
                       {formatDate(c.createdAt)}
                     </span>
                   </td>
-                  <td className={`${styles.td} ${styles.tdAction}`}>
-                    <ChevronRight size={14} className={styles.chev} />
-                  </td>
+                  {userCanWrite && (
+                    <td className={`${styles.td} ${styles.tdAction}`}>
+                      <ClientActionsKebab
+                        accountId={c.id}
+                        accountName={c.name}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* ── Drawer ────────────────────────────────────────── */}
+      {drawerMode !== "closed" && userCanWrite && (
+        <ClientEditDrawer
+          initialClient={drawerMode === "edit" ? drawerInitial : null}
+        />
       )}
     </div>
   );

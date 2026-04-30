@@ -13,7 +13,7 @@ import styles from "./DriverAssetsHeatmap.module.css";
 //    · Columnas = semanas (52-53), oldest left, newest right
 //    · Color = paleta determinística por vehículo (colorSlot 0..5)
 //    · Intensidad = km de la semana / maxWeekKm (4 niveles + 0)
-//    · Click en celda con datos → navega a /gestion/vehiculos/[id]
+//    · Click en celda con datos → navega a /catalogos/vehiculos/[id]
 //    · Hover muestra tooltip con nombre del vehículo, semana y km
 // ═══════════════════════════════════════════════════════════════
 
@@ -75,7 +75,7 @@ export function DriverAssetsHeatmap({ data }: Props) {
   }
 
   const handleCellClick = (cell: CellInfo) => {
-    router.push(`/gestion/vehiculos/${cell.assetId}`);
+    router.push(`/catalogos/vehiculos/${cell.assetId}`);
   };
 
   return (
@@ -111,7 +111,7 @@ export function DriverAssetsHeatmap({ data }: Props) {
                 type="button"
                 className={styles.driverNameBtn}
                 onClick={() =>
-                  router.push(`/gestion/vehiculos/${asset.assetId}`)
+                  router.push(`/catalogos/vehiculos/${asset.assetId}`)
                 }
                 title={`Ver detalle de ${asset.assetName}`}
               >

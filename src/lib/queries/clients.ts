@@ -123,3 +123,53 @@ export async function getClientCounts(): Promise<{
   ]);
   return { total, base, pro, enterprise };
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  CRUD helpers (H1)
+// ═══════════════════════════════════════════════════════════════
+
+export async function getClientForEdit(accountId: string): Promise<{
+  id: string;
+  name: string;
+  slug: string;
+  tier: "BASE" | "PRO" | "ENTERPRISE";
+  industry: string | null;
+} | null> {
+  const a = await db.account.findUnique({
+    where: { id: accountId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      tier: true,
+      industry: true,
+    },
+  });
+  if (!a) return null;
+  return {
+    id: a.id,
+    name: a.name,
+    slug: a.slug,
+    tier: a.tier as "BASE" | "PRO" | "ENTERPRISE",
+    industry: a.industry,
+  };
+}
+
+/**
+ * Conteo de FK · usado para validar el delete. Si tiene cualquier
+ * relación, no se puede eliminar el cliente.
+ */
+export async function getClientStats(accountId: string): Promise<{
+  assetCount: number;
+  personCount: number;
+  groupCount: number;
+  userCount: number;
+}> {
+  const [assetCount, personCount, groupCount, userCount] = await Promise.all([
+    db.asset.count({ where: { accountId } }),
+    db.person.count({ where: { accountId } }),
+    db.group.count({ where: { accountId } }),
+    db.user.count({ where: { accountId } }),
+  ]);
+  return { assetCount, personCount, groupCount, userCount };
+}

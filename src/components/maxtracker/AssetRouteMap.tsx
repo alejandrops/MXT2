@@ -11,7 +11,7 @@ import styles from "./AssetMiniMap.module.css";
 //  import this module without pulling Leaflet code into the SSR
 //  pass.
 //
-//  Used by the Overview tab in /gestion/vehiculos/[id] to render
+//  Used by the Overview tab in /catalogos/vehiculos/[id] to render
 //  a mini polyline of the asset's most recent active day, next
 //  to the position metadata.
 //

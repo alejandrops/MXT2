@@ -1,66 +1,348 @@
-import { CircleSlash, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import styles from "../placeholder.module.css";
+import { redirect } from "next/navigation";
+import { Search } from "lucide-react";
+import {
+  getSimCounts,
+  getSimForEdit,
+  listDevicesForSimAssign,
+  listSims,
+  type Carrier,
+  type SimStatus,
+} from "@/lib/queries";
+import { getSession } from "@/lib/session";
+import { canRead, canWrite } from "@/lib/permissions";
+import { SimEditDrawer } from "./SimEditDrawer";
+import { SimActionsKebab } from "./SimActionsKebab";
+import { AdminSimsHeaderActions } from "./AdminSimsHeaderActions";
+import { AdminSimsImporter } from "./AdminSimsImporter";
+import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  /admin/sims · Placeholder
-//  ─────────────────────────────────────────────────────────────
-//  This page will manage SIM cards: ICCID, plan, carrier, data
-//  usage, expiration, and the device the SIM is installed in.
-//  Schema models needed:
-//    · Sim (iccid, msisdn, carrier, planMb, expiresAt, status)
-//    · SimProvider (Claro, Personal, Movistar, etc.)
-//
-//  Rendered as a placeholder until the schema lands · keeps the
-//  navigation surface complete for stakeholder demos.
+//  /admin/sims · CRUD SIMs (H3)
 // ═══════════════════════════════════════════════════════════════
 
-export default function SimsPage() {
+export const dynamic = "force-dynamic";
+
+interface PageProps {
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    carrier?: string;
+    new?: string;
+    edit?: string | string[];
+    import?: string;
+  }>;
+}
+
+const ALLOWED_STATUSES: SimStatus[] = [
+  "STOCK",
+  "ACTIVE",
+  "SUSPENDED",
+  "CANCELLED",
+];
+
+const ALLOWED_CARRIERS: Carrier[] = [
+  "MOVISTAR",
+  "CLARO",
+  "PERSONAL",
+  "ENTEL",
+  "OTHER",
+];
+
+const CARRIER_LABELS: Record<Carrier, string> = {
+  MOVISTAR: "Movistar",
+  CLARO: "Claro",
+  PERSONAL: "Personal",
+  ENTEL: "Entel",
+  OTHER: "Otro",
+};
+
+const STATUS_LABELS: Record<SimStatus, string> = {
+  STOCK: "Stock",
+  ACTIVE: "Activa",
+  SUSPENDED: "Suspendida",
+  CANCELLED: "Cancelada",
+};
+
+export default async function SimsPage({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const search = typeof sp.q === "string" && sp.q.trim() ? sp.q.trim() : null;
+  const status = ALLOWED_STATUSES.includes(sp.status as SimStatus)
+    ? (sp.status as SimStatus)
+    : null;
+  const carrier = ALLOWED_CARRIERS.includes(sp.carrier as Carrier)
+    ? (sp.carrier as Carrier)
+    : null;
+
+  // Drawer
+  const isNew = sp.new === "1";
+  const isImport = sp.import === "1";
+  const editIdRaw = sp.edit;
+  const editId = Array.isArray(editIdRaw) ? editIdRaw[0] : editIdRaw;
+  const drawerMode: "new" | "edit" | "closed" = editId
+    ? "edit"
+    : isNew
+      ? "new"
+      : "closed";
+
+  // Permisos
+  const session = await getSession();
+  if (!canRead(session, "backoffice_sims")) {
+    redirect("/admin");
+  }
+  const userCanWrite = canWrite(session, "backoffice_sims");
+
+  const [counts, listResult] = await Promise.all([
+    getSimCounts(),
+    listSims({ search, status, carrier }),
+  ]);
+
+  let drawerInitial: Awaited<ReturnType<typeof getSimForEdit>> = null;
+  let deviceOptions: Awaited<
+    ReturnType<typeof listDevicesForSimAssign>
+  > = [];
+
+  if (drawerMode !== "closed" && userCanWrite) {
+    if (drawerMode === "edit" && editId) {
+      drawerInitial = await getSimForEdit(editId);
+    }
+    deviceOptions = await listDevicesForSimAssign({
+      currentSimId: drawerInitial?.id ?? null,
+    });
+  }
+
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.iconWrap}>
-          <CircleSlash size={28} className={styles.icon} />
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Líneas SIM</h1>
+          <p className={styles.subtitle}>
+            Catálogo de SIMs · plan, carrier y asignación a dispositivos
+          </p>
         </div>
-        <h1 className={styles.title}>Líneas SIM</h1>
-        <p className={styles.subtitle}>
-          Próximamente · gestión de planes, vencimientos y uso de datos
-        </p>
-
-        <div className={styles.divider} />
-
-        <div className={styles.specs}>
-          <span className={styles.specsLabel}>Esta pantalla incluirá</span>
-          <ul className={styles.specsList}>
-            <li>Inventario de líneas con ICCID y número MSISDN</li>
-            <li>Operadora (Claro, Personal, Movistar) y plan contratado</li>
-            <li>Uso de datos del mes y % consumido del plan</li>
-            <li>Fechas de alta y vencimiento por línea</li>
-            <li>Dispositivo asignado y cliente al que pertenece</li>
-            <li>Alertas: SIMs próximas a vencer, planes excedidos</li>
-          </ul>
-        </div>
-
-        <div className={styles.specs}>
-          <span className={styles.specsLabel}>
-            Modelos de datos pendientes
-          </span>
-          <ul className={styles.specsList}>
-            <li>
-              <code>Sim</code> · iccid, msisdn, carrier, planMb, status,
-              expiresAt
-            </li>
-            <li>
-              <code>SimUsage</code> · daily snapshots por línea
-            </li>
-          </ul>
-        </div>
-
-        <Link href="/admin" className={styles.backLink}>
-          <ArrowLeft size={13} />
-          Volver al dashboard
-        </Link>
+        {userCanWrite && <AdminSimsHeaderActions />}
       </div>
+
+      {/* ── KPI strip ──────────────────────────────────────── */}
+      <div className={styles.kpiStrip}>
+        <KpiTile label="Total" value={counts.total} />
+        <KpiTile label="En stock" value={counts.stock} accent="blu" />
+        <KpiTile label="Activas" value={counts.active} accent="grn" />
+        <KpiTile
+          label="Suspendidas"
+          value={counts.suspended}
+          accent={counts.suspended > 0 ? "amb" : undefined}
+        />
+        <KpiTile label="Canceladas" value={counts.cancelled} />
+      </div>
+
+      {/* ── Filter bar ─────────────────────────────────────── */}
+      <form className={styles.filterBar} action="/admin/sims">
+        <div className={styles.searchWrap}>
+          <Search size={14} className={styles.searchIcon} />
+          <input
+            name="q"
+            type="search"
+            defaultValue={search ?? ""}
+            placeholder="Buscar por ICCID, número o APN…"
+            className={styles.searchInput}
+          />
+        </div>
+
+        <select
+          name="status"
+          defaultValue={status ?? ""}
+          className={styles.select}
+        >
+          <option value="">Todos los estados</option>
+          <option value="STOCK">En stock</option>
+          <option value="ACTIVE">Activas</option>
+          <option value="SUSPENDED">Suspendidas</option>
+          <option value="CANCELLED">Canceladas</option>
+        </select>
+
+        <select
+          name="carrier"
+          defaultValue={carrier ?? ""}
+          className={styles.select}
+        >
+          <option value="">Todos los carriers</option>
+          {ALLOWED_CARRIERS.map((c) => (
+            <option key={c} value={c}>
+              {CARRIER_LABELS[c]}
+            </option>
+          ))}
+        </select>
+
+        <button type="submit" className={styles.applyBtn}>
+          Aplicar
+        </button>
+        {(search || status || carrier) && (
+          <Link href="/admin/sims" className={styles.clearLink}>
+            Limpiar
+          </Link>
+        )}
+      </form>
+
+      {/* ── Table ──────────────────────────────────────────── */}
+      {listResult.rows.length === 0 ? (
+        <div className={styles.empty}>
+          {search || status || carrier
+            ? "No hay SIMs que coincidan con los filtros."
+            : "No hay SIMs cargadas."}
+        </div>
+      ) : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.th}>ICCID · Carrier</th>
+                <th className={styles.th}>Plan</th>
+                <th className={styles.th}>Estado</th>
+                <th className={styles.th}>Dispositivo</th>
+                <th className={styles.th}>APN</th>
+                {userCanWrite && (
+                  <th className={styles.thAction} aria-hidden="true" />
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {listResult.rows.map((s) => (
+                <tr
+                  key={s.id}
+                  className={`${styles.row} ${
+                    s.status === "CANCELLED" ? styles.rowMuted : ""
+                  }`}
+                >
+                  <td className={styles.td}>
+                    <div className={styles.iccidCell}>
+                      <span className={`${styles.iccid} ${styles.mono}`}>
+                        {s.iccid}
+                      </span>
+                      <span className={styles.iccidSub}>
+                        {CARRIER_LABELS[s.carrier]}
+                        {s.phoneNumber && ` · ${s.phoneNumber}`}
+                      </span>
+                    </div>
+                  </td>
+                  <td className={styles.td}>
+                    <span className={styles.planValue}>
+                      {formatPlan(s.dataPlanMb)}
+                    </span>
+                  </td>
+                  <td className={styles.td}>
+                    <StatusPill status={s.status} />
+                  </td>
+                  <td className={styles.td}>
+                    {s.device ? (
+                      <div className={styles.deviceCell}>
+                        <span
+                          className={`${styles.deviceImei} ${styles.mono}`}
+                        >
+                          {s.device.imei}
+                        </span>
+                        {(s.device.assetName || s.device.accountName) && (
+                          <span className={styles.deviceSub}>
+                            {s.device.assetName ?? "(sin vehículo)"}
+                            {s.device.accountName && ` · ${s.device.accountName}`}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className={styles.placeholder}>—</span>
+                    )}
+                  </td>
+                  <td className={styles.td}>
+                    <span className={`${styles.dim} ${styles.mono}`}>
+                      {s.apn}
+                    </span>
+                  </td>
+                  {userCanWrite && (
+                    <td className={`${styles.td} ${styles.tdAction}`}>
+                      <SimActionsKebab
+                        simId={s.id}
+                        iccid={s.iccid}
+                        status={s.status}
+                      />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Drawer ────────────────────────────────────────── */}
+      {drawerMode !== "closed" && userCanWrite && (
+        <SimEditDrawer
+          initialSim={drawerMode === "edit" ? drawerInitial : null}
+          deviceOptions={deviceOptions}
+        />
+      )}
+
+      {/* ── Importer drawer ──────────────────────────────── */}
+      {isImport && userCanWrite && <AdminSimsImporter />}
     </div>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Subcomponents
+// ═══════════════════════════════════════════════════════════════
+
+function KpiTile({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: "grn" | "amb" | "red" | "blu";
+}) {
+  return (
+    <div className={styles.kpiTile}>
+      <span className={styles.kpiLabel}>{label}</span>
+      <span
+        className={`${styles.kpiValue} ${
+          accent === "grn"
+            ? styles.kpiAccentGrn
+            : accent === "amb"
+              ? styles.kpiAccentAmb
+              : accent === "red"
+                ? styles.kpiAccentRed
+                : accent === "blu"
+                  ? styles.kpiAccentBlu
+                  : ""
+        }`}
+      >
+        {value.toLocaleString("es-AR")}
+      </span>
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: SimStatus }) {
+  const cls =
+    status === "ACTIVE"
+      ? styles.statusActive
+      : status === "STOCK"
+        ? styles.statusStock
+        : status === "SUSPENDED"
+          ? styles.statusSuspended
+          : styles.statusCancelled;
+  return (
+    <span className={`${styles.statusPill} ${cls}`}>
+      {STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function formatPlan(mb: number): string {
+  if (mb >= 1000) {
+    const gb = mb / 1000;
+    return gb % 1 === 0 ? `${gb} GB` : `${gb.toFixed(1)} GB`;
+  }
+  return `${mb} MB`;
 }

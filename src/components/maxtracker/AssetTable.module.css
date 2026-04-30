@@ -165,3 +165,34 @@
   white-space: nowrap;
   position: relative;
 }
+
+/* ── Bulk select column · A6a ─────────────────────────── */
+
+.thCheckbox {
+  width: 36px;
+  padding: 0 8px 0 14px;
+  background: var(--sf2);
+  border-bottom: 1px solid var(--brd);
+}
+
+.tdCheckbox {
+  width: 36px;
+  padding: 0 8px 0 14px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #2563EB;
+}
+
+.rowSelected {
+  background: #EFF6FF;
+}
+
+.rowSelected:hover {
+  background: #DBEAFE;
+}

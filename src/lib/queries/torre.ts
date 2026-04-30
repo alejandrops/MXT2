@@ -51,7 +51,7 @@ export interface AlarmQueueRow {
 
 export interface AlarmDetail {
   id: string;
-  /** Asset · linked to /gestion/vehiculos/[id] from the page */
+  /** Asset · linked to /catalogos/vehiculos/[id] from the page */
   assetId: string;
   assetName: string;
   assetPlate: string | null;

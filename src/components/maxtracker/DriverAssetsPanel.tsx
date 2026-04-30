@@ -60,7 +60,7 @@ export async function DriverAssetsPanel({
             </thead>
             <tbody>
               {assets.map((a) => {
-                const href = `/gestion/vehiculos/${a.assetId}`;
+                const href = `/catalogos/vehiculos/${a.assetId}`;
                 return (
                   <tr key={a.assetId} className={styles.row}>
                     <Cell href={href}>

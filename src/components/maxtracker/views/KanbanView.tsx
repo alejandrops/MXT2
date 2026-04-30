@@ -127,7 +127,7 @@ function Column({ bucket: b }: { bucket: Bucket }) {
 }
 
 function Chip({ asset: a, bucketKey }: { asset: FleetAssetLive; bucketKey: string }) {
-  const href = `/gestion/vehiculos/${a.id}`;
+  const href = `/catalogos/vehiculos/${a.id}`;
   return (
     <Link
       href={href}

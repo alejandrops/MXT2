@@ -21,9 +21,18 @@ import styles from "./AssetActionsKebab.module.css";
 interface Props {
   assetId: string;
   assetName: string;
+  /** H7b · si false oculta "Editar" del menú */
+  canEdit: boolean;
+  /** H7b · si false oculta "Dar de baja" del menú */
+  canDelete: boolean;
 }
 
-export function AssetActionsKebab({ assetId, assetName }: Props) {
+export function AssetActionsKebab({
+  assetId,
+  assetName,
+  canEdit,
+  canDelete,
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -83,6 +92,11 @@ export function AssetActionsKebab({ assetId, assetName }: Props) {
     setConfirmingDelete(false);
   }
 
+  // Si no tiene ningún permiso, no mostrar el kebab
+  if (!canEdit && !canDelete) {
+    return null;
+  }
+
   return (
     <div ref={wrapRef} className={styles.wrap}>
       <button
@@ -101,24 +115,28 @@ export function AssetActionsKebab({ assetId, assetName }: Props) {
 
       {open && (
         <div className={styles.menu} role="menu">
-          <button
-            type="button"
-            className={styles.menuItem}
-            onClick={handleEdit}
-            role="menuitem"
-          >
-            <Pencil size={13} />
-            <span>Editar</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.menuItem} ${styles.menuItemDanger}`}
-            onClick={handleDeleteRequest}
-            role="menuitem"
-          >
-            <Trash2 size={13} />
-            <span>Dar de baja</span>
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={handleEdit}
+              role="menuitem"
+            >
+              <Pencil size={13} />
+              <span>Editar</span>
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className={`${styles.menuItem} ${styles.menuItemDanger}`}
+              onClick={handleDeleteRequest}
+              role="menuitem"
+            >
+              <Trash2 size={13} />
+              <span>Dar de baja</span>
+            </button>
+          )}
         </div>
       )}
 

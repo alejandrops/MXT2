@@ -31,7 +31,7 @@ export function AssetHeader({ asset }: AssetHeaderProps) {
 
   return (
     <header className={styles.header}>
-      <Link href="/gestion/vehiculos" className={styles.backLink}>
+      <Link href="/catalogos/vehiculos" className={styles.backLink}>
         <ChevronLeft size={13} />
         Volver a Vehículos
       </Link>

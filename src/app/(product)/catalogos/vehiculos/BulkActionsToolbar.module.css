@@ -1,0 +1,272 @@
+/* ═══════════════════════════════════════════════════════════════
+   BulkActionsToolbar · barra arriba con acciones masivas
+   ═══════════════════════════════════════════════════════════════ */
+
+.toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #1E3A8A;
+  border-radius: 4px;
+  font-family: var(--f);
+  flex-wrap: wrap;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.count {
+  font-size: 12.5px;
+  color: #FFFFFF;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.count strong {
+  font-weight: 700;
+}
+
+/* ── Action button ─────────────────────────────────────── */
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionBtnActive {
+  background: #FFFFFF;
+  color: #1E3A8A;
+}
+
+.actionBtnActive:hover:not(:disabled) {
+  background: #FFFFFF;
+}
+
+.actionBtnDanger {
+  background: rgba(220, 38, 38, 0.85);
+}
+
+.actionBtnDanger:hover:not(:disabled) {
+  background: #DC2626;
+}
+
+.chev {
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+/* ── Right side ────────────────────────────────────────── */
+
+.okMsg {
+  font-family: var(--f);
+  font-size: 12px;
+  color: #BBF7D0;
+  font-weight: 500;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.clearBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.clearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Popover · debajo del toolbar
+   ═══════════════════════════════════════════════════════════════ */
+
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 12px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
+  min-width: 320px;
+  max-width: 420px;
+  padding: 14px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.popoverDanger {
+  border-color: #FCA5A5;
+}
+
+.popoverHeader {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.select {
+  font-family: var(--f);
+  font-size: 13px;
+  color: #111827;
+  padding: 8px 10px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
+}
+
+.select:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.popoverFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.errorMsg {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: #991B1B;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 4px;
+  padding: 6px 10px;
+  line-height: 1.4;
+}
+
+.popoverActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cancelBtn {
+  padding: 6px 12px;
+  background: #FFFFFF;
+  color: #4B5563;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #F3F4F6;
+}
+
+.cancelBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.applyBtn {
+  padding: 6px 14px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: #1D4ED8;
+}
+
+.applyBtn:disabled {
+  cursor: not-allowed;
+  background: #9CA3AF;
+}
+
+.applyBtnDanger {
+  background: #DC2626;
+}
+
+.applyBtnDanger:hover:not(:disabled) {
+  background: #B91C1C;
+}
+
+/* ── Danger popover content ───────────────────────────── */
+
+.dangerHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f);
+  font-size: 13px;
+  color: #111827;
+}
+
+.dangerIcon {
+  color: #DC2626;
+  flex-shrink: 0;
+}
+
+.dangerHint {
+  margin: 0;
+  font-family: var(--f);
+  font-size: 12px;
+  color: #6B7280;
+  line-height: 1.5;
+}

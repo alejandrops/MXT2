@@ -15,10 +15,17 @@ import {
 import { parseAssetsParams, buildAssetsHref } from "@/lib/url";
 import { formatNumber } from "@/lib/format";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canWrite,
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { AssetEditDrawer } from "./AssetEditDrawer";
 import { NewAssetButton } from "./NewAssetButton";
+import { AssetsBulkContainer } from "./AssetsBulkContainer";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -57,13 +64,21 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
   // Sesión y permisos
   const session = await getSession();
   const scopedAccountIds = getScopedAccountIds(session, "catalogos");
+  // Permiso a nivel módulo (usado por el bulk container y para
+  // gate genérico de "puede hacer algo de escritura")
   const userCanWrite = canWrite(session, "catalogos");
+
+  // Permisos granulares por acción (H7a)
+  const canCreateVehicle = canCreateEntity(session, "catalogos", "vehiculos");
+  const canUpdateVehicle = canUpdateEntity(session, "catalogos", "vehiculos");
+  const canDeleteVehicle = canDeleteEntity(session, "catalogos", "vehiculos");
 
   const [
     listResult,
     statusCounts,
     accounts,
     groups,
+    drivers,
   ] = await Promise.all([
     listAssets({
       search: params.search,
@@ -80,24 +95,29 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
     getAssetStatusCounts({ accountId: params.accountId, scopedAccountIds }),
     getAccountsForFilter(scopedAccountIds),
     getGroupsForFilter(null, scopedAccountIds),
+    // Drivers cargados para drawer Y bulk toolbar (si canWrite)
+    userCanWrite
+      ? (async () => {
+          if (Array.isArray(scopedAccountIds) && scopedAccountIds.length === 0) {
+            return [];
+          }
+          const where = Array.isArray(scopedAccountIds)
+            ? { accountId: { in: scopedAccountIds } }
+            : {};
+          return db.person.findMany({
+            where,
+            select: { id: true, firstName: true, lastName: true, accountId: true },
+            orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+          });
+        })()
+      : Promise.resolve([] as { id: string; firstName: string; lastName: string; accountId: string }[]),
   ]);
 
   // Drawer data · cargo solo si está abierto y user tiene write perm
   let drawerInitial: Awaited<ReturnType<typeof getAssetForEdit>> = null;
-  let drawerDrivers: { id: string; firstName: string; lastName: string; accountId: string }[] = [];
 
-  if (drawerMode !== "closed" && userCanWrite) {
-    if (drawerMode === "edit" && editId) {
-      drawerInitial = await getAssetForEdit(editId, scopedAccountIds);
-    }
-    // Cargar drivers de TODOS los accounts del scope · drawer filtra
-    // cliente-side al cambiar selectbox de cliente
-    const accountIdsForDrivers = scopedAccountIds ?? accounts.map((a) => a.id);
-    drawerDrivers = await db.person.findMany({
-      where: { accountId: { in: accountIdsForDrivers } },
-      select: { id: true, firstName: true, lastName: true, accountId: true },
-      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-    });
+  if (drawerMode === "edit" && editId && canUpdateVehicle) {
+    drawerInitial = await getAssetForEdit(editId, scopedAccountIds);
   }
 
   const totalCount =
@@ -109,21 +129,23 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
 
   return (
     <div className={styles.page}>
-      {/* ── Header con título y botón "+ Nuevo" ─────────────── */}
-      {userCanWrite && (
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1 className={styles.title}>Vehículos</h1>
-            <p className={styles.subtitle}>
-              Catálogo de la flota
-              {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
-                ? ` · ${accounts[0].name}`
-                : ""}
-            </p>
-          </div>
-          <NewAssetButton />
+      {/* ── Header con título y acciones ─────────────────── */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Vehículos</h1>
+          <p className={styles.subtitle}>
+            Catálogo de la flota
+            {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
+              ? ` · ${accounts[0].name}`
+              : ""}
+          </p>
         </div>
-      )}
+        {canCreateVehicle && (
+          <div className={styles.headerActions}>
+            <NewAssetButton />
+          </div>
+        )}
+      </div>
 
       {/* ── KPI Strip ────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
@@ -154,11 +176,23 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
       />
 
       {/* ── Table + pagination ───────────────────────────── */}
-      <AssetTable
-        rows={listResult.rows}
-        current={params}
-        showActions={userCanWrite}
-      />
+      {userCanWrite ? (
+        <AssetsBulkContainer
+          rows={listResult.rows}
+          current={params}
+          groupOptions={groups}
+          driverOptions={drivers}
+          canDelete={canDeleteVehicle}
+          canEdit={canUpdateVehicle}
+          canBulkUpdate={canUpdateVehicle}
+        />
+      ) : (
+        <AssetTable
+          rows={listResult.rows}
+          current={params}
+          showActions={false}
+        />
+      )}
 
       <Pagination
         total={listResult.total}
@@ -169,12 +203,20 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
       />
 
       {/* ── Drawer ────────────────────────────────────────── */}
-      {drawerMode !== "closed" && userCanWrite && (
+      {drawerMode === "new" && canCreateVehicle && (
         <AssetEditDrawer
-          initialAsset={drawerMode === "edit" ? drawerInitial : null}
+          initialAsset={null}
           accountOptions={accounts}
           groupOptions={groups}
-          driverOptions={drawerDrivers}
+          driverOptions={drivers}
+        />
+      )}
+      {drawerMode === "edit" && canUpdateVehicle && drawerInitial && (
+        <AssetEditDrawer
+          initialAsset={drawerInitial}
+          accountOptions={accounts}
+          groupOptions={groups}
+          driverOptions={drivers}
         />
       )}
     </div>

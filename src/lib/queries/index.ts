@@ -22,3 +22,8 @@ export * from "./devices";
 export * from "./clients";
 export * from "./activity";
 export * from "./analysis";
+export * from "./users";
+export * from "./profiles";
+export * from "./sims";
+export * from "./admin-assets";
+export * from "./admin-drivers";

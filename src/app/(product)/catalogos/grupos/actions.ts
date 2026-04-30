@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import {
   getGroupRelationCounts,
   getGroupDescendantIds,
@@ -62,7 +67,7 @@ function validate(input: GroupInput, forCreate: boolean): {
 
 export async function createGroup(input: GroupInput): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canCreateEntity(session, "catalogos", "grupos")) {
     return { ok: false, message: "No tenés permiso para crear grupos." };
   }
 
@@ -116,7 +121,7 @@ export async function updateGroup(
   input: GroupInput,
 ): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canUpdateEntity(session, "catalogos", "grupos")) {
     return { ok: false, message: "No tenés permiso." };
   }
 
@@ -183,7 +188,7 @@ export async function updateGroup(
 
 export async function deleteGroup(groupId: string): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canDeleteEntity(session, "catalogos", "grupos")) {
     return { ok: false, message: "No tenés permiso." };
   }
 

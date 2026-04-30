@@ -1,0 +1,19 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 60ms;
+}
+
+.btn:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: #6366F1;
+  color: #C7D2FE;
+}

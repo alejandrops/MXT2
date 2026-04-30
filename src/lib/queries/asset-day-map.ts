@@ -3,7 +3,7 @@
 //  ─────────────────────────────────────────────────────────────
 //  Returns the most recent day with telemetry data for an asset:
 //  the route polyline, the last position, and quick stats for
-//  that day. Used by the mini-map tab on /gestion/vehiculos/[id].
+//  that day. Used by the mini-map tab on /catalogos/vehiculos/[id].
 //
 //  We deliberately resolve the "current day" server-side (rather
 //  than literally "today") because for demo data the latest day

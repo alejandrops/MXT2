@@ -13,7 +13,7 @@ import styles from "./DriverFilterBar.module.css";
 // ═══════════════════════════════════════════════════════════════
 //  DriverFilterBar
 //  ─────────────────────────────────────────────────────────────
-//  Twin of AssetFilterBar adapted for /gestion/conductores:
+//  Twin of AssetFilterBar adapted for /catalogos/conductores:
 //    · Search by name or document
 //    · Account select
 //    · Status pill: Todos / Activos / Inactivos
@@ -108,7 +108,7 @@ export function DriverFilterBar({ current, accounts }: DriverFilterBarProps) {
       {/* ── Clear all ──────────────────────────────────────── */}
       {hasFilters && (
         <Link
-          href="/gestion/conductores"
+          href="/catalogos/conductores"
           className={styles.clearAll}
           scroll={false}
         >

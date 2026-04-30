@@ -110,6 +110,11 @@ model Asset {
   make            String?
   model           String?
   year            Int?
+  /// Lectura del odómetro al momento del alta (km). El kilometraje
+  /// "actual" se deriva sumando los Trips posteriores. Permite
+  /// planes de mantenimiento por kilómetros sin perder el histórico
+  /// previo a Maxtracker.
+  initialOdometerKm Int?
   status          AssetStatus  @default(IDLE)
   currentDriverId String?
   currentDriver   Person?      @relation("CurrentDriver", fields: [currentDriverId], references: [id])
@@ -155,16 +160,134 @@ enum AssetStatus {
 /// primary for position reporting.
 model Device {
   id          String    @id @default(cuid())
-  assetId     String
-  asset       Asset     @relation(fields: [assetId], references: [id])
+
+  /// Asset al que está instalado el dispositivo. NULL cuando el
+  /// device está en stock, en reparación o dado de baja.
+  assetId     String?
+  asset       Asset?    @relation(fields: [assetId], references: [id])
+
   imei        String    @unique
-  vendor      String
+  /// Número de serie del fabricante (puede coexistir con IMEI).
+  /// No todos los vendors lo proveen.
+  serialNumber String?
+
+  /// Marca del dispositivo. Limitamos a un set conocido para
+  /// poder mantener integraciones (codecs, configs, comandos).
+  /// "OTHER" deja espacio para casos esporádicos.
+  vendor      DeviceVendor
   model       String
+
+  /// Versión de firmware actualmente cargada · útil para tracking
+  /// de updates y troubleshooting de bugs específicos por versión.
+  firmwareVersion String?
+
+  /// Estado en el ciclo de vida del dispositivo · ver DeviceStatus
+  status      DeviceStatus @default(STOCK)
+
+  /// Si está marcado, es el dispositivo principal del Asset
+  /// (cuando un Asset tiene múltiples devices, ej · GPS + cámara).
   isPrimary   Boolean   @default(false)
+
+  /// SIM card insertada en el dispositivo. NULL cuando el device
+  /// no tiene SIM (recién recibido, en stock sin SIM provista, o
+  /// en reparación con la SIM removida). La relación es 1-1 vía
+  /// @unique en simId · una SIM no puede estar en dos devices.
+  simId       String?   @unique
+  sim         Sim?      @relation(fields: [simId], references: [id])
+
   lastSeenAt  DateTime?
   installedAt DateTime  @default(now())
 
   @@index([assetId])
+  @@index([status])
+}
+
+enum DeviceVendor {
+  TELTONIKA
+  QUECLINK
+  CONCOX
+  OTHER
+}
+
+enum DeviceStatus {
+  /// Recién recibido, no instalado en ningún asset todavía.
+  STOCK
+  /// Instalado y operando en un Asset.
+  INSTALLED
+  /// Removido por falla, esperando service o reemplazo.
+  IN_REPAIR
+  /// Vida útil terminada · no se reinstala.
+  DECOMMISSIONED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SIM CARDS
+// ═══════════════════════════════════════════════════════════════
+
+/// SIM card de datos asignada (potencialmente) a un Device. La
+/// relación SIM ↔ Device vive en `Device.simId` (1-1). Una SIM
+/// puede estar en stock (sin device) o asignada (en un device).
+model Sim {
+  id           String    @id @default(cuid())
+
+  /// Integrated Circuit Card ID · 19-20 dígitos numéricos.
+  /// Es el identificador único físico de la SIM, impreso en
+  /// el plástico y leído por el modem del Device.
+  iccid        String    @unique
+
+  /// Número telefónico (MSISDN) asignado por el carrier. No
+  /// siempre se conoce · algunas APIs IoT no lo exponen.
+  phoneNumber  String?
+
+  /// IMSI · International Mobile Subscriber Identity. Usado para
+  /// algunos provisioning automáticos · opcional para el demo.
+  imsi         String?
+
+  /// Carrier comercial · acotado a los principales del Cono Sur.
+  /// "OTHER" cubre carriers regionales (Bitel, Tigo, etc.).
+  carrier      Carrier
+
+  /// Access Point Name · necesario para que el modem se conecte
+  /// a la red de datos. Cada carrier tiene su APN específico.
+  /// Ej · "internet.movistar.com.ar"
+  apn          String
+
+  /// Cuota mensual de datos en MB. Los planes IoT típicos van
+  /// de 10 MB (telemetría básica) a 500 MB (cámaras + video).
+  dataPlanMb   Int       @default(50)
+
+  status       SimStatus @default(STOCK)
+
+  /// Backref · una SIM puede estar dentro de un Device. La FK
+  /// real vive en Device.simId (con @unique). Acá es el otro
+  /// lado de la relación, opcional.
+  device       Device?
+
+  activatedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([status])
+  @@index([carrier])
+}
+
+enum Carrier {
+  MOVISTAR
+  CLARO
+  PERSONAL
+  ENTEL
+  OTHER
+}
+
+enum SimStatus {
+  /// Recibida del carrier, no asignada a ningún device.
+  STOCK
+  /// Operando dentro de un device · transmitiendo datos.
+  ACTIVE
+  /// Pausada por el carrier (deuda, cambio de plan, robo).
+  /// El device queda offline mientras dura la suspensión.
+  SUSPENDED
+  /// Dada de baja · no se reactiva. Liberable del device.
+  CANCELLED
 }
 
 // ═══════════════════════════════════════════════════════════════

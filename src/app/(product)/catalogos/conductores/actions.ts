@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import { getPersonRelationCounts } from "@/lib/queries/persons";
 
 // ═══════════════════════════════════════════════════════════════
@@ -112,7 +117,7 @@ function validate(input: PersonInput, forCreate: boolean): {
 
 export async function createPerson(input: PersonInput): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canCreateEntity(session, "catalogos", "conductores")) {
     return { ok: false, message: "No tenés permiso para crear conductores." };
   }
 
@@ -165,7 +170,7 @@ export async function updatePerson(
   input: PersonInput,
 ): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canUpdateEntity(session, "catalogos", "conductores")) {
     return { ok: false, message: "No tenés permiso para editar conductores." };
   }
 
@@ -216,7 +221,7 @@ export async function updatePerson(
 
 export async function deletePerson(personId: string): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canDeleteEntity(session, "catalogos", "conductores")) {
     return { ok: false, message: "No tenés permiso." };
   }
 

@@ -6,10 +6,14 @@ import {
   ChevronLeft,
   LayoutGrid,
   Users,
+  Truck,
+  IdCard,
   Smartphone,
   CircleSlash,
   Wrench,
   Shield,
+  UserCog,
+  ShieldCheck,
 } from "lucide-react";
 import styles from "./AdminSidebar.module.css";
 
@@ -42,6 +46,16 @@ const NAV: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: <LayoutGrid size={15} /> },
   { href: "/admin/clientes", label: "Clientes", icon: <Users size={15} /> },
   {
+    href: "/admin/vehiculos",
+    label: "Vehículos",
+    icon: <Truck size={15} />,
+  },
+  {
+    href: "/admin/conductores",
+    label: "Conductores",
+    icon: <IdCard size={15} />,
+  },
+  {
     href: "/admin/dispositivos",
     label: "Dispositivos",
     icon: <Smartphone size={15} />,
@@ -55,6 +69,16 @@ const NAV: NavItem[] = [
     href: "/admin/instalaciones",
     label: "Instalaciones",
     icon: <Wrench size={15} />,
+  },
+  {
+    href: "/admin/usuarios",
+    label: "Usuarios",
+    icon: <UserCog size={15} />,
+  },
+  {
+    href: "/admin/perfiles",
+    label: "Perfiles",
+    icon: <ShieldCheck size={15} />,
   },
 ];
 

@@ -460,6 +460,7 @@ export async function getAssetForEdit(
   make: string | null;
   model: string | null;
   year: number | null;
+  initialOdometerKm: number | null;
   vehicleType: string;
   mobilityType: string;
   status: string;
@@ -484,6 +485,7 @@ export async function getAssetForEdit(
       make: true,
       model: true,
       year: true,
+      initialOdometerKm: true,
       vehicleType: true,
       mobilityType: true,
       status: true,

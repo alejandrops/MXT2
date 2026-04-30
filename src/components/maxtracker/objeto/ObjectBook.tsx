@@ -41,9 +41,9 @@ const TYPE_LABELS: Record<ObjectType, string> = {
 };
 
 const TYPE_BACK: Record<ObjectType, { label: string; href: string }> = {
-  vehiculo: { label: "Vehículos", href: "/gestion/vehiculos" },
-  conductor: { label: "Conductores", href: "/gestion/conductores" },
-  grupo: { label: "Grupos", href: "/gestion/grupos" },
+  vehiculo: { label: "Vehículos", href: "/catalogos/vehiculos" },
+  conductor: { label: "Conductores", href: "/catalogos/conductores" },
+  grupo: { label: "Grupos", href: "/catalogos/grupos" },
 };
 
 interface Props {

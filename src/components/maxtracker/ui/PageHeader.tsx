@@ -57,7 +57,7 @@ interface ObjectHeaderProps {
   status?: ObjectStatus | null;
   /** Etiqueta del breadcrumb · ej "Vehículos" */
   backLabel?: string;
-  /** URL del breadcrumb · ej "/gestion/vehiculos" */
+  /** URL del breadcrumb · ej "/catalogos/vehiculos" */
   backHref?: string;
   /** Acciones rápidas a la derecha */
   actions?: React.ReactNode;

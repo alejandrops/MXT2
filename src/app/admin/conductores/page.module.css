@@ -1,0 +1,519 @@
+/* ═══════════════════════════════════════════════════════════════
+   /admin/dispositivos · variant oscura (admin shell)
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 16px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1380px;
+  font-family: var(--f);
+  color: #E5E7EB;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #F9FAFB;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: #9CA3AF;
+}
+
+.newBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #6366F1;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 80ms;
+  white-space: nowrap;
+}
+
+.newBtn:hover {
+  background: #4F46E5;
+}
+
+/* ── KPI strip ──────────────────────────────────────── */
+
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 1100px) {
+  .kpiStrip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kpiTile {
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpiLabel {
+  font-size: 11px;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.kpiValue {
+  font-family: var(--m);
+  font-size: 22px;
+  font-weight: 700;
+  color: #F9FAFB;
+  line-height: 1.1;
+}
+
+.kpiAccentGrn { color: #34D399; }
+.kpiAccentAmb { color: #FBBF24; }
+.kpiAccentRed { color: #F87171; }
+.kpiAccentBlu { color: #93C5FD; }
+
+/* ── Filter bar ─────────────────────────────────────── */
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 8px 10px;
+  flex-wrap: wrap;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6B7280;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  font-family: var(--f);
+  font-size: 13px;
+  color: #F9FAFB;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 7px 10px 7px 30px;
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #6366F1;
+}
+
+.searchInput::placeholder {
+  color: #6B7280;
+}
+
+.select {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: #F9FAFB;
+  background: #0F1320;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.select:focus {
+  border-color: #6366F1;
+}
+
+.applyBtn {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: #FFFFFF;
+  background: #6366F1;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.applyBtn:hover {
+  background: #4F46E5;
+}
+
+.clearLink {
+  font-family: var(--f);
+  font-size: 12px;
+  color: #9CA3AF;
+  text-decoration: none;
+  padding: 7px 10px;
+}
+
+.clearLink:hover {
+  color: #F9FAFB;
+}
+
+/* ── Table ──────────────────────────────────────────── */
+
+.tableWrap {
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--f);
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  background: #232938;
+  border-bottom: 1px solid #2A3142;
+  white-space: nowrap;
+}
+
+.thAction {
+  width: 40px;
+  background: #232938;
+  border-bottom: 1px solid #2A3142;
+}
+
+.row {
+  border-bottom: 1px solid #232938;
+  transition: background-color 60ms;
+}
+
+.row:hover {
+  background: #232938;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowMuted {
+  opacity: 0.55;
+}
+
+.td {
+  padding: 10px 14px;
+  vertical-align: middle;
+  color: #E5E7EB;
+}
+
+.tdAction {
+  padding: 0 12px;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.dim {
+  color: #9CA3AF;
+}
+
+.placeholder {
+  color: #4B5563;
+}
+
+.mono {
+  font-family: var(--m);
+}
+
+/* ── IMEI cell ──────────────────────────────────────── */
+
+.imeiCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.imei {
+  font-size: 13px;
+  font-weight: 500;
+  color: #F9FAFB;
+}
+
+.imeiSub {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+/* ── Asset cell ─────────────────────────────────────── */
+
+.assetCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assetName {
+  font-size: 12.5px;
+  color: #F9FAFB;
+  font-weight: 500;
+}
+
+.primaryBadge {
+  display: inline-block;
+  margin-left: 6px;
+  color: #FBBF24;
+  font-size: 12px;
+}
+
+.assetSub {
+  font-size: 11px;
+  color: #9CA3AF;
+  font-family: var(--m);
+}
+
+/* ── Status pill (lifecycle) ────────────────────────── */
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.statusStock {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93C5FD;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.statusInstalled {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.statusRepair {
+  background: rgba(251, 191, 36, 0.15);
+  color: #FCD34D;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.statusDecommissioned {
+  background: rgba(107, 114, 128, 0.18);
+  color: #9CA3AF;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* ── Comm pill (estado de señal) ────────────────────── */
+
+.commPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+}
+
+.commOnline {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+}
+
+.commRecent {
+  background: rgba(132, 204, 22, 0.15);
+  color: #BEF264;
+}
+
+.commStale {
+  background: rgba(251, 191, 36, 0.15);
+  color: #FBBF24;
+}
+
+.commLong {
+  background: rgba(249, 115, 22, 0.15);
+  color: #FDBA74;
+}
+
+.commOffline {
+  background: rgba(239, 68, 68, 0.15);
+  color: #FCA5A5;
+}
+
+/* ── Empty ──────────────────────────────────────────── */
+
+.empty {
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  padding: 28px;
+  text-align: center;
+  color: #9CA3AF;
+  font-family: var(--f);
+  font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   H7c · Cells y chips específicos
+   ═══════════════════════════════════════════════════════════════ */
+
+.assetCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assetName {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #F9FAFB;
+}
+
+.assetSub {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.deviceCell,
+.simCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.deviceImei,
+.simIccid {
+  font-size: 12px;
+  color: #F9FAFB;
+}
+
+.deviceSub,
+.simSub {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.typeChip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #C7D2FE;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.warningChip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(251, 191, 36, 0.12);
+  color: #FCD34D;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ── Pagination ──────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #1A1F2E;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+}
+
+.pageInfo {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.pageButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.pageBtn {
+  padding: 6px 12px;
+  background: #232938;
+  color: #E5E7EB;
+  border: 1px solid #2A3142;
+  border-radius: 4px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 60ms;
+}
+
+.pageBtn:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: #6366F1;
+  color: #C7D2FE;
+}

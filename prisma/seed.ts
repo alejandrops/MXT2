@@ -214,6 +214,8 @@ async function reset() {
   await db.event.deleteMany();
   await db.position.deleteMany();
   await db.device.deleteMany();
+  await db.sim.deleteMany();
+  await db.assetWeeklyStats.deleteMany();
   await db.asset.deleteMany();
   await db.person.deleteMany();
   await db.group.deleteMany();
@@ -478,13 +480,41 @@ async function main() {
     // ship full-featured FMB devices, motorcycles use lighter ones.
     const deviceModel = spec.vehicleType === "MOTORCYCLE" ? "FMB001" : "FMB920";
 
+    // Crear primero la SIM · después el Device la referencia.
+    // Distribuimos carriers por seed determinístico para variedad.
+    const carrierPick = ["MOVISTAR", "CLARO", "PERSONAL"][totalAssets % 3] as
+      | "MOVISTAR"
+      | "CLARO"
+      | "PERSONAL";
+    const apnPick =
+      carrierPick === "MOVISTAR"
+        ? "internet.movistar.com.ar"
+        : carrierPick === "CLARO"
+          ? "internet.ctimovil.com.ar"
+          : "internet.personal.com";
+
+    const sim = await db.sim.create({
+      data: {
+        iccid: faker.string.numeric(20),
+        phoneNumber: `+54 11 ${faker.string.numeric(4)}-${faker.string.numeric(4)}`,
+        imsi: faker.string.numeric(15),
+        carrier: carrierPick,
+        apn: apnPick,
+        dataPlanMb: spec.vehicleType === "TRUCK" ? 250 : 100,
+        status: "ACTIVE",
+        activatedAt: faker.date.past({ years: 1, refDate: NOW }),
+      },
+    });
+
     await db.device.create({
       data: {
         assetId: asset.id,
         imei: faker.string.numeric(15),
-        vendor: "Teltonika",
+        vendor: "TELTONIKA",
         model: deviceModel,
+        status: "INSTALLED",
         isPrimary: true,
+        simId: sim.id,
         installedAt: faker.date.past({ years: 2, refDate: NOW }),
         lastSeenAt: faker.date.recent({ days: 1, refDate: NOW }),
       },

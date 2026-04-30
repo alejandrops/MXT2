@@ -84,3 +84,14 @@
 .newBtn:hover {
   background: #1D4ED8;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   H5a · Botones del header alineados a la derecha
+   ═══════════════════════════════════════════════════════════════ */
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

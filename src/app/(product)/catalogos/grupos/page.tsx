@@ -10,7 +10,12 @@ import {
 } from "@/lib/queries";
 import { KpiTile } from "@/components/maxtracker";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import { GroupEditDrawer } from "./GroupEditDrawer";
 import { GroupActionsKebab } from "./GroupActionsKebab";
 import { NewGroupButton } from "./NewGroupButton";
@@ -58,7 +63,9 @@ export default async function GruposPage({ searchParams }: PageProps) {
   // Sesión y permisos
   const session = await getSession();
   const scopedAccountIds = getScopedAccountIds(session, "catalogos");
-  const userCanWrite = canWrite(session, "catalogos");
+  const canCreateGroup = canCreateEntity(session, "catalogos", "grupos");
+  const canUpdateGroup = canUpdateEntity(session, "catalogos", "grupos");
+  const canDeleteGroup = canDeleteEntity(session, "catalogos", "grupos");
 
   const [counts, rows, accounts] = await Promise.all([
     getGroupCounts(scopedAccountIds),
@@ -66,7 +73,8 @@ export default async function GruposPage({ searchParams }: PageProps) {
     getAccountsForFilter(scopedAccountIds),
   ]);
 
-  // Drawer · cargar datos solo si está abierto y user tiene write
+  // Drawer · cargar datos solo si está abierto y user tiene el permiso
+  // específico (canCreate para new · canUpdate para edit)
   let drawerInitial: Awaited<ReturnType<typeof getGroupForEdit>> = null;
   let parentOptions: {
     id: string;
@@ -75,7 +83,11 @@ export default async function GruposPage({ searchParams }: PageProps) {
     parentName: string | null;
   }[] = [];
 
-  if (drawerMode !== "closed" && userCanWrite) {
+  const drawerOpen =
+    (drawerMode === "new" && canCreateGroup) ||
+    (drawerMode === "edit" && canUpdateGroup);
+
+  if (drawerOpen) {
     if (drawerMode === "edit" && editId) {
       drawerInitial = await getGroupForEdit(editId, scopedAccountIds);
     }
@@ -102,20 +114,18 @@ export default async function GruposPage({ searchParams }: PageProps) {
   return (
     <div className={styles.page}>
       {/* ── Header con título y botón "+ Nuevo" ─────────────── */}
-      {userCanWrite && (
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <h1 className={styles.title}>Grupos</h1>
-            <p className={styles.subtitle}>
-              Organización jerárquica de la flota
-              {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
-                ? ` · ${accounts[0].name}`
-                : ""}
-            </p>
-          </div>
-          <NewGroupButton />
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Grupos</h1>
+          <p className={styles.subtitle}>
+            Organización jerárquica de la flota
+            {scopedAccountIds && scopedAccountIds.length === 1 && accounts[0]
+              ? ` · ${accounts[0].name}`
+              : ""}
+          </p>
         </div>
-      )}
+        {canCreateGroup && <NewGroupButton />}
+      </div>
 
       {/* ── KPI strip ──────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
@@ -205,10 +215,12 @@ export default async function GruposPage({ searchParams }: PageProps) {
                       </Link>
                     </td>
                     <td className={`${styles.td} ${styles.tdAction}`}>
-                      {userCanWrite ? (
+                      {canUpdateGroup || canDeleteGroup ? (
                         <GroupActionsKebab
                           groupId={g.id}
                           groupName={g.name}
+                          canEdit={canUpdateGroup}
+                          canDelete={canDeleteGroup}
                         />
                       ) : (
                         <Link href={href} className={styles.cellLink}>
@@ -225,9 +237,16 @@ export default async function GruposPage({ searchParams }: PageProps) {
       )}
 
       {/* ── Drawer ────────────────────────────────────────── */}
-      {drawerMode !== "closed" && userCanWrite && (
+      {drawerMode === "new" && canCreateGroup && (
         <GroupEditDrawer
-          initialGroup={drawerMode === "edit" ? drawerInitial : null}
+          initialGroup={null}
+          accountOptions={accounts}
+          parentOptions={parentOptions}
+        />
+      )}
+      {drawerMode === "edit" && canUpdateGroup && drawerInitial && (
+        <GroupEditDrawer
+          initialGroup={drawerInitial}
           accountOptions={accounts}
           parentOptions={parentOptions}
         />

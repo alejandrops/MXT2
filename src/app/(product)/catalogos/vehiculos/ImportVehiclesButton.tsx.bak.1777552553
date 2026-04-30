@@ -1,0 +1,24 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Upload } from "lucide-react";
+import styles from "./ImportVehiclesButton.module.css";
+
+export function ImportVehiclesButton() {
+  const router = useRouter();
+
+  function handleClick() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("import", "1");
+    url.searchParams.delete("new");
+    url.searchParams.delete("edit");
+    router.push(url.pathname + url.search, { scroll: false });
+  }
+
+  return (
+    <button type="button" className={styles.btn} onClick={handleClick}>
+      <Upload size={13} />
+      <span>Importar CSV</span>
+    </button>
+  );
+}

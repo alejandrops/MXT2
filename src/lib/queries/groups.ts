@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 //  Groups queries · listing only (Lote A · simple version)
 //  ─────────────────────────────────────────────────────────────
 //  The Group model is hierarchical (parent/children) but for the
-//  first iteration of /gestion/grupos we render a flat list with:
+//  first iteration of /catalogos/grupos we render a flat list with:
 //    · group name
 //    · account name
 //    · vehicle count (assets directly assigned to that group)

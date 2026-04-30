@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 // ═══════════════════════════════════════════════════════════════
 //  Home route
 //  ─────────────────────────────────────────────────────────────
-//  Lote 1: Redirects to the Seguridad dashboard (the primary
-//  demo surface). In a later lote this becomes a real landing
-//  page with an account switcher and cross-module snapshot.
+//  Pantalla por defecto al entrar al sistema · Mapa de Seguimiento
+//  (vista operativa primaria · "qué está pasando ahora").
 // ═══════════════════════════════════════════════════════════════
 
 export default function HomePage() {
-  redirect("/seguridad/dashboard");
+  redirect("/seguimiento/mapa");
 }

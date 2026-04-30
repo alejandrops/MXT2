@@ -6,7 +6,7 @@ import styles from "./DriverAssetHistoryPanel.module.css";
 // ═══════════════════════════════════════════════════════════════
 //  DriverAssetHistoryPanel
 //  ─────────────────────────────────────────────────────────────
-//  Used in /gestion/vehiculos/[id]?tab=persona to show the full
+//  Used in /catalogos/vehiculos/[id]?tab=persona to show the full
 //  list of drivers who have driven this vehicle in the recent
 //  past, with usage stats and a 84-day GitHub-style mini-heatmap
 //  per driver.
@@ -69,7 +69,7 @@ function DriverHistoryCard({ row }: { row: DriverAssetHistoryRow }) {
 
   return (
     <Link
-      href={`/gestion/conductores/${row.driverId}`}
+      href={`/catalogos/conductores/${row.driverId}`}
       className={styles.card}
     >
       {/* ── Identity column ─────────────────────────────── */}

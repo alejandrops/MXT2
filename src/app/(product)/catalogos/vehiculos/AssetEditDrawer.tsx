@@ -32,14 +32,6 @@ const MOBILITY_LABELS: Record<string, string> = {
   FIXED: "Fijo",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  MOVING: "En movimiento",
-  IDLE: "Detenido",
-  STOPPED: "Apagado",
-  OFFLINE: "Sin señal",
-  MAINTENANCE: "Mantenimiento",
-};
-
 export interface DrawerInitialAsset {
   id: string;
   accountId: string;
@@ -51,6 +43,7 @@ export interface DrawerInitialAsset {
   make: string | null;
   model: string | null;
   year: number | null;
+  initialOdometerKm: number | null;
   vehicleType: string;
   mobilityType: string;
   status: string;
@@ -121,13 +114,22 @@ export function AssetEditDrawer({
   const [year, setYear] = useState(
     initialAsset?.year != null ? String(initialAsset.year) : "",
   );
+  const [initialOdometerKm, setInitialOdometerKm] = useState(
+    initialAsset?.initialOdometerKm != null
+      ? String(initialAsset.initialOdometerKm)
+      : "",
+  );
   const [vehicleType, setVehicleType] = useState(
     initialAsset?.vehicleType ?? "GENERIC",
   );
   const [mobilityType, setMobilityType] = useState(
     initialAsset?.mobilityType ?? "MOBILE",
   );
-  const [status, setStatus] = useState(initialAsset?.status ?? "IDLE");
+  // Toggle binario · true = MAINTENANCE
+  // En create default false. En edit, derivado del status actual.
+  const [inMaintenance, setInMaintenance] = useState(
+    initialAsset?.status === "MAINTENANCE",
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -172,9 +174,10 @@ export function AssetEditDrawer({
       make,
       model,
       year,
+      initialOdometerKm,
       vehicleType,
       mobilityType,
-      status,
+      inMaintenance,
     };
   }
 
@@ -236,7 +239,10 @@ export function AssetEditDrawer({
             <div className={styles.alert}>{generalError}</div>
           )}
 
+          {/* ── Sección 1 · Identificación ─────────────── */}
           <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Identificación</h3>
+
             {showAccountSelect && (
               <Field label="Cliente" required error={errors.accountId}>
                 <select
@@ -262,6 +268,7 @@ export function AssetEditDrawer({
                 onChange={(e) => setName(e.target.value)}
                 disabled={isPending}
                 maxLength={80}
+                placeholder="Ej · Camión 12 · Volvo Norte"
               />
             </Field>
 
@@ -325,6 +332,7 @@ export function AssetEditDrawer({
             </div>
           </div>
 
+          {/* ── Sección 2 · Operación ─────────────────── */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Operación</h3>
 
@@ -391,19 +399,44 @@ export function AssetEditDrawer({
               </select>
             </Field>
 
-            <Field label="Estado">
-              <select
-                className={styles.select}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+            <Field
+              label="Odómetro al alta (km)"
+              error={errors.initialOdometerKm}
+              hint="Lectura del cuentakilómetros al alta · sirve para planes de mantenimiento por km. Opcional."
+            >
+              <input
+                type="number"
+                className={styles.input}
+                value={initialOdometerKm}
+                onChange={(e) => setInitialOdometerKm(e.target.value)}
                 disabled={isPending}
-              >
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+                min={0}
+                max={9999999}
+                placeholder="125000"
+              />
+            </Field>
+
+            {/* Toggle de mantenimiento · binario */}
+            <Field
+              label="Disponibilidad"
+              hint={
+                inMaintenance
+                  ? "El vehículo no aparece en vistas operativas. Cuando vuelva a operar, destildá esto · el sistema va a actualizar el estado real automáticamente."
+                  : "El estado operativo (en movimiento, detenido, sin señal) lo determina el dispositivo IoT automáticamente."
+              }
+            >
+              <label className={styles.toggleRow}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={inMaintenance}
+                  onChange={(e) => setInMaintenance(e.target.checked)}
+                  disabled={isPending}
+                />
+                <span className={styles.toggleLabel}>
+                  Está en mantenimiento (fuera de operación)
+                </span>
+              </label>
             </Field>
           </div>
         </form>
@@ -440,11 +473,13 @@ function Field({
   label,
   required,
   error,
+  hint,
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -454,7 +489,11 @@ function Field({
         {required && <span className={styles.fieldRequired}> *</span>}
       </label>
       {children}
-      {error && <span className={styles.fieldError}>{error}</span>}
+      {error ? (
+        <span className={styles.fieldError}>{error}</span>
+      ) : hint ? (
+        <span className={styles.fieldHint}>{hint}</span>
+      ) : null}
     </div>
   );
 }

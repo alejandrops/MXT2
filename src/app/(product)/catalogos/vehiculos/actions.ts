@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { canWrite, getScopedAccountIds } from "@/lib/permissions";
+import {
+  canCreateEntity,
+  canUpdateEntity,
+  canDeleteEntity,
+  getScopedAccountIds,
+} from "@/lib/permissions";
 import type { Prisma } from "@prisma/client";
 
 // ═══════════════════════════════════════════════════════════════
@@ -67,9 +72,12 @@ export interface AssetInput {
   make: string;
   model: string;
   year: string; // string desde el form, parsea acá
+  /** Odómetro al alta · número o vacío */
+  initialOdometerKm: string;
   vehicleType: string;
   mobilityType: string;
-  status: string;
+  /** Toggle binario · true = MAINTENANCE, false = operación normal */
+  inMaintenance: boolean;
 }
 
 function validate(
@@ -84,6 +92,7 @@ function validate(
   const make = (input.make ?? "").trim();
   const model = (input.model ?? "").trim();
   const yearRaw = (input.year ?? "").trim();
+  const odometerRaw = (input.initialOdometerKm ?? "").trim();
 
   if (name.length === 0) errors.name = "Requerido";
   else if (name.length > 80) errors.name = "Máximo 80 caracteres";
@@ -104,14 +113,21 @@ function validate(
     }
   }
 
+  let initialOdometerKm: number | null = null;
+  if (odometerRaw.length > 0) {
+    const n = Number.parseInt(odometerRaw, 10);
+    if (Number.isNaN(n) || n < 0 || n > 9_999_999) {
+      errors.initialOdometerKm = "Valor inválido (0 – 9.999.999 km)";
+    } else {
+      initialOdometerKm = n;
+    }
+  }
+
   if (!VALID_VEHICLE_TYPES.includes(input.vehicleType as VehicleType)) {
     errors.vehicleType = "Tipo inválido";
   }
   if (!VALID_MOBILITY.includes(input.mobilityType as MobilityType)) {
     errors.mobilityType = "Movilidad inválida";
-  }
-  if (!VALID_STATUS.includes(input.status as AssetStatus)) {
-    errors.status = "Estado inválido";
   }
 
   if (forCreate && !input.accountId) {
@@ -120,6 +136,8 @@ function validate(
 
   if (Object.keys(errors).length > 0) return { errors };
 
+  // Status NO se setea acá · cada caller (create / update) decide
+  // según contexto (preservar estado actual o forzar MAINTENANCE)
   const data: Prisma.AssetUncheckedCreateInput = {
     accountId: input.accountId!,
     groupId: input.groupId ?? null,
@@ -130,9 +148,11 @@ function validate(
     make: make.length > 0 ? make : null,
     model: model.length > 0 ? model : null,
     year,
+    initialOdometerKm,
     vehicleType: input.vehicleType as VehicleType,
     mobilityType: input.mobilityType as MobilityType,
-    status: input.status as AssetStatus,
+    // status se sobreescribe en cada caller
+    status: input.inMaintenance ? "MAINTENANCE" : "IDLE",
   };
 
   return { errors, data };
@@ -144,7 +164,7 @@ function validate(
 
 export async function createAsset(input: AssetInput): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canCreateEntity(session, "catalogos", "vehiculos")) {
     return { ok: false, message: "No tenés permiso para crear vehículos." };
   }
 
@@ -225,7 +245,7 @@ export async function updateAsset(
   input: AssetInput,
 ): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canUpdateEntity(session, "catalogos", "vehiculos")) {
     return { ok: false, message: "No tenés permiso para editar vehículos." };
   }
 
@@ -235,19 +255,19 @@ export async function updateAsset(
     return { ok: false, message: "Sin permiso." };
   }
 
-  const existing = await db.asset.findUnique({
+  const existingFull = await db.asset.findUnique({
     where: { id: assetId },
-    select: { id: true, accountId: true },
+    select: { id: true, accountId: true, status: true },
   });
-  if (!existing) {
+  if (!existingFull) {
     return { ok: false, message: "Vehículo no encontrado" };
   }
-  if (Array.isArray(scoped) && !scoped.includes(existing.accountId)) {
+  if (Array.isArray(scoped) && !scoped.includes(existingFull.accountId)) {
     return { ok: false, message: "Sin permiso para este vehículo." };
   }
 
   // En update no permitimos cambiar accountId · forzamos el actual
-  input.accountId = existing.accountId;
+  input.accountId = existingFull.accountId;
 
   const { errors, data } = validate(input, false);
   if (Object.keys(errors).length > 0 || !data) {
@@ -278,7 +298,7 @@ export async function updateAsset(
       where: { id: data.groupId },
       select: { accountId: true },
     });
-    if (!group || group.accountId !== existing.accountId) {
+    if (!group || group.accountId !== existingFull.accountId) {
       return { ok: false, errors: { groupId: "Grupo inválido para este cliente" } };
     }
   }
@@ -289,7 +309,7 @@ export async function updateAsset(
       where: { id: data.currentDriverId },
       select: { accountId: true },
     });
-    if (!driver || driver.accountId !== existing.accountId) {
+    if (!driver || driver.accountId !== existingFull.accountId) {
       return {
         ok: false,
         errors: { currentDriverId: "Conductor inválido para este cliente" },
@@ -308,9 +328,20 @@ export async function updateAsset(
       make: data.make,
       model: data.model,
       year: data.year,
+      initialOdometerKm: data.initialOdometerKm,
       vehicleType: data.vehicleType,
       mobilityType: data.mobilityType,
-      status: data.status,
+      // Status: si el toggle dice "en mantenimiento", forzar MAINTENANCE.
+      // Si dice "en operación":
+      //   - Si estaba en MAINTENANCE, pasar a IDLE (el sistema lo va a
+      //     actualizar al recibir la próxima posición del dispositivo)
+      //   - Si NO estaba en MAINTENANCE, NO tocar el status · preservar
+      //     el real (MOVING / IDLE / STOPPED / OFFLINE) que viene del IoT
+      ...(input.inMaintenance
+        ? { status: "MAINTENANCE" as const }
+        : existingFull?.status === "MAINTENANCE"
+          ? { status: "IDLE" as const }
+          : {}),
     },
   });
 
@@ -329,7 +360,7 @@ export async function updateAsset(
 
 export async function softDeleteAsset(assetId: string): Promise<ActionResult> {
   const session = await getSession();
-  if (!canWrite(session, "catalogos")) {
+  if (!canDeleteEntity(session, "catalogos", "vehiculos")) {
     return { ok: false, message: "No tenés permiso." };
   }
 
@@ -355,4 +386,237 @@ export async function softDeleteAsset(assetId: string): Promise<ActionResult> {
   });
   revalidatePath("/catalogos/vehiculos");
   return { ok: true, message: "Vehículo dado de baja" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Bulk actions · A6a
+//  ─────────────────────────────────────────────────────────────
+//  Patrón común:
+//    1. Resolver session + canWrite
+//    2. Resolver scopedAccountIds
+//    3. Filtrar IDs · solo aquellos que están en mi scope. Si
+//       alguien manipula el form para incluir IDs fuera del scope,
+//       los ignoramos silenciosamente · no los procesamos.
+//    4. Validar datos de la mutación (groupId / driverId / status)
+//    5. updateMany / updates individuales según el caso
+// ═══════════════════════════════════════════════════════════════
+
+interface BulkResult extends ActionResult {
+  affected?: number;
+  skipped?: number;
+}
+
+/**
+ * Filtra los assetIds quedándose solo con los que pertenecen al
+ * scope del usuario · si scope es null (cross-account), los
+ * devuelve todos los que existan en DB.
+ */
+async function filterIdsToScope(
+  assetIds: string[],
+  scopedAccountIds: string[] | null,
+): Promise<string[]> {
+  if (assetIds.length === 0) return [];
+  const where: Prisma.AssetWhereInput = { id: { in: assetIds } };
+  if (Array.isArray(scopedAccountIds)) {
+    where.accountId = { in: scopedAccountIds };
+  }
+  const valid = await db.asset.findMany({
+    where,
+    select: { id: true },
+  });
+  return valid.map((a) => a.id);
+}
+
+// ── Bulk · mover a grupo ────────────────────────────────────────
+
+export async function bulkMoveToGroup(
+  assetIds: string[],
+  groupId: string | null,
+): Promise<BulkResult> {
+  const session = await getSession();
+  if (!canUpdateEntity(session, "catalogos", "vehiculos")) {
+    return { ok: false, message: "No tenés permiso." };
+  }
+  if (assetIds.length === 0) {
+    return { ok: false, message: "Seleccioná al menos un vehículo." };
+  }
+
+  const scoped = getScopedAccountIds(session, "catalogos");
+  const validIds = await filterIdsToScope(assetIds, scoped);
+  const skipped = assetIds.length - validIds.length;
+
+  if (validIds.length === 0) {
+    return { ok: false, message: "Sin permiso sobre los vehículos seleccionados." };
+  }
+
+  // Si groupId NO es null, validar que pertenezca a un account
+  // común a TODOS los assets seleccionados · si los assets están
+  // en distintos clientes, no se pueden mover al mismo grupo.
+  if (groupId !== null) {
+    const group = await db.group.findUnique({
+      where: { id: groupId },
+      select: { accountId: true },
+    });
+    if (!group) {
+      return { ok: false, message: "Grupo inválido." };
+    }
+    // Verificar que todos los assets sean del mismo accountId que el group
+    const assets = await db.asset.findMany({
+      where: { id: { in: validIds } },
+      select: { id: true, accountId: true },
+    });
+    const wrongAccount = assets.filter((a) => a.accountId !== group.accountId);
+    if (wrongAccount.length > 0) {
+      return {
+        ok: false,
+        message: `${wrongAccount.length} ${wrongAccount.length === 1 ? "vehículo no pertenece" : "vehículos no pertenecen"} al cliente del grupo seleccionado.`,
+      };
+    }
+  }
+
+  const result = await db.asset.updateMany({
+    where: { id: { in: validIds } },
+    data: { groupId },
+  });
+
+  revalidatePath("/catalogos/vehiculos");
+  const groupLabel = groupId ? "al grupo" : "fuera de grupo";
+  return {
+    ok: true,
+    affected: result.count,
+    skipped,
+    message: `${result.count} ${result.count === 1 ? "vehículo movido" : "vehículos movidos"} ${groupLabel}${skipped > 0 ? ` · ${skipped} omitido${skipped === 1 ? "" : "s"}` : ""}.`,
+  };
+}
+
+// ── Bulk · asignar conductor ────────────────────────────────────
+
+export async function bulkAssignDriver(
+  assetIds: string[],
+  driverId: string | null,
+): Promise<BulkResult> {
+  const session = await getSession();
+  if (!canUpdateEntity(session, "catalogos", "vehiculos")) {
+    return { ok: false, message: "No tenés permiso." };
+  }
+  if (assetIds.length === 0) {
+    return { ok: false, message: "Seleccioná al menos un vehículo." };
+  }
+
+  const scoped = getScopedAccountIds(session, "catalogos");
+  const validIds = await filterIdsToScope(assetIds, scoped);
+  const skipped = assetIds.length - validIds.length;
+
+  if (validIds.length === 0) {
+    return { ok: false, message: "Sin permiso sobre los vehículos seleccionados." };
+  }
+
+  if (driverId !== null) {
+    const driver = await db.person.findUnique({
+      where: { id: driverId },
+      select: { accountId: true },
+    });
+    if (!driver) {
+      return { ok: false, message: "Conductor inválido." };
+    }
+    const assets = await db.asset.findMany({
+      where: { id: { in: validIds } },
+      select: { accountId: true },
+    });
+    const wrongAccount = assets.filter((a) => a.accountId !== driver.accountId);
+    if (wrongAccount.length > 0) {
+      return {
+        ok: false,
+        message: `${wrongAccount.length} ${wrongAccount.length === 1 ? "vehículo no pertenece" : "vehículos no pertenecen"} al cliente del conductor.`,
+      };
+    }
+  }
+
+  const result = await db.asset.updateMany({
+    where: { id: { in: validIds } },
+    data: { currentDriverId: driverId },
+  });
+
+  revalidatePath("/catalogos/vehiculos");
+  const driverLabel = driverId ? "asignado" : "desasignado";
+  return {
+    ok: true,
+    affected: result.count,
+    skipped,
+    message: `${result.count} ${result.count === 1 ? "vehículo" : "vehículos"} con conductor ${driverLabel}${skipped > 0 ? ` · ${skipped} omitido${skipped === 1 ? "" : "s"}` : ""}.`,
+  };
+}
+
+// ── Bulk · cambiar estado ───────────────────────────────────────
+
+export async function bulkChangeStatus(
+  assetIds: string[],
+  status: string,
+): Promise<BulkResult> {
+  const session = await getSession();
+  if (!canUpdateEntity(session, "catalogos", "vehiculos")) {
+    return { ok: false, message: "No tenés permiso." };
+  }
+  if (assetIds.length === 0) {
+    return { ok: false, message: "Seleccioná al menos un vehículo." };
+  }
+  if (!VALID_STATUS.includes(status as AssetStatus)) {
+    return { ok: false, message: "Estado inválido." };
+  }
+
+  const scoped = getScopedAccountIds(session, "catalogos");
+  const validIds = await filterIdsToScope(assetIds, scoped);
+  const skipped = assetIds.length - validIds.length;
+
+  if (validIds.length === 0) {
+    return { ok: false, message: "Sin permiso sobre los vehículos seleccionados." };
+  }
+
+  const result = await db.asset.updateMany({
+    where: { id: { in: validIds } },
+    data: { status: status as AssetStatus },
+  });
+
+  revalidatePath("/catalogos/vehiculos");
+  return {
+    ok: true,
+    affected: result.count,
+    skipped,
+    message: `Estado actualizado en ${result.count} ${result.count === 1 ? "vehículo" : "vehículos"}${skipped > 0 ? ` · ${skipped} omitido${skipped === 1 ? "" : "s"}` : ""}.`,
+  };
+}
+
+// ── Bulk · soft delete (status=MAINTENANCE) ────────────────────
+
+export async function bulkSoftDelete(
+  assetIds: string[],
+): Promise<BulkResult> {
+  const session = await getSession();
+  if (!canDeleteEntity(session, "catalogos", "vehiculos")) {
+    return { ok: false, message: "No tenés permiso." };
+  }
+  if (assetIds.length === 0) {
+    return { ok: false, message: "Seleccioná al menos un vehículo." };
+  }
+
+  const scoped = getScopedAccountIds(session, "catalogos");
+  const validIds = await filterIdsToScope(assetIds, scoped);
+  const skipped = assetIds.length - validIds.length;
+
+  if (validIds.length === 0) {
+    return { ok: false, message: "Sin permiso sobre los vehículos seleccionados." };
+  }
+
+  const result = await db.asset.updateMany({
+    where: { id: { in: validIds } },
+    data: { status: "MAINTENANCE" },
+  });
+
+  revalidatePath("/catalogos/vehiculos");
+  return {
+    ok: true,
+    affected: result.count,
+    skipped,
+    message: `${result.count} ${result.count === 1 ? "vehículo dado" : "vehículos dados"} de baja${skipped > 0 ? ` · ${skipped} omitido${skipped === 1 ? "" : "s"}` : ""}.`,
+  };
 }

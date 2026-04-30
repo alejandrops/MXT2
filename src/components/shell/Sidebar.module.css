@@ -83,12 +83,6 @@
   color: var(--t3);
   cursor: pointer;
   flex-shrink: 0;
-  /* Reset de defaults del <button> · igual look que cuando era <div> */
-  font-family: inherit;
-  text-align: left;
-  width: calc(100% - 20px);
-  appearance: none;
-  -webkit-appearance: none;
 }
 .search:hover {
   border-color: var(--brd2);
@@ -364,7 +358,6 @@
   background: transparent;
   border: none;
   font-family: inherit;
-  text-decoration: none;
   transition: background 0.1s, color 0.1s;
 }
 
@@ -399,4 +392,18 @@
 .collapsed .configBtn {
   padding: 0;
   justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Fix · configBtn como Link (no más button disabled)
+   ═══════════════════════════════════════════════════════════════ */
+
+a.configBtn {
+  text-decoration: none;
+}
+
+.configBtnActive {
+  color: var(--tx);
+  background: var(--bg);
+  font-weight: 500;
 }

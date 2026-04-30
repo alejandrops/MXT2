@@ -247,7 +247,7 @@ function buildDailyHistogram(
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Lista de Conductores · /gestion/conductores
+//  Lista de Conductores · /catalogos/conductores
 //  ─────────────────────────────────────────────────────────────
 //  Paginated, filterable list with the same shape as listAssets:
 //    · server-side filters (search, account, status)
