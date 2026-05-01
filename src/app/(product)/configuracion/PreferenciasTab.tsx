@@ -10,13 +10,12 @@ import styles from "./PreferenciasTab.module.css";
 // ═══════════════════════════════════════════════════════════════
 //  Tab "Preferencias" · idioma + tema
 //  ─────────────────────────────────────────────────────────────
-//  Honesty note: en este MVP el demo está solo en español y el
-//  modo oscuro aplica únicamente a /admin. Los selectores
-//  PERSISTEN el valor (campo en User) pero su efecto visual
-//  llega cuando se completen i18n y theme audit (post-MVP).
+//  Idioma · solo español por ahora · selector persiste pero no
+//  cambia la UI (post-MVP cuando se complete i18n).
 //
-//  Decision aware: muestro la UI completa porque es el shape
-//  final · la persistencia ya funciona para cuando se conecte.
+//  Tema · LIGHT / DARK / AUTO · funcional desde S2. Al guardar,
+//  el layout re-renderea con el nuevo session, ThemeProvider
+//  recibe el nuevo pref y aplica data-theme al <html>.
 // ═══════════════════════════════════════════════════════════════
 
 interface Props {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { ThemeBoot } from "@/components/theme/ThemeBoot";
 import "./globals.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -10,6 +11,10 @@ import "./globals.css";
 //    · admin/layout.tsx      · backoffice with dark sidebar
 //  This separation lets each surface have its own chrome without
 //  conditional rendering tricks.
+//
+//  ThemeBoot is an inline script that runs BEFORE the first paint,
+//  reads the `mxt-theme` cookie, and applies data-theme on <html>.
+//  Avoids "flash of unstyled content" when user prefers dark mode.
 // ═══════════════════════════════════════════════════════════════
 
 const sans = IBM_Plex_Sans({
@@ -39,7 +44,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ThemeBoot />
+        {children}
+      </body>
     </html>
   );
 }

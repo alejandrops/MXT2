@@ -4,7 +4,7 @@
 
 .sidebar {
   width: var(--sw);
-  background: #F6F7F9;
+  background: var(--sf);
   border-right: 1px solid var(--brd);
   display: flex;
   flex-direction: column;
@@ -243,7 +243,7 @@
 /* ── Pages list (inside an expanded section) ─────────────────── */
 
 .pages {
-  background: #EDEEF1;
+  background: var(--bg);
   border-bottom: 1px solid var(--brd);
   animation: slideDown 0.18s ease;
   display: flex;

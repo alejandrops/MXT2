@@ -1,16 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 
-// ═══════════════════════════════════════════════════════════════
-//  /auth/signout (H2)
-//  ─────────────────────────────────────────────────────────────
-//  POST endpoint · cierra la sesión de Supabase y redirige.
-//  Accept POST para evitar CSRF accidental con un GET preview.
-// ═══════════════════════════════════════════════════════════════
+async function handleSignout(request: NextRequest) {
+  const authMode = process.env.AUTH_MODE === "supabase" ? "supabase" : "demo";
+
+  if (authMode === "supabase") {
+    try {
+      const supabase = await createServerSupabase();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("[signout] supabase signOut failed:", err);
+    }
+  }
+
+  const url = new URL("/login", request.url);
+  const response = NextResponse.redirect(url, 303);
+  response.cookies.delete("mxt-demo-user-id");
+  response.cookies.delete("mxt-demo-user");
+  return response;
+}
 
 export async function POST(request: NextRequest) {
-  const { origin } = new URL(request.url);
-  const supabase = await createServerSupabase();
-  await supabase.auth.signOut();
-  return NextResponse.redirect(`${origin}/login`, { status: 303 });
+  return handleSignout(request);
+}
+
+export async function GET(request: NextRequest) {
+  return handleSignout(request);
 }

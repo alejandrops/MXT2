@@ -265,7 +265,7 @@ a {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 1.5cm 1.2cm;
+    margin: 0;
   }
 
   html,
@@ -279,26 +279,56 @@ a {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
 
-  /* ── Ocultar el shell del producto · solo queda .app-content ──
-     Estructura del shell:
-       .app-root
-         .app-body
-           <Sidebar />        ← oculto (hermano de .app-main)
-           .app-main
-             <Topbar />       ← oculto (hermano de .app-content)
-             <GlobalFilterBar/> ← oculto (idem)
-             .app-content     ← ESTO queda · contiene la página
-  */
-  .app-body > *:not(.app-main) {
-    display: none !important;
-  }
-  .app-main > *:not(.app-content) {
-    display: none !important;
-  }
-  .app-content {
-    height: auto !important;
-    overflow: visible !important;
-    padding: 0 !important;
-  }
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE
+   ─────────────────────────────────────────────────────────────
+   Aplicado via `data-theme="dark"` en <html>. Sobrescribe las
+   variables de surfaces y texto · mantiene los colores semánticos
+   (red, blu, grn, amb) porque su contraste fue elegido contra
+   surfaces light. En dark se ven igual de bien (mejor incluso,
+   por mayor saturación percibida).
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  /* ── SURFACES (dark) ───────────────────────────────────────── */
+  --bg:            #0F1117;   /* page background · casi negro */
+  --sf:            #1A1F2E;   /* card surface */
+  --sf2:           #232A3D;   /* subtle alt surface */
+  --brd:           #2D3748;   /* default border */
+  --brd2:          #3D4658;   /* emphasized border */
+  --tx:            #E2E8F0;   /* primary text */
+  --t1:            #E2E8F0;
+  --t2:            #94A3B8;   /* secondary text */
+  --t3:            #64748B;   /* tertiary text */
+  --hover:         rgba(255,255,255,.05);
+  --map-bg:        #1A1F2E;
+
+  /* ── Semantic backgrounds (dark variants) ──────────────────── */
+  --red-bg:        rgba(232, 53, 42, 0.10);
+  --red-t:         #FCA5A5;
+  --red-b:         rgba(232, 53, 42, 0.30);
+  --ora-bg:        rgba(245, 158, 11, 0.10);
+  --ora-t:         #FCD34D;
+  --grn-bg:        rgba(5, 150, 105, 0.10);
+  --grn-t:         #6EE7B7;
+  --grn-brd:       rgba(5, 150, 105, 0.30);
+  --blu-bg:        rgba(37, 99, 235, 0.10);
+  --blu-t:         #93C5FD;
+  --blu-brd:       rgba(37, 99, 235, 0.30);
+  --tel-bg:        rgba(8, 145, 178, 0.10);
+  --tel-t:         #67E8F9;
+  --tel-brd:       rgba(8, 145, 178, 0.30);
+  --pur-bg:        rgba(124, 58, 237, 0.10);
+  --pur-t:         #C4B5FD;
+  --amb-bg:        var(--ora-bg);
+  --amb-t:         var(--ora-t);
+
+  color-scheme: dark;
+}
+
+/* ── Light explicit (cuando el cookie indica light) ─────────── */
+[data-theme="light"] {
+  color-scheme: light;
 }

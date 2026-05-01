@@ -3,7 +3,8 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 import { GlobalFilterBar } from "@/components/maxtracker/ui";
 import { CommandPalette } from "@/components/maxtracker/cmdk/CommandPalette";
-import { getSession, listDemoIdentities } from "@/lib/session";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { getSession } from "@/lib/session";
 
 // ═══════════════════════════════════════════════════════════════
 //  Product shell · light sidebar + topbar with avatar menu
@@ -11,9 +12,12 @@ import { getSession, listDemoIdentities } from "@/lib/session";
 //  Used for all client-facing routes: Seguimiento, Seguridad,
 //  Gestión, etc. Pairs with /admin which has its own dark shell.
 //
-//  Lote F1 · ahora resuelve la sesión y la pasa al Topbar para
-//  que el avatar muestre el usuario real (no más "AS" hardcoded).
-//  También pasa la lista de identidades demo para el switcher.
+//  Refactor F2.E · monta <CommandPalette /> · Cmd+K abre desde
+//  cualquier pantalla · search global de objetos y pantallas.
+//
+//  S2 · Carga session en el server, la pasa al Topbar para que
+//  muestre el user real y permita logout. ThemeProvider sincroniza
+//  preferencia user con el DOM (data-theme="dark|light").
 // ═══════════════════════════════════════════════════════════════
 
 export default async function ProductLayout({
@@ -21,19 +25,25 @@ export default async function ProductLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [session, demoIdentities] = await Promise.all([
-    getSession(),
-    listDemoIdentities(),
-  ]);
+  const session = await getSession();
 
   return (
     <div className="app-root">
+      <ThemeProvider pref={session.user.theme as "LIGHT" | "DARK" | "AUTO"} />
       <div className="app-body">
-        <Sidebar session={session} />
+        <Sidebar />
         <div className="app-main">
           <Topbar
-            session={session}
-            demoIdentities={demoIdentities}
+            user={{
+              firstName: session.user.firstName,
+              lastName: session.user.lastName,
+              email: session.user.email,
+              profileLabel: session.profile.nameLabel,
+            }}
+            isSuperAdmin={
+              session.profile.systemKey === "SUPER_ADMIN" ||
+              session.profile.systemKey === "MAXTRACKER_ADMIN"
+            }
           />
           <Suspense fallback={null}>
             <GlobalFilterBar />
