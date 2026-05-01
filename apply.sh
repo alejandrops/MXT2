@@ -1,28 +1,45 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote H3 · Deploy a Vercel
+#  apply.sh · Lote S1 · /configuracion completo (sidebar + 9 tabs)
 #  ─────────────────────────────────────────────────────────────
 #
-#  Prepara el repo para deploy a Vercel:
+#  Reestructura /configuracion con sidebar contextual estilo
+#  Notion/Linear · 2 grupos:
 #
-#  · vercel.json · config con region São Paulo + maxDuration en
-#    los endpoints de ingestion (default 10s no alcanza para
-#    batches grandes)
-#  · package.json · agrega script `vercel-build` que corre
-#    `prisma migrate deploy` antes del build (Vercel usa este
-#    script automáticamente cuando vercel.json apunta a él)
-#  · docs/operations/deploy-vercel.md · paso a paso del deploy,
-#    env vars, smoke tests, rollback
+#  MI CUENTA (todos los users)
+#   · Mi perfil           ← reaprovechado de A1
+#   · Notificaciones      ← reaprovechado de A2
+#   · Preferencias        ← reaprovechado de A1
+#   · Seguridad           ← reaprovechado de A2
+#
+#  EMPRESA (solo CLIENT_ADMIN+)
+#   · Datos de la cuenta  ← NUEVO
+#   · Umbrales y alarmas  ← NUEVO (tabla AccountSettings)
+#   · Integraciones       ← NUEVO (placeholder cards)
+#   · Plan y facturación  ← NUEVO (read-only · muestra tier)
+#   · Usuarios y permisos ← NUEVO (CRUD completo)
+#
+#  Schema:
+#   · Tabla AccountSettings (1:1 con Account) · umbrales tipados
+#     + integraciones JSON + plan overrides JSON
+#
+#  Sidebar:
+#   · Botón "Configuración" pasa de DISABLED a Link funcional
 #
 #  Pre-requisitos:
-#   · H1 + H2 aplicados y funcionando local
-#   · Cuenta Vercel logueada con GitHub
-#   · Repo Maxtracker en GitHub privado con permisos otorgados
-#     a Vercel
+#   · H1 + H2 aplicados (Postgres + Auth)
+#   · DB seedeada
 #
-#  IMPORTANTE: este lote NO ejecuta el deploy. Solo prepara
-#  archivos. El deploy se hace desde el dashboard de Vercel
-#  siguiendo `docs/operations/deploy-vercel.md`.
+#  Workflow post-apply:
+#
+#   1. bash prisma/patches/patch-account-settings.sh
+#   2. npx prisma migrate dev --name add_account_settings
+#   3. npx tsx prisma/backfill-account-settings.ts
+#   4. rm -rf .next && npm run dev
+#   5. Como SA · /configuracion debería tener todos los tabs
+#   6. Cambiar a CA (admin@frigorificos-andinos.cl o similar) ·
+#      verás tu propio account en el grupo Empresa
+#   7. Cambiar a OP (operador1@...) · solo ves grupo Mi cuenta
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -33,15 +50,15 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="H3 · Deploy a Vercel"
+LOTE_NAME="S1 · /configuracion completo"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ ! -d "$SCRIPT_DIR/scripts" ]; then
-  echo "ERROR · No encuentro 'scripts' en $SCRIPT_DIR/"
+if [ ! -d "$SCRIPT_DIR/src" ]; then
+  echo "ERROR · No encuentro 'src' en $SCRIPT_DIR/"
   exit 1
 fi
 
-if [ ! -f "package.json" ]; then
+if [ ! -d "src" ] || [ ! -f "package.json" ]; then
   echo "ERROR · No encuentro la raíz del proyecto Next.js."
   exit 1
 fi
@@ -85,51 +102,98 @@ apply_file() {
   fi
 }
 
-echo -e "${CYAN}── Configuración Vercel ──${NC}"
-apply_file "vercel.json"
+echo -e "${CYAN}── Schema patch + migration ──${NC}"
+apply_file "prisma/patches/patch-account-settings.sh" "exec"
+apply_file "prisma/backfill-account-settings.ts"
 
 echo
-echo -e "${CYAN}── Helper script ──${NC}"
-apply_file "scripts/patch-package-json-vercel.sh" "exec"
+echo -e "${CYAN}── Páginas de configuración ──${NC}"
+apply_file "src/app/(product)/configuracion/page.tsx"
+apply_file "src/app/(product)/configuracion/ConfiguracionShell.tsx"
+apply_file "src/app/(product)/configuracion/ConfiguracionPage.module.css"
 
 echo
-echo -e "${CYAN}── Documentación ──${NC}"
-apply_file "docs/operations/deploy-vercel.md"
+echo -e "${CYAN}── Tabs personales (Mi cuenta) ──${NC}"
+apply_file "src/app/(product)/configuracion/MiPerfilTab.tsx"
+apply_file "src/app/(product)/configuracion/MiPerfilTab.module.css"
+apply_file "src/app/(product)/configuracion/NotificacionesTab.tsx"
+apply_file "src/app/(product)/configuracion/NotificacionesTab.module.css"
+apply_file "src/app/(product)/configuracion/PreferenciasTab.tsx"
+apply_file "src/app/(product)/configuracion/PreferenciasTab.module.css"
+apply_file "src/app/(product)/configuracion/SeguridadTab.tsx"
+apply_file "src/app/(product)/configuracion/SeguridadTab.module.css"
+apply_file "src/app/(product)/configuracion/actions.ts"
 
 echo
-echo -e "${CYAN}─── Resumen archivos ───${NC}"
+echo -e "${CYAN}── Tabs empresa (NUEVOS) ──${NC}"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaDatosTab.tsx"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaUmbralesTab.tsx"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaIntegracionesTab.tsx"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaIntegracionesTab.module.css"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaPlanTab.tsx"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaPlanTab.module.css"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaUsuariosTab.tsx"
+apply_file "src/app/(product)/configuracion/empresa/EmpresaUsuariosTab.module.css"
+apply_file "src/app/(product)/configuracion/actions-empresa.ts"
+
+echo
+echo -e "${CYAN}── Sidebar (habilitar Configuración) ──${NC}"
+apply_file "src/components/shell/Sidebar.tsx"
+apply_file "src/components/shell/Sidebar.module.css"
+
+echo
+echo -e "${CYAN}─── Resumen ───${NC}"
 echo "  Nuevos:        $created"
 echo "  Actualizados:  $written"
 echo "  Sin cambios:   $unchanged"
 echo
 
+if [ -d ".next" ]; then
+  rm -rf .next
+  echo -e "  ${GREY}.next eliminado${NC}"
+  echo
+fi
+
 echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
 echo -e "${YELLOW}══ PASOS POST-APLICACIÓN ══${NC}"
 echo
-echo "1. Patch del package.json (agrega vercel-build script):"
+echo "1. Patch del schema (agrega tabla AccountSettings):"
+echo "     bash prisma/patches/patch-account-settings.sh"
 echo
-echo "     bash scripts/patch-package-json-vercel.sh"
+echo "2. Migration en Supabase:"
+echo "     npx prisma migrate dev --name add_account_settings"
 echo
-echo "2. Verificar que .env esté gitignored:"
+echo "3. Backfill · crear settings con defaults LATAM para los"
+echo "   accounts existentes:"
+echo "     npx tsx prisma/backfill-account-settings.ts"
 echo
-echo "     grep -E '^\\.env\$' .gitignore || echo '.env' >> .gitignore"
+echo "4. Iniciar dev server:"
+echo "     npm run dev"
 echo
-echo "3. Commit y push:"
+echo -e "${YELLOW}══ TESTING ══${NC}"
 echo
-echo "     git add vercel.json package.json .gitignore"
-echo "     git commit -m 'chore(deploy): vercel config + vercel-build script (H3)'"
+echo "  Como SA (alejandro):"
+echo "    /configuracion → debería redirect a ?section=perfil"
+echo "    Sidebar muestra · Mi cuenta (4) + Empresa (5)"
+echo "    Como SA NO tenés account, los tabs de empresa van a fallar"
+echo "    (no es bug del código · es que SA no tiene una cuenta propia)"
+echo
+echo "  Como CA (admin@frigorificos-andinos.cl):"
+echo "    /configuracion → ves tu propia cuenta en grupo Empresa"
+echo "    Probá editar Datos · cambiar industria · Guardar"
+echo "    Probá editar Umbrales · cambiar velocidad urbana · Guardar"
+echo "    Probá Usuarios · crear uno nuevo, suspender, eliminar"
+echo
+echo "  Como OP (operador1@...):"
+echo "    /configuracion → solo ves grupo 'Mi cuenta' (4 tabs)"
+echo "    Si tipeás manualmente ?section=empresa-usuarios → redirect"
+echo
+echo "  Sidebar:"
+echo "    El botón 'Configuración' al pie ahora es clickeable"
+echo "    (antes estaba en gris/disabled)"
+echo
+echo "  Una vez aprobado, commit + push para deployar a Vercel:"
+echo "     git add ."
+echo "     git commit -m 'feat(config): full settings page with sidebar (S1)'"
 echo "     git push origin main"
-echo
-echo "4. Seguir el doc paso a paso para conectar Vercel:"
-echo
-echo "     cat docs/operations/deploy-vercel.md"
-echo
-echo "   Resumen del doc:"
-echo "    · Importar repo en Vercel (vercel.com/new)"
-echo "    · Configurar 6 env vars · DATABASE_URL, DIRECT_URL,"
-echo "      NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,"
-echo "      AUTH_MODE=supabase, FLESPI_INGEST_TOKEN"
-echo "    · Click Deploy → esperar 3-7 min"
-echo "    · Actualizar Site URL en Supabase Auth a la URL de Vercel"
-echo "    · Smoke tests · login + curl al endpoint público"

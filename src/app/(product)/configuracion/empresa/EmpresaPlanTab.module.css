@@ -1,0 +1,144 @@
+.currentPlan {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 20px;
+  margin-bottom: 24px;
+  max-width: 640px;
+  border-left-width: 4px;
+}
+
+.currentPlan.accent_blu {
+  border-left-color: var(--blu, #2563eb);
+}
+.currentPlan.accent_amb {
+  border-left-color: var(--amb, #d97706);
+}
+.currentPlan.accent_grn {
+  border-left-color: var(--grn, #16a34a);
+}
+
+.currentPlanHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.planIcon {
+  width: 40px;
+  height: 40px;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--t1);
+}
+
+.planLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+}
+
+.planName {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.planDescription {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--t2);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--brd);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statShort .statValue {
+  font-size: 12px;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--t3);
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--t1);
+}
+
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--t1);
+}
+
+.featureItem svg {
+  color: var(--grn, #16a34a);
+  flex-shrink: 0;
+}
+
+.upgradeCard {
+  margin-top: 32px;
+  padding: 16px 20px;
+  background: var(--bg);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-md);
+  max-width: 640px;
+}
+
+.upgradeCard strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--t1);
+}
+
+.upgradeCard p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--t2);
+}
+
+.upgradeCard a {
+  color: var(--blu, #2563eb);
+  text-decoration: none;
+}
+.upgradeCard a:hover {
+  text-decoration: underline;
+}

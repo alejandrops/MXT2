@@ -58,6 +58,7 @@ model Account {
   industry       String?
   groups         Group[]
   assets         Asset[]
+  settings       AccountSettings?
   persons        Person[]
   alarms         Alarm[]
   assetDriverDays AssetDriverDay[]
@@ -65,6 +66,67 @@ model Account {
   users          User[]
   createdAt      DateTime     @default(now())
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  AccountSettings · 1:1 con Account
+//  ─────────────────────────────────────────────────────────────
+//  Settings configurables por el CLIENT_ADMIN. Una row por
+//  Account · creada al provisionar el cliente con defaults LATAM.
+// ═══════════════════════════════════════════════════════════════
+
+model AccountSettings {
+  id        String  @id @default(cuid())
+  accountId String  @unique
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // ─── Umbrales · velocidad ────────────────────────────────
+  /// Velocidad máxima en zona urbana (km/h)
+  speedLimitUrban       Int @default(60)
+  /// Velocidad máxima en ruta nacional/provincial (km/h)
+  speedLimitHighway     Int @default(100)
+  /// Tolerancia · % por encima del límite antes de disparar alarma
+  speedTolerancePercent Int @default(10)
+
+  // ─── Umbrales · conducción agresiva ──────────────────────
+  /// Frenada brusca · g-force mínimo · default LATAM 0.35g
+  /// (US standard 0.45g · LATAM ajustado por estudios locales)
+  harshBrakingThreshold     Float @default(0.35)
+  /// Aceleración brusca · g-force mínimo
+  harshAccelerationThreshold Float @default(0.35)
+  /// Curva agresiva · g-force lateral mínimo
+  harshCorneringThreshold    Float @default(0.40)
+
+  // ─── Umbrales · ralentí ──────────────────────────────────
+  /// Tiempo mínimo de ralentí para disparar alarma (segundos)
+  idlingMinDuration Int @default(300)
+
+  // ─── Umbrales · viajes ───────────────────────────────────
+  /// Distancia mínima para considerar un viaje válido (km)
+  tripMinDistanceKm Float @default(0.5)
+  /// Duración mínima para considerar un viaje válido (segundos)
+  tripMinDurationSec Int @default(60)
+
+  // ─── Notificaciones a nivel cuenta ───────────────────────
+  /// Email de contacto general del cliente para alertas críticas
+  alertContactEmail String?
+  /// Teléfono de contacto · capaz para SMS post-MVP
+  alertContactPhone String?
+
+  // ─── Integraciones (flexible · shape varía por provider) ──
+  /// JSON con configuración de integraciones activas
+  /// Ejemplo: { flespi: { token: "...", enabled: true }, ... }
+  integrations Json @default("{}")
+
+  // ─── Plan extras (flexible) ──────────────────────────────
+  /// Features adicionales habilitados manualmente fuera del tier
+  /// Ejemplo: { extraVehicles: 50, customReports: true }
+  planOverrides Json @default("{}")
+
+  // ─── Audit ───────────────────────────────────────────────
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 
 enum Tier {
   BASE

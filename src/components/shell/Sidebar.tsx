@@ -242,23 +242,19 @@ export function Sidebar() {
         )}
       </Link>
 
-      {/* ── Search shortcut · abre el CommandPalette ──────────
-          Conectado vía custom event 'mxt:cmdk:open' que escucha
-          el componente CommandPalette montado en el layout.
-          También responde al atajo Cmd+K / Ctrl+K. */}
+      {/* ── Search shortcut · disabled placeholder ──────────────
+          Visible but inactive while a real command palette is built.
+          Tooltip indicates upcoming feature. */}
       {!collapsed && (
-        <button
-          type="button"
-          className={styles.search}
-          title="Búsqueda global · Cmd+K / Ctrl+K"
-          onClick={() => {
-            window.dispatchEvent(new Event("mxt:cmdk:open"));
-          }}
+        <div
+          className={`${styles.search} ${styles.searchDisabled}`}
+          title="Búsqueda global · próximamente"
+          aria-disabled="true"
         >
           <Search size={13} />
           <span>Buscar</span>
           <kbd className={styles.kbd}>⌘K</kbd>
-        </button>
+        </div>
       )}
 
       {/* ── Modules accordion ─────────────────────────────────── */}
@@ -286,10 +282,10 @@ export function Sidebar() {
           {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           {!collapsed && <span>Colapsar</span>}
         </button>
-        <button className={styles.configBtn} disabled>
+        <Link href="/configuracion" className={styles.configBtn}>
           <Settings size={15} />
           {!collapsed && <span>Configuración</span>}
-        </button>
+        </Link>
       </div>
     </aside>
   );
