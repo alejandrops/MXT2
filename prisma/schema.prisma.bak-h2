@@ -1,0 +1,735 @@
+// ═══════════════════════════════════════════════════════════════
+//  Maxtracker · Prisma Schema
+//  ─────────────────────────────────────────────────────────────
+//  Lote 1 scope: 9 entities to support the Seguridad vertical
+//  slice (Dashboard D + Lista A + Libro B).
+//
+//  Decisions applied:
+//    · ADR-000  Inaugural stack: Next.js 15 + Prisma 6 + SQLite
+//    · ADR-001  One asset belongs to exactly ONE group (1:N)
+//
+//  Deliberately OUT of scope for Lote 1 (deferred to Lotes 2-4):
+//    · Trip, Zone/Geofence, Document, ServiceRecord
+//    · User/Auth (Auth0 integration)
+//    · KpiDailySnapshot (pre-aggregation)
+//    · AlarmRule (rule engine)
+//    · POI (points of interest)
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection · usado por la app (alta concurrencia, conexiones cortas)
+  url       = env("DATABASE_URL")
+  // Conexión directa · usada por `prisma migrate` y `prisma db push`
+  // (migrations no funcionan vía pooler · necesitan prepared statements)
+  directUrl = env("DIRECT_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ORGANIZATIONAL
+// ═══════════════════════════════════════════════════════════════
+
+/// The platform tenant (i.e. Maxtracker itself). A single row in
+/// v1. Multi-tenant reseller scenarios are handled as additional
+/// Organizations in a future lote.
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  accounts  Account[]
+  users     User[]
+  createdAt DateTime  @default(now())
+}
+
+/// A client of the platform (e.g. a logistics company, a mining
+/// operation, a delivery network). Everything the user sees is
+/// scoped to an Account.
+model Account {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  slug           String       @unique
+  tier           Tier         @default(PRO)
+  industry       String?
+  groups         Group[]
+  assets         Asset[]
+  persons        Person[]
+  alarms         Alarm[]
+  assetDriverDays AssetDriverDay[]
+  assetWeeklyStats AssetWeeklyStats[]
+  users          User[]
+  createdAt      DateTime     @default(now())
+}
+
+enum Tier {
+  BASE
+  PRO
+  ENTERPRISE
+}
+
+/// Logical grouping of assets within an Account. Two-level
+/// hierarchy supported via self-relation (memory: max 2 niveles,
+/// extensible in v2). An Asset belongs to at most one Group
+/// directly (ADR-001).
+model Group {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  parentId  String?
+  parent    Group?   @relation("GroupHierarchy", fields: [parentId], references: [id])
+  children  Group[]  @relation("GroupHierarchy")
+  name      String
+  assets    Asset[]
+  createdAt DateTime @default(now())
+
+  @@index([accountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MONITORED OBJECT
+// ═══════════════════════════════════════════════════════════════
+
+/// The thing being monitored. Mobile (vehicle, machine) or fixed
+/// (silo, elevator, refrigerator unit).
+model Asset {
+  id              String       @id @default(cuid())
+  accountId       String
+  account         Account      @relation(fields: [accountId], references: [id])
+  /// ADR-001: nullable FK, 1:N cardinality.
+  groupId         String?
+  group           Group?       @relation(fields: [groupId], references: [id])
+  name            String
+  plate           String?      @unique
+  vin             String?      @unique
+  mobilityType    MobilityType @default(MOBILE)
+  /// Used by the live tracking map to pick an icon when the
+  /// "icons by type" view option is enabled. Falls back to the
+  /// generic shape if GENERIC.
+  vehicleType     VehicleType  @default(GENERIC)
+  make            String?
+  model           String?
+  year            Int?
+  /// Lectura del odómetro al momento del alta (km). El kilometraje
+  /// "actual" se deriva sumando los Trips posteriores. Permite
+  /// planes de mantenimiento por kilómetros sin perder el histórico
+  /// previo a Maxtracker.
+  initialOdometerKm Int?
+  status          AssetStatus  @default(IDLE)
+  currentDriverId String?
+  currentDriver   Person?      @relation("CurrentDriver", fields: [currentDriverId], references: [id])
+  devices         Device[]
+  positions       Position[]
+  livePosition    LivePosition?
+  trips           Trip[]
+  events          Event[]
+  alarms          Alarm[]
+  assetDriverDays AssetDriverDay[]
+  weeklyStats     AssetWeeklyStats[]
+  createdAt       DateTime     @default(now())
+
+  @@index([accountId, status])
+  @@index([groupId])
+}
+
+enum MobilityType {
+  MOBILE
+  FIXED
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  TRUCK
+  HEAVY_MACHINERY
+  TRAILER
+  SILO
+  GENERIC
+}
+
+enum AssetStatus {
+  MOVING
+  IDLE
+  STOPPED
+  OFFLINE
+  MAINTENANCE
+}
+
+/// Physical IoT hardware attached to an Asset. An asset can have
+/// multiple devices simultaneously; exactly one is marked as
+/// primary for position reporting.
+model Device {
+  id          String    @id @default(cuid())
+
+  /// Asset al que está instalado el dispositivo. NULL cuando el
+  /// device está en stock, en reparación o dado de baja.
+  assetId     String?
+  asset       Asset?    @relation(fields: [assetId], references: [id])
+
+  imei        String    @unique
+  /// Número de serie del fabricante (puede coexistir con IMEI).
+  /// No todos los vendors lo proveen.
+  serialNumber String?
+
+  /// Marca del dispositivo. Limitamos a un set conocido para
+  /// poder mantener integraciones (codecs, configs, comandos).
+  /// "OTHER" deja espacio para casos esporádicos.
+  vendor      DeviceVendor
+  model       String
+
+  /// Versión de firmware actualmente cargada · útil para tracking
+  /// de updates y troubleshooting de bugs específicos por versión.
+  firmwareVersion String?
+
+  /// Estado en el ciclo de vida del dispositivo · ver DeviceStatus
+  status      DeviceStatus @default(STOCK)
+
+  /// Si está marcado, es el dispositivo principal del Asset
+  /// (cuando un Asset tiene múltiples devices, ej · GPS + cámara).
+  isPrimary   Boolean   @default(false)
+
+  /// SIM card insertada en el dispositivo. NULL cuando el device
+  /// no tiene SIM (recién recibido, en stock sin SIM provista, o
+  /// en reparación con la SIM removida). La relación es 1-1 vía
+  /// @unique en simId · una SIM no puede estar en dos devices.
+  simId       String?   @unique
+  sim         Sim?      @relation(fields: [simId], references: [id])
+
+  lastSeenAt  DateTime?
+  installedAt DateTime  @default(now())
+
+  @@index([assetId])
+  @@index([status])
+}
+
+enum DeviceVendor {
+  TELTONIKA
+  QUECLINK
+  CONCOX
+  OTHER
+}
+
+enum DeviceStatus {
+  /// Recién recibido, no instalado en ningún asset todavía.
+  STOCK
+  /// Instalado y operando en un Asset.
+  INSTALLED
+  /// Removido por falla, esperando service o reemplazo.
+  IN_REPAIR
+  /// Vida útil terminada · no se reinstala.
+  DECOMMISSIONED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SIM CARDS
+// ═══════════════════════════════════════════════════════════════
+
+/// SIM card de datos asignada (potencialmente) a un Device. La
+/// relación SIM ↔ Device vive en `Device.simId` (1-1). Una SIM
+/// puede estar en stock (sin device) o asignada (en un device).
+model Sim {
+  id           String    @id @default(cuid())
+
+  /// Integrated Circuit Card ID · 19-20 dígitos numéricos.
+  /// Es el identificador único físico de la SIM, impreso en
+  /// el plástico y leído por el modem del Device.
+  iccid        String    @unique
+
+  /// Número telefónico (MSISDN) asignado por el carrier. No
+  /// siempre se conoce · algunas APIs IoT no lo exponen.
+  phoneNumber  String?
+
+  /// IMSI · International Mobile Subscriber Identity. Usado para
+  /// algunos provisioning automáticos · opcional para el demo.
+  imsi         String?
+
+  /// Carrier comercial · acotado a los principales del Cono Sur.
+  /// "OTHER" cubre carriers regionales (Bitel, Tigo, etc.).
+  carrier      Carrier
+
+  /// Access Point Name · necesario para que el modem se conecte
+  /// a la red de datos. Cada carrier tiene su APN específico.
+  /// Ej · "internet.movistar.com.ar"
+  apn          String
+
+  /// Cuota mensual de datos en MB. Los planes IoT típicos van
+  /// de 10 MB (telemetría básica) a 500 MB (cámaras + video).
+  dataPlanMb   Int       @default(50)
+
+  status       SimStatus @default(STOCK)
+
+  /// Backref · una SIM puede estar dentro de un Device. La FK
+  /// real vive en Device.simId (con @unique). Acá es el otro
+  /// lado de la relación, opcional.
+  device       Device?
+
+  activatedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([status])
+  @@index([carrier])
+}
+
+enum Carrier {
+  MOVISTAR
+  CLARO
+  PERSONAL
+  ENTEL
+  OTHER
+}
+
+enum SimStatus {
+  /// Recibida del carrier, no asignada a ningún device.
+  STOCK
+  /// Operando dentro de un device · transmitiendo datos.
+  ACTIVE
+  /// Pausada por el carrier (deuda, cambio de plan, robo).
+  /// El device queda offline mientras dura la suspensión.
+  SUSPENDED
+  /// Dada de baja · no se reactiva. Liberable del device.
+  CANCELLED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PEOPLE
+// ═══════════════════════════════════════════════════════════════
+
+/// Drivers and operators. Different from the system User (auth)
+/// entity — those come in a later lote when we wire Auth0.
+model Person {
+  id               String           @id @default(cuid())
+  accountId        String
+  account          Account          @relation(fields: [accountId], references: [id])
+  firstName        String
+  lastName         String
+  document         String?
+  licenseExpiresAt DateTime?
+  hiredAt          DateTime?
+  /// Rolling safety score 0-100, derived from Event history.
+  /// Seeded statically in Lote 1; derived dynamically in Lote 3.
+  safetyScore      Int              @default(75)
+  drivenAssets     Asset[]          @relation("CurrentDriver")
+  events           Event[]
+  alarms           Alarm[]
+  trips            Trip[]
+  assetDriverDays  AssetDriverDay[]
+
+  @@index([accountId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REPORTING · pre-aggregated tables
+//  ─────────────────────────────────────────────────────────────
+//  These tables exist to keep the UI off of the raw Position
+//  hypertable. In production they're populated by a stream
+//  processor (or a periodic batch job) over the same window.
+//  In the demo they're populated at seed time once.
+// ═══════════════════════════════════════════════════════════════
+
+/// Per-asset latest known position. Conceptually a key-value
+/// store: `assetId → last position`. In production this is an
+/// in-memory store (e.g. Redis or a process-local map) fed by
+/// the TCP ingester. Modeled here as a regular table so the
+/// demo can serve it through Prisma without changing the UI
+/// when the ingester is wired up.
+///
+/// Read by:
+///   · /gestion/vehiculos · listado · columna "Velocidad
+///     instantánea" (E6-A)
+///   · /seguimiento/mapa · markers de la flota (futuro)
+///
+/// Populated in seed from the most recent Position row of each
+/// asset. In production it's overwritten by every fix the
+/// ingester receives.
+model LivePosition {
+  assetId    String   @id
+  asset      Asset    @relation(fields: [assetId], references: [id])
+  recordedAt DateTime
+  lat        Float
+  lng        Float
+  speedKmh   Float
+  heading    Int?
+  ignition   Boolean
+  updatedAt  DateTime @default(now())
+
+  @@index([recordedAt])
+  @@index([speedKmh])
+}
+
+/// Detected trip · ignition-bounded segment of an asset's
+/// movement. Persisted at seed time (in production: emitted by
+/// the trip-detection stream processor on top of Position).
+///
+/// Read by:
+///   · /seguimiento/viajes (E5-B antes; F1 ahora · sub-segundo)
+///   · /gestion/vehiculos/[id] tab Histórico (filtra por assetId)
+///   · AssetDriverDay rollup (lee Trips, no Positions)
+///
+/// `polylineJson` is the simplified geometry (~80 points) used by
+/// the routes overlay. SQLite has no Json type, so it's a string;
+/// Postgres in prod uses Jsonb.
+model Trip {
+  id                     String   @id @default(cuid())
+  assetId                String
+  asset                  Asset    @relation(fields: [assetId], references: [id])
+  /// Driver associated with the trip · resolved at trip-creation
+  /// time (currentDriver at startedAt). Null if asset had no driver.
+  personId               String?
+  person                 Person?  @relation(fields: [personId], references: [id])
+  startedAt              DateTime
+  endedAt                DateTime
+  durationMs             Int
+  distanceKm             Float
+  avgSpeedKmh            Float
+  maxSpeedKmh            Float
+  idleMs                 Int
+  startLat               Float
+  startLng               Float
+  endLat                 Float
+  endLng                 Float
+  positionCount          Int
+  /// JSON-encoded `[[lat, lng], …]` · ~80 points after Douglas-
+  /// Peucker-style decimation. Used by getTripRoutes overlays.
+  polylineJson           String
+  eventCount             Int      @default(0)
+  highSeverityEventCount Int      @default(0)
+  createdAt              DateTime @default(now())
+
+  @@index([startedAt])
+  @@index([assetId, startedAt])
+  @@index([personId, startedAt])
+}
+
+/// Daily aggregation: who drove which asset on which day, plus
+/// distance / active time / trip count for that pairing. One row
+/// per (asset, person, AR-local day) with at least one trip.
+///
+/// Read by:
+///   · /gestion/vehiculos/[id] · tab Conductor (E5-A) · "who drove
+///     this vehicle and when"
+///   · /gestion/conductores/[id] · tab Vehículos (E7 · espejo) ·
+///     "which vehicles did this driver use"
+///   · Driver-asset utilization reports (future)
+///
+/// Populated in seed by detecting trips from Position once and
+/// rolling them up. In production this is the output of a daily
+/// batch job over the trip table.
+model AssetDriverDay {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  personId    String
+  person      Person   @relation(fields: [personId], references: [id])
+  /// AR-local day boundary. Stored as the UTC instant that
+  /// represents 00:00:00 AR-local of the day (i.e. 03:00:00 UTC).
+  day         DateTime
+  distanceKm  Float
+  /// Active driving minutes (ignition-on segments capped at 5 min
+  /// per gap to avoid overcounting device dropouts).
+  activeMin   Int
+  tripCount   Int
+  /// First trip start of the day (for "primer toque").
+  firstTripAt DateTime
+  /// Last trip end of the day (for "último toque").
+  lastTripAt  DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([assetId, personId, day])
+  @@index([assetId, day])
+  @@index([personId, day])
+  @@index([accountId, day])
+}
+
+/// Weekly aggregate per asset · used by the Actividad module
+/// (Resumen, Comparativas, Reportes) to compute deltas vs. the
+/// asset's own historical baseline and to detect outliers.
+///
+/// Generated by a batch job at week-close. Reads from
+/// AssetDriverDay + Event + Trip · never from Position.
+///
+/// `weekStart` is the AR-local Monday 00:00 of the week, stored
+/// as the UTC instant (i.e. 03:00:00 UTC of that Monday).
+///
+/// All time fields are minutes. distanceKm is float because we
+/// inherit fractional km from AssetDriverDay rollups.
+model AssetWeeklyStats {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id])
+  assetId         String
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  weekStart       DateTime
+  /// Total km in the week (sum across all drivers of the asset)
+  distanceKm      Float
+  /// Active driving minutes
+  activeMin       Int
+  /// Idle minutes (ignition on, no movement)
+  idleMin         Int
+  /// Distinct days with at least one trip
+  activeDays      Int
+  tripCount       Int
+  /// Total events generated in the week (any severity)
+  eventCount      Int
+  /// Events with severity HIGH or CRITICAL
+  highEventCount  Int
+  /// Speeding-type events specifically (counts toward "infracciones")
+  speedingCount   Int
+  /// Peak speed reached during the week (km/h)
+  maxSpeedKmh     Float
+  /// Estimated fuel consumption in liters (placeholder · refined
+  /// when we add real fuel sensor data; today derived from
+  /// activeMin × consumption coefficient by vehicleType)
+  fuelLiters      Float
+  createdAt       DateTime @default(now())
+
+  @@unique([assetId, weekStart])
+  @@index([assetId, weekStart])
+  @@index([accountId, weekStart])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TELEMETRY
+// ═══════════════════════════════════════════════════════════════
+
+/// Raw GPS position record. In production these land on a
+/// TimescaleDB hypertable; in SQLite they live as a plain table.
+/// recordedAt = device time, receivedAt = server ingest time.
+/// Backfill scenarios make these diverge (memory: backfill_flag).
+model Position {
+  id         String   @id @default(cuid())
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id])
+  recordedAt DateTime
+  receivedAt DateTime @default(now())
+  lat        Float
+  lng        Float
+  speedKmh   Float
+  heading    Int?
+  ignition   Boolean  @default(true)
+
+  @@index([assetId, recordedAt])
+  @@unique([assetId, recordedAt])
+}
+
+/// Discrete observation derived from telemetry (harsh braking,
+/// speeding threshold crossed, ignition change, etc.). Feeds KPIs
+/// and may escalate into an Alarm.
+model Event {
+  id         String    @id @default(cuid())
+  assetId    String
+  asset      Asset     @relation(fields: [assetId], references: [id])
+  personId   String?
+  person     Person?   @relation(fields: [personId], references: [id])
+  type       EventType
+  severity   Severity  @default(MEDIUM)
+  occurredAt DateTime
+  lat        Float?
+  lng        Float?
+  speedKmh   Float?
+  /// Stringified JSON (SQLite has no Jsonb). Postgres migration
+  /// will convert this field to Json type.
+  metadata   String?
+
+  @@index([assetId, occurredAt])
+  @@index([personId, occurredAt])
+}
+
+enum EventType {
+  // ─── Conducción · driver behavior ──────────────────
+  HARSH_BRAKING
+  HARSH_ACCELERATION
+  HARSH_CORNERING
+  SPEEDING
+  IDLING
+  IGNITION_ON
+  IGNITION_OFF
+
+  // ─── Seguridad · threats & sabotage ────────────────
+  PANIC_BUTTON
+  UNAUTHORIZED_USE
+  DOOR_OPEN
+  SIDE_DOOR_OPEN
+  CARGO_DOOR_OPEN
+  TRAILER_DETACH
+  GPS_DISCONNECT
+  POWER_DISCONNECT
+  JAMMING_DETECTED
+  SABOTAGE
+
+  // ─── Transversales ──────────────────────────────────
+  GEOFENCE_ENTRY
+  GEOFENCE_EXIT
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ALARMS
+// ═══════════════════════════════════════════════════════════════
+
+/// Escalated event requiring human attention. Lifecycle:
+/// OPEN → ATTENDED → CLOSED (or DISMISSED). Rule engine for
+/// auto-escalation comes in Lote 3.
+///
+/// `domain` separates Conducción (driver behavior) from
+/// Seguridad (threats / sabotage). Each module shows only
+/// alarms of its own domain.
+model Alarm {
+  id          String      @id @default(cuid())
+  accountId   String
+  account     Account     @relation(fields: [accountId], references: [id])
+  assetId     String
+  asset       Asset       @relation(fields: [assetId], references: [id])
+  personId    String?
+  person      Person?     @relation(fields: [personId], references: [id])
+  domain      AlarmDomain
+  type        AlarmType
+  severity    Severity
+  status      AlarmStatus @default(OPEN)
+  triggeredAt DateTime
+  attendedAt  DateTime?
+  closedAt    DateTime?
+  lat         Float?
+  lng         Float?
+  notes       String?
+
+  @@index([accountId, domain, status, triggeredAt])
+  @@index([assetId, triggeredAt])
+}
+
+enum AlarmDomain {
+  CONDUCCION
+  SEGURIDAD
+}
+
+enum AlarmType {
+  // ─── Conducción ──────────────────
+  HARSH_DRIVING_PATTERN
+  SPEEDING_CRITICAL
+  RECKLESS_BEHAVIOR
+
+  // ─── Seguridad ───────────────────
+  PANIC
+  UNAUTHORIZED_USE
+  SABOTAGE
+  GPS_DISCONNECT
+  POWER_DISCONNECT
+  JAMMING
+  TRAILER_DETACH
+  CARGO_BREACH
+  DOOR_BREACH
+  GEOFENCE_BREACH_CRITICAL
+
+  // ─── Transversales ───────────────
+  DEVICE_OFFLINE
+}
+
+enum AlarmStatus {
+  OPEN
+  ATTENDED
+  CLOSED
+  DISMISSED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH & PERMISSIONS
+//  ─────────────────────────────────────────────────────────────
+//  Lote F1 · fundamentos para Configuración personal y Backoffice.
+//
+//  Auth real (Auth0) viene en v1.1+. Por ahora la sesión es
+//  simulada con una cookie "mxt-demo-user-id" + selector de
+//  identidad en el topbar. passwordHash queda como columna pero
+//  no se valida en demo.
+//
+//  Multi-tenancy:
+//    · Super admin / Maxtracker admin · accountId = null (cross)
+//    · Client admin / Operator · accountId set (scoped)
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  firstName       String
+  lastName        String
+  phone           String?
+  documentNumber  String?
+
+  /// Dummy en demo · auth real (Auth0) en v1.1+
+  passwordHash    String
+  status          UserStatus @default(ACTIVE)
+
+  // ─── Tenant scoping ──────────────────────────────────────
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  /// Null si Super admin o Admin Maxtracker (cross-account).
+  /// Set si Admin de Cliente u Operador (scoped a un Account).
+  accountId       String?
+  account         Account?  @relation(fields: [accountId], references: [id])
+
+  // ─── Role assignment ─────────────────────────────────────
+  profileId       String
+  profile         Profile   @relation(fields: [profileId], references: [id])
+
+  // ─── Personal preferences (Configuración) ────────────────
+  language             String   @default("es-AR")
+  theme                Theme    @default(LIGHT)
+  notifyAlarmHighCrit  Boolean  @default(true)
+  notifyScoreDrop      Boolean  @default(true)
+  notifyBoletinClosed  Boolean  @default(true)
+  notifyCriticalEvent  Boolean  @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+}
+
+/// Perfil de permisos · 4 builtin (SUPER_ADMIN, MAXTRACKER_ADMIN,
+/// CLIENT_ADMIN, OPERATOR) + posibles personalizados a futuro
+/// (isBuiltin = false).
+model Profile {
+  id          String    @id @default(cuid())
+  systemKey   ProfileKey @unique
+  /// Nombre editable por admin · "Operador" puede renombrarse a
+  /// "Despachador" sin cambiar systemKey
+  nameLabel   String
+  description String?
+
+  /// Permisos por módulo · JSON con shape PermissionsMap definido
+  /// en src/lib/permissions.ts. Editable desde /admin/perfiles.
+  permissions Json
+
+  users       User[]
+  isBuiltin   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum ProfileKey {
+  SUPER_ADMIN
+  MAXTRACKER_ADMIN
+  CLIENT_ADMIN
+  OPERATOR
+}

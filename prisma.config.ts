@@ -1,5 +1,6 @@
 // Patched by Maxtracker installer · cargar .env (Prisma 6 ya no lo hace solo)
 try { process.loadEnvFile(".env"); } catch {}
+try { process.loadEnvFile(".env.local"); } catch {}
 // ═══════════════════════════════════════════════════════════════
 //  Prisma config (TypeScript)
 //  ─────────────────────────────────────────────────────────────

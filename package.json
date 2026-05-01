@@ -18,6 +18,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.105.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.468.0",

@@ -21,8 +21,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Pooled connection · usado por la app (alta concurrencia, conexiones cortas)
+  url       = env("DATABASE_URL")
+  // Conexión directa · usada por `prisma migrate` y `prisma db push`
+  // (migrations no funcionan vía pooler · necesitan prepared statements)
+  directUrl = env("DIRECT_URL")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -656,6 +660,10 @@ enum AlarmStatus {
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
+
+  /// ID en auth.users de Supabase. Null si el user todavía
+  /// no fue provisionado en Supabase Auth (caso seed inicial).
+  supabaseAuthId String?     @unique
   firstName       String
   lastName        String
   phone           String?

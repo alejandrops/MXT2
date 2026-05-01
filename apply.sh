@@ -1,32 +1,48 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote O1 · /admin/ingestion-status
+#  apply.sh · Lote H2 · Supabase Auth (email + password)
 #  ─────────────────────────────────────────────────────────────
-#  Pantalla de monitoreo en tiempo real del endpoint flespi.
-#  Reemplaza el `curl /api/ingest/flespi/metrics | jq` con una UI.
 #
-#  Lo que muestra:
-#   · KPI strip con totales acumulados (received/ok/skipped/
-#     errores/duplicados) + porcentajes
-#   · Card · Detección de viajes (trips creados / descartados)
-#   · Card · Razones de descarte (skip reasons desglosados)
-#   · Card · Devices silenciosos (5min / 1h / 24h / nunca)
-#   · Auto-refresh cada 30s con toggle
+#  Reemplaza la cookie demo con autenticación real de Supabase
+#  para producción, manteniendo la cookie demo en dev local
+#  controlado por la env var AUTH_MODE.
 #
-#  Archivos nuevos:
-#   · src/app/admin/ingestion-status/page.tsx · Server Component
-#     con permission check (solo SA y MA)
-#   · src/app/admin/ingestion-status/IngestionStatusClient.tsx ·
-#     Client Component con UI + auto-refresh
-#   · src/app/admin/ingestion-status/page.module.css
+#  Archivos del lote:
 #
-#  Archivos modificados:
-#   · src/components/shell/AdminSidebar.tsx · agrega link
-#     "Estado ingestion" debajo de "Dispositivos"
+#  Código (src/)
+#   · src/lib/supabase/client.ts       · cliente browser
+#   · src/lib/supabase/server.ts       · cliente Server Components/Actions
+#   · src/lib/session.ts               · UPDATED · soporta dos modos
+#   · src/middleware.ts                · refresh de sesión + protección
+#   · src/app/login/page.tsx           · pantalla de login
+#   · src/app/login/LoginForm.tsx      · client component del form
+#   · src/app/login/page.module.css
+#   · src/app/auth/callback/route.ts   · callback de Supabase
+#   · src/app/auth/signout/route.ts    · POST endpoint de logout
+#
+#  Schema (prisma/)
+#   · prisma/patches/patch-user-supabase-auth-id.sh · agrega
+#     campo `supabaseAuthId` a User
+#   · prisma/seed-prod-users.ts        · reset limpio · solo Alejandro
+#
+#  Documentación (docs/)
+#   · docs/operations/configurar-supabase-auth.md
 #
 #  Pre-requisitos:
-#   · I1 · endpoint /api/ingest/flespi
-#   · I4 · endpoint /api/ingest/flespi/metrics
+#   · H1 aplicado (Postgres en Supabase)
+#   · Proyecto Supabase con Auth habilitado
+#
+#  IMPORTANTE: este lote NO ejecuta nada destructivo. Después
+#  de aplicarlo, hay que:
+#
+#   1. Instalar deps · npm install @supabase/supabase-js @supabase/ssr
+#   2. Aplicar el patch del schema
+#      bash prisma/patches/patch-user-supabase-auth-id.sh
+#   3. Crear migration
+#      npx prisma migrate dev --name add_supabase_auth_id
+#   4. (Opcional) Reset de users · npx tsx prisma/seed-prod-users.ts
+#   5. Configurar Supabase Auth · ver doc operations
+#   6. Editar .env con NEXT_PUBLIC_SUPABASE_URL, ANON_KEY, AUTH_MODE
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -37,7 +53,7 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="O1 · /admin/ingestion-status"
+LOTE_NAME="H2 · Supabase Auth"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ ! -d "$SCRIPT_DIR/src" ]; then
@@ -50,12 +66,6 @@ if [ ! -d "src" ] || [ ! -f "package.json" ]; then
   exit 1
 fi
 
-if [ ! -f "src/app/api/ingest/flespi/metrics/route.ts" ]; then
-  echo "ERROR · No encuentro src/app/api/ingest/flespi/metrics/route.ts"
-  echo "        · Aplicá primero el lote I4."
-  exit 1
-fi
-
 echo -e "${CYAN}═══ Lote $LOTE_NAME ═══${NC}"
 echo
 
@@ -65,6 +75,7 @@ created=0
 
 apply_file() {
   local rel="$1"
+  local mode="$2"
   local src="$SCRIPT_DIR/$rel"
   local dst="$rel"
 
@@ -77,6 +88,7 @@ apply_file() {
 
   if [ ! -f "$dst" ]; then
     cp "$src" "$dst"
+    [ "$mode" = "exec" ] && chmod +x "$dst"
     echo -e "  ${GREEN}new ${NC}  $rel"
     created=$((created + 1))
     return
@@ -87,19 +99,40 @@ apply_file() {
     unchanged=$((unchanged + 1))
   else
     cp "$src" "$dst"
+    [ "$mode" = "exec" ] && chmod +x "$dst"
     echo -e "  ${GREEN}upd ${NC}  $rel"
     written=$((written + 1))
   fi
 }
 
-echo -e "${CYAN}── Pantalla nueva ──${NC}"
-apply_file "src/app/admin/ingestion-status/page.tsx"
-apply_file "src/app/admin/ingestion-status/IngestionStatusClient.tsx"
-apply_file "src/app/admin/ingestion-status/page.module.css"
+echo -e "${CYAN}── Supabase clients ──${NC}"
+apply_file "src/lib/supabase/client.ts"
+apply_file "src/lib/supabase/server.ts"
 
 echo
-echo -e "${CYAN}── Sidebar admin · agregar link ──${NC}"
-apply_file "src/components/shell/AdminSidebar.tsx"
+echo -e "${CYAN}── Session adapter ──${NC}"
+apply_file "src/lib/session.ts"
+
+echo
+echo -e "${CYAN}── Middleware ──${NC}"
+apply_file "src/middleware.ts"
+
+echo
+echo -e "${CYAN}── Páginas ──${NC}"
+apply_file "src/app/login/page.tsx"
+apply_file "src/app/login/LoginForm.tsx"
+apply_file "src/app/login/page.module.css"
+apply_file "src/app/auth/callback/route.ts"
+apply_file "src/app/auth/signout/route.ts"
+
+echo
+echo -e "${CYAN}── Schema patch + seed ──${NC}"
+apply_file "prisma/patches/patch-user-supabase-auth-id.sh" "exec"
+apply_file "prisma/seed-prod-users.ts"
+
+echo
+echo -e "${CYAN}── Documentación ──${NC}"
+apply_file "docs/operations/configurar-supabase-auth.md"
 
 echo
 echo -e "${CYAN}─── Resumen ───${NC}"
@@ -108,26 +141,39 @@ echo "  Actualizados:  $written"
 echo "  Sin cambios:   $unchanged"
 echo
 
-if [ -d ".next" ]; then
-  rm -rf .next
-  echo -e "  ${GREY}.next eliminado${NC}"
-  echo
-fi
-
 echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
-echo -e "${YELLOW}══ TESTING ══${NC}"
+echo -e "${YELLOW}══ PASOS POST-APLICACIÓN ══${NC}"
 echo
-echo "  1. Como SUPER_ADMIN o MAXTRACKER_ADMIN, ir a:"
-echo "       /admin → debería verse 'Estado ingestion' en el sidebar"
-echo "       /admin/ingestion-status → la pantalla"
+echo "1. Instalar dependencias de Supabase:"
 echo
-echo "  2. Como CLIENT_ADMIN o OPERATOR, navegar manualmente a"
-echo "     /admin/ingestion-status → redirect a /admin (acceso negado)"
+echo "     npm install @supabase/supabase-js @supabase/ssr"
 echo
-echo "  3. Para ver datos, simular un batch:"
-echo "       bash scripts/simulate-flespi-trip.sh"
-echo "     Esperar 30s o apretar 'Refrescar' · los counters deben subir"
+echo "2. Patch del schema · agrega supabaseAuthId al User:"
 echo
-echo "  4. Apagar el toggle 'Auto-refresh 30s' · debería dejar de"
-echo "     actualizarse hasta que apretes el botón manual"
+echo "     bash prisma/patches/patch-user-supabase-auth-id.sh"
+echo
+echo "3. Crear migration:"
+echo
+echo "     npx prisma migrate dev --name add_supabase_auth_id"
+echo
+echo "4. (RECOMENDADO) Reset users · arrancar limpio:"
+echo
+echo "     npx tsx prisma/seed-prod-users.ts"
+echo
+echo "5. Seguir el doc paso a paso para configurar Supabase Auth:"
+echo
+echo "     cat docs/operations/configurar-supabase-auth.md"
+echo
+echo "   Resumen del doc:"
+echo "    · Habilitar Email provider en Supabase Auth"
+echo "    · Crear user en dashboard (Authentication → Users)"
+echo "    · Copiar UUID de auth.users → UPDATE \"User\" SET \"supabaseAuthId\""
+echo "    · Agregar a .env:"
+echo "        NEXT_PUBLIC_SUPABASE_URL=..."
+echo "        NEXT_PUBLIC_SUPABASE_ANON_KEY=..."
+echo "        AUTH_MODE=\"supabase\""
+echo
+echo "6. Probar:"
+echo "     rm -rf .next && npm run dev"
+echo "     → /login → email + password → debería entrar al producto"

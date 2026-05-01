@@ -1,27 +1,38 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 // ═══════════════════════════════════════════════════════════════
-//  Session · simulada vía cookie en demo
+//  Session · soporta dos modos · controlado por AUTH_MODE env (H2)
 //  ─────────────────────────────────────────────────────────────
-//  Cookie: "mxt-demo-user-id"
-//  Si no hay cookie → default al primer Super admin (Alejandro).
-//  Si la cookie apunta a un user inexistente → fallback al primer
-//  user activo (cubre el caso "borraron mi user pero mi cookie
-//  sigue ahí").
 //
-//  Cuando viene auth real (Auth0 v1.1+):
-//    · `getSession()` lee el JWT en lugar de la cookie demo
-//    · El switcher de identidad se elimina
-//    · El resto del código no cambia · todo consume SessionData
+//  AUTH_MODE=demo (default · dev local)
+//    · Cookie "mxt-demo-user-id" apunta a User.id
+//    · Si no hay cookie → fallback al primer SUPER_ADMIN activo
+//    · El switcher de identidad (Topbar) sigue funcionando
 //
-//  cache() de React: cachea `getSession()` por request, así
-//  múltiples server components que la pidan no consultan DB
-//  varias veces.
+//  AUTH_MODE=supabase (producción)
+//    · Lee la sesión de Supabase Auth via @supabase/ssr
+//    · Mapea auth.users.id → User.supabaseAuthId → User row
+//    · Si no hay sesión válida → redirect a /login
+//    · El switcher de identidad NO se muestra (deshabilitado)
+//
+//  El resto del código (todas las páginas) consume `getSession()`
+//  sin saber qué modo está activo · misma SessionData en ambos.
+//
+//  cache() de React: cachea por request, así múltiples
+//  Server Components no consultan DB varias veces.
 // ═══════════════════════════════════════════════════════════════
 
 const COOKIE_NAME = "mxt-demo-user-id";
+
+export type AuthMode = "demo" | "supabase";
+
+export function getAuthMode(): AuthMode {
+  return process.env.AUTH_MODE === "supabase" ? "supabase" : "demo";
+}
 
 export interface SessionData {
   user: {
@@ -30,13 +41,9 @@ export interface SessionData {
     lastName: string;
     fullName: string;
     email: string;
-    phone: string | null;
-    documentNumber: string | null;
     organizationId: string;
     accountId: string | null;
-    /** "AS" · iniciales para avatar */
     initials: string;
-    /** Color hex estable derivado del id · para avatar coloreado */
     avatarColor: string;
     language: string;
     theme: "LIGHT" | "DARK" | "AUTO";
@@ -49,65 +56,44 @@ export interface SessionData {
     id: string;
     systemKey: "SUPER_ADMIN" | "MAXTRACKER_ADMIN" | "CLIENT_ADMIN" | "OPERATOR";
     nameLabel: string;
-    /** Json del DB · ver PermissionsMap en permissions.ts */
     permissions: unknown;
   };
   account: {
     id: string;
     name: string;
     slug: string;
-    tier: "BASE" | "PRO" | "ENTERPRISE";
   } | null;
   organization: {
     id: string;
     name: string;
   };
+  /** Indica el modo de auth activo · UI lo usa para decidir si
+   * mostrar el switcher de identidad o no */
+  authMode: AuthMode;
 }
 
+// ─── Public API ──────────────────────────────────────────────
+
 export const getSession = cache(async (): Promise<SessionData> => {
-  const cookieStore = await cookies();
-  const userIdCookie = cookieStore.get(COOKIE_NAME);
-  const userId = userIdCookie?.value ?? null;
+  const mode = getAuthMode();
 
-  // 1. Buscar por cookie (si existe)
-  let user = userId
-    ? await db.user.findFirst({
-        where: { id: userId, status: "ACTIVE" },
-        include: { profile: true, account: true, organization: true },
-      })
-    : null;
-
-  // 2. Fallback · primer Super admin
-  if (!user) {
-    user = await db.user.findFirst({
-      where: { profile: { systemKey: "SUPER_ADMIN" }, status: "ACTIVE" },
-      include: { profile: true, account: true, organization: true },
-    });
+  if (mode === "supabase") {
+    return getSessionFromSupabase();
   }
 
-  // 3. Fallback final · primer user activo
-  if (!user) {
-    user = await db.user.findFirst({
-      where: { status: "ACTIVE" },
-      include: { profile: true, account: true, organization: true },
-    });
-  }
-
-  if (!user) {
-    throw new Error(
-      "No hay usuarios activos en la base · ejecutá `npm run db:seed`",
-    );
-  }
-
-  return mapUser(user);
+  return getSessionFromDemoCookie();
 });
 
 /**
- * Lista todos los usuarios activos · para el switcher de identidad
- * demo. Solo se usa desde el dropdown del Topbar (que es client),
- * a través de prop drilling desde el layout server component.
+ * Lista usuarios para el switcher de identidad.
+ *
+ * En modo demo, devuelve TODOS los users activos.
+ * En modo supabase, devuelve [] (no hay switcher en producción).
  */
 export async function listDemoIdentities() {
+  if (getAuthMode() === "supabase") {
+    return [];
+  }
   const users = await db.user.findMany({
     where: { status: "ACTIVE" },
     include: { profile: true, account: true },
@@ -126,19 +112,82 @@ export async function listDemoIdentities() {
   }));
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Helpers internos
-// ═══════════════════════════════════════════════════════════════
+// ─── Implementación · modo demo ───────────────────────────────
+
+async function getSessionFromDemoCookie(): Promise<SessionData> {
+  const cookieStore = await cookies();
+  const userIdCookie = cookieStore.get(COOKIE_NAME);
+  const userId = userIdCookie?.value ?? null;
+
+  let user = userId
+    ? await db.user.findFirst({
+        where: { id: userId, status: "ACTIVE" },
+        include: { profile: true, account: true, organization: true },
+      })
+    : null;
+
+  if (!user) {
+    user = await db.user.findFirst({
+      where: { profile: { systemKey: "SUPER_ADMIN" }, status: "ACTIVE" },
+      include: { profile: true, account: true, organization: true },
+    });
+  }
+
+  if (!user) {
+    user = await db.user.findFirst({
+      where: { status: "ACTIVE" },
+      include: { profile: true, account: true, organization: true },
+    });
+  }
+
+  if (!user) {
+    throw new Error(
+      "No hay usuarios activos en la base · ejecutá los seeds",
+    );
+  }
+
+  return mapUser(user, "demo");
+}
+
+// ─── Implementación · modo Supabase ───────────────────────────
+
+async function getSessionFromSupabase(): Promise<SessionData> {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) {
+    redirect("/login");
+  }
+
+  // Buscar el User local por supabaseAuthId
+  const user = await db.user.findFirst({
+    where: { supabaseAuthId: authUser.id, status: "ACTIVE" },
+    include: { profile: true, account: true, organization: true },
+  });
+
+  // El user existe en auth pero no en nuestra DB · hay desincronización
+  // (se borró del backoffice mientras tenía sesión) · forzar logout.
+  if (!user) {
+    await supabase.auth.signOut();
+    redirect("/login?error=user_not_provisioned");
+  }
+
+  return mapUser(user, "supabase");
+}
+
+// ─── Helper de mapping (compartido) ───────────────────────────
 
 type UserWithRelations = NonNullable<
   Awaited<ReturnType<typeof db.user.findFirst>>
 > & {
   profile: { id: string; systemKey: string; nameLabel: string; permissions: unknown };
-  account: { id: string; name: string; slug: string; tier: string } | null;
+  account: { id: string; name: string; slug: string } | null;
   organization: { id: string; name: string };
 };
 
-function mapUser(u: UserWithRelations): SessionData {
+function mapUser(u: UserWithRelations, authMode: AuthMode): SessionData {
   const fullName = `${u.firstName} ${u.lastName}`.trim();
   const initials = computeInitials(u.firstName, u.lastName);
   const avatarColor = colorForId(u.id);
@@ -150,8 +199,6 @@ function mapUser(u: UserWithRelations): SessionData {
       lastName: u.lastName,
       fullName,
       email: u.email,
-      phone: u.phone,
-      documentNumber: u.documentNumber,
       organizationId: u.organizationId,
       accountId: u.accountId,
       initials,
@@ -170,14 +217,10 @@ function mapUser(u: UserWithRelations): SessionData {
       permissions: u.profile.permissions,
     },
     account: u.account
-      ? {
-          id: u.account.id,
-          name: u.account.name,
-          slug: u.account.slug,
-          tier: u.account.tier as "BASE" | "PRO" | "ENTERPRISE",
-        }
+      ? { id: u.account.id, name: u.account.name, slug: u.account.slug }
       : null,
     organization: { id: u.organization.id, name: u.organization.name },
+    authMode,
   };
 }
 
@@ -187,19 +230,15 @@ function computeInitials(firstName: string, lastName: string): string {
   return (f + l).toUpperCase();
 }
 
-/**
- * Color estable derivado del id · paleta acotada para look enterprise.
- * 8 tonos para que diferentes usuarios sean distinguibles sin caos.
- */
 const AVATAR_PALETTE = [
-  "#2563EB", // blue
-  "#7C3AED", // purple
-  "#0891B2", // cyan
-  "#059669", // green
-  "#CA8A04", // amber-dark
-  "#DC2626", // red
-  "#DB2777", // pink
-  "#0D9488", // teal
+  "#2563EB",
+  "#7C3AED",
+  "#0891B2",
+  "#059669",
+  "#CA8A04",
+  "#DC2626",
+  "#DB2777",
+  "#0D9488",
 ];
 
 function colorForId(id: string): string {
