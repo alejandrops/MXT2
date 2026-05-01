@@ -23,6 +23,7 @@ import { EmpresaUmbralesTab } from "./empresa/EmpresaUmbralesTab";
 import { EmpresaIntegracionesTab } from "./empresa/EmpresaIntegracionesTab";
 import { EmpresaPlanTab } from "./empresa/EmpresaPlanTab";
 import { EmpresaUsuariosTab } from "./empresa/EmpresaUsuariosTab";
+import { AccountSwitcher } from "./empresa/AccountSwitcher";
 import styles from "./ConfiguracionPage.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -85,6 +86,11 @@ interface Props {
   account: AccountWithSettings | null;
   accountUsers: AccountUser[] | null;
   assignableProfiles: AssignableProfile[] | null;
+  usage: { vehicles: number; users: number } | null;
+  // S5 · selector de cuenta para SA/MA
+  availableAccounts: { id: string; name: string; slug: string }[];
+  targetAccountId: string | null;
+  isPlatformAdmin: boolean;
 }
 
 interface SectionDef {
@@ -105,12 +111,22 @@ export function ConfiguracionShell({
   account,
   accountUsers,
   assignableProfiles,
+  usage,
+  availableAccounts,
+  targetAccountId,
+  isPlatformAdmin,
 }: Props) {
   const router = useRouter();
 
   function navigate(key: SectionKey) {
     if (key === activeSection) return;
-    router.push(`/configuracion?section=${key}`);
+    // Preservar account param si existe (caso SA/MA)
+    const params = new URLSearchParams();
+    params.set("section", key);
+    if (targetAccountId && isPlatformAdmin) {
+      params.set("account", targetAccountId);
+    }
+    router.push(`/configuracion?${params.toString()}`);
   }
 
   const groups: SectionGroup[] = [
@@ -145,28 +161,40 @@ export function ConfiguracionShell({
         <div className={styles.sidebarHeader}>
           <h1 className={styles.sidebarTitle}>Configuración</h1>
         </div>
-        {groups.map((group) => (
-          <div key={group.label} className={styles.sidebarGroup}>
-            <div className={styles.sidebarGroupLabel}>{group.label}</div>
-            {group.sections.map((section) => {
-              const isActive = section.key === activeSection;
-              return (
-                <button
-                  key={section.key}
-                  type="button"
-                  className={`${styles.sidebarItem} ${
-                    isActive ? styles.sidebarItemActive : ""
-                  }`}
-                  onClick={() => navigate(section.key)}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <span className={styles.sidebarItemIcon}>{section.icon}</span>
-                  <span className={styles.sidebarItemLabel}>{section.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {groups.map((group) => {
+          const isEmpresaGroup = group.label === "Empresa";
+          return (
+            <div key={group.label} className={styles.sidebarGroup}>
+              <div className={styles.sidebarGroupLabel}>{group.label}</div>
+
+              {/* S5 · Switcher de cuenta arriba del grupo Empresa para SA/MA */}
+              {isEmpresaGroup && isPlatformAdmin && availableAccounts.length > 0 && (
+                <AccountSwitcher
+                  accounts={availableAccounts}
+                  currentAccountId={targetAccountId}
+                />
+              )}
+
+              {group.sections.map((section) => {
+                const isActive = section.key === activeSection;
+                return (
+                  <button
+                    key={section.key}
+                    type="button"
+                    className={`${styles.sidebarItem} ${
+                      isActive ? styles.sidebarItemActive : ""
+                    }`}
+                    onClick={() => navigate(section.key)}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span className={styles.sidebarItemIcon}>{section.icon}</span>
+                    <span className={styles.sidebarItemLabel}>{section.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* ── Content area ───────────────────────────────────── */}
@@ -218,8 +246,8 @@ function renderSection(
         <EmptyState text="No se pudo cargar las integraciones." />
       );
     case "empresa-plan":
-      return account ? (
-        <EmpresaPlanTab account={account} />
+      return account && usage ? (
+        <EmpresaPlanTab account={account} usage={usage} />
       ) : (
         <EmptyState text="No se pudo cargar el plan." />
       );

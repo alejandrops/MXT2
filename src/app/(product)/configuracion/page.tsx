@@ -88,20 +88,54 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
     redirect("/configuracion?section=perfil");
   }
 
+  // ── S5 · resolver targetAccountId ──
+  // CA → siempre su propia cuenta (session.account.id)
+  // SA/MA → query param ?account=X · si falta, primer account de su org
+  const isPlatformAdmin =
+    session.profile.systemKey === "SUPER_ADMIN" ||
+    session.profile.systemKey === "MAXTRACKER_ADMIN";
+
+  const accountParam = Array.isArray(sp.account) ? sp.account[0] : sp.account;
+
+  let targetAccountId: string | null = null;
+  let availableAccounts: { id: string; name: string; slug: string }[] = [];
+
+  if (canSeeEmpresa) {
+    if (isPlatformAdmin) {
+      // SA/MA · listar todas las cuentas de su organización
+      availableAccounts = await db.account.findMany({
+        where: { organizationId: session.organization.id },
+        select: { id: true, name: true, slug: true },
+        orderBy: { name: "asc" },
+      });
+
+      // Si pidió un account específico y existe en su org, usarlo
+      if (accountParam && availableAccounts.some((a) => a.id === accountParam)) {
+        targetAccountId = accountParam;
+      } else if (availableAccounts.length > 0) {
+        // Default · primera cuenta de su org
+        targetAccountId = availableAccounts[0]!.id;
+      }
+    } else if (session.account?.id) {
+      // CA · su propia cuenta
+      targetAccountId = session.account.id;
+    }
+  }
+
   // Para secciones de empresa, cargar el account + settings
   let accountWithSettings = null;
-  if (canSeeEmpresa && session.account?.id) {
+  if (canSeeEmpresa && targetAccountId) {
     accountWithSettings = await db.account.findUnique({
-      where: { id: session.account.id },
+      where: { id: targetAccountId },
       include: { settings: true },
     });
   }
 
-  // Para usuarios y permisos · listar users del account
+  // Para usuarios y permisos · listar users del target account
   let accountUsers = null;
-  if (canSeeEmpresa && requestedSection === "empresa-usuarios" && session.account?.id) {
+  if (canSeeEmpresa && requestedSection === "empresa-usuarios" && targetAccountId) {
     accountUsers = await db.user.findMany({
-      where: { accountId: session.account.id },
+      where: { accountId: targetAccountId },
       include: { profile: true },
       orderBy: [{ status: "asc" }, { firstName: "asc" }],
     });
@@ -116,6 +150,16 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
         })
       : null;
 
+  // S4 · uso vs límite del plan · solo cuando section es empresa-plan
+  let usage: { vehicles: number; users: number } | null = null;
+  if (canSeeEmpresa && requestedSection === "empresa-plan" && targetAccountId) {
+    const [vehicles, users] = await Promise.all([
+      db.asset.count({ where: { accountId: targetAccountId } }),
+      db.user.count({ where: { accountId: targetAccountId } }),
+    ]);
+    usage = { vehicles, users };
+  }
+
   return (
     <div className={styles.page}>
       <ConfiguracionShell
@@ -125,6 +169,10 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
         account={accountWithSettings}
         accountUsers={accountUsers}
         assignableProfiles={assignableProfiles}
+        usage={usage}
+        availableAccounts={availableAccounts}
+        targetAccountId={targetAccountId}
+        isPlatformAdmin={isPlatformAdmin}
       />
     </div>
   );

@@ -19,6 +19,10 @@ interface Props {
     name: string;
     tier: string;
   };
+  usage: {
+    vehicles: number;
+    users: number;
+  };
 }
 
 interface PlanFeatures {
@@ -92,8 +96,13 @@ const PLANS: Record<string, { label: string; description: string; features: Plan
   },
 };
 
-export function EmpresaPlanTab({ account }: Props) {
+export function EmpresaPlanTab({ account, usage }: Props) {
   const plan = PLANS[account.tier] || PLANS.BASE!;
+
+  const vehicleLimit = plan.features.vehicles;
+  const userLimit = plan.features.users;
+  const vehicleIsUnlimited = vehicleLimit >= 9999;
+  const userIsUnlimited = userLimit >= 9999;
 
   return (
     <div>
@@ -114,9 +123,23 @@ export function EmpresaPlanTab({ account }: Props) {
         </div>
         <p className={styles.planDescription}>{plan.description}</p>
 
+        {/* ── Uso vs límite ─────────────────────────────────── */}
+        <div className={styles.usageGrid}>
+          <UsageBar
+            label="Vehículos"
+            current={usage.vehicles}
+            limit={vehicleLimit}
+            unlimited={vehicleIsUnlimited}
+          />
+          <UsageBar
+            label="Usuarios"
+            current={usage.users}
+            limit={userLimit}
+            unlimited={userIsUnlimited}
+          />
+        </div>
+
         <div className={styles.statsGrid}>
-          <Stat label="Vehículos incluidos" value={plan.features.vehicles >= 9999 ? "Ilimitados" : plan.features.vehicles.toString()} />
-          <Stat label="Usuarios incluidos" value={plan.features.users >= 9999 ? "Ilimitados" : plan.features.users.toString()} />
           <Stat label="Retención de datos" value={plan.features.retention} />
           <Stat label="Soporte" value={plan.features.support} short />
         </div>
@@ -150,6 +173,62 @@ function Stat({ label, value, short }: { label: string; value: string; short?: b
     <div className={`${styles.stat} ${short ? styles.statShort : ""}`}>
       <div className={styles.statLabel}>{label}</div>
       <div className={styles.statValue}>{value}</div>
+    </div>
+  );
+}
+
+function UsageBar({
+  label,
+  current,
+  limit,
+  unlimited,
+}: {
+  label: string;
+  current: number;
+  limit: number;
+  unlimited: boolean;
+}) {
+  if (unlimited) {
+    return (
+      <div className={styles.usageItem}>
+        <div className={styles.usageHeader}>
+          <span className={styles.usageLabel}>{label}</span>
+          <span className={styles.usageValue}>
+            <strong>{current}</strong> / Ilimitado
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const percent = limit > 0 ? Math.min(100, Math.round((current / limit) * 100)) : 0;
+  const status =
+    percent >= 100 ? "full" : percent >= 80 ? "warning" : "ok";
+
+  return (
+    <div className={styles.usageItem}>
+      <div className={styles.usageHeader}>
+        <span className={styles.usageLabel}>{label}</span>
+        <span className={styles.usageValue}>
+          <strong>{current}</strong> / {limit}
+        </span>
+      </div>
+      <div className={styles.usageBar}>
+        <div
+          className={`${styles.usageBarFill} ${styles[`usageBarFill_${status}`]}`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {status === "warning" && (
+        <div className={styles.usageWarn}>
+          Estás cerca del límite del plan.
+        </div>
+      )}
+      {status === "full" && (
+        <div className={styles.usageWarn}>
+          Llegaste al límite del plan. Contactá soporte para upgradear.
+        </div>
+      )}
     </div>
   );
 }

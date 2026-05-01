@@ -164,3 +164,33 @@
   border-top: 1px solid var(--brd);
   margin-top: 4px;
 }
+
+/* ─── Info box · S4 · invite manual notice ─── */
+.infoBox {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--blu, #2563eb) 6%, var(--sf));
+  border: 1px solid color-mix(in srgb, var(--blu, #2563eb) 25%, transparent);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--t1);
+}
+
+.infoBox > svg {
+  flex-shrink: 0;
+  color: var(--blu, #2563eb);
+  margin-top: 2px;
+}
+
+.infoBox strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12.5px;
+}
+
+.infoBox p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--t2);
+}

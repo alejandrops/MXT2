@@ -5,12 +5,15 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
 // ═══════════════════════════════════════════════════════════════
-//  Server Actions · Empresa (S1)
+//  Server Actions · Empresa (S1 + S4 fixes)
 //  ─────────────────────────────────────────────────────────────
-//  Acciones del grupo "Empresa" en /configuracion. Todas validan
-//  que el caller tenga permiso (CLIENT_ADMIN o superior) Y que
-//  el accountId target sea su propio account (excepto SA/MA que
-//  pueden tocar cualquier cuenta).
+//  S4 ·
+//    · updateEmpresaUmbrales · validación completa de TODAS las
+//      inputs (antes solo 3 de 9)
+//    · updateAccountUser · bloquea cambiar el último CA a OP
+//    · toggleUserStatus · bloquea suspender al último CA activo
+//    · deleteAccountUser · bloquea eliminar al último CA +
+//      mensajes específicos de error según relations
 // ═══════════════════════════════════════════════════════════════
 
 type ActionResult<T = void> =
@@ -25,17 +28,50 @@ async function ensureCanManageAccount(
   const session = await getSession();
   const role = session.profile.systemKey;
 
-  // SA y MA pueden tocar cualquier account
+  // SA y MA pueden tocar cualquier account de SU organización (no de otras)
   if (role === "SUPER_ADMIN" || role === "MAXTRACKER_ADMIN") {
+    const target = await db.account.findUnique({
+      where: { id: targetAccountId },
+      select: { organizationId: true },
+    });
+    if (!target) {
+      return { ok: false, error: "Cuenta no encontrada." };
+    }
+    if (target.organizationId !== session.organization.id) {
+      return { ok: false, error: "Esa cuenta pertenece a otra organización." };
+    }
     return { ok: true, data: { session } };
   }
 
-  // CA solo su propio account
   if (role === "CLIENT_ADMIN" && session.account?.id === targetAccountId) {
     return { ok: true, data: { session } };
   }
 
   return { ok: false, error: "No tenés permisos para esta operación." };
+}
+
+/**
+ * Helper · cuenta cuántos CLIENT_ADMIN ACTIVOS quedan en una cuenta
+ * (excluyendo opcionalmente al user que está siendo modificado)
+ */
+async function countActiveClientAdmins(
+  accountId: string,
+  excludeUserId?: string,
+): Promise<number> {
+  const where: {
+    accountId: string;
+    status: "ACTIVE";
+    profile: { systemKey: "CLIENT_ADMIN" };
+    NOT?: { id: string };
+  } = {
+    accountId,
+    status: "ACTIVE",
+    profile: { systemKey: "CLIENT_ADMIN" },
+  };
+  if (excludeUserId) {
+    where.NOT = { id: excludeUserId };
+  }
+  return db.user.count({ where });
 }
 
 // ─── Datos de la cuenta ──────────────────────────────────────
@@ -50,25 +86,32 @@ export async function updateEmpresaDatos(input: {
   const auth = await ensureCanManageAccount(input.accountId);
   if (!auth.ok) return auth;
 
-  if (!input.name || input.name.length < 2) {
+  if (!input.name || input.name.trim().length < 2) {
     return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
+  }
+  if (input.name.length > 100) {
+    return { ok: false, error: "El nombre no puede superar los 100 caracteres." };
   }
 
   if (input.alertContactEmail && !/^\S+@\S+\.\S+$/.test(input.alertContactEmail)) {
     return { ok: false, error: "Email de alertas inválido." };
   }
+  if (input.alertContactEmail && input.alertContactEmail.length > 120) {
+    return { ok: false, error: "Email de alertas demasiado largo." };
+  }
+  if (input.alertContactPhone && input.alertContactPhone.length > 30) {
+    return { ok: false, error: "Teléfono demasiado largo." };
+  }
 
   try {
-    // Update Account
     await db.account.update({
       where: { id: input.accountId },
       data: {
-        name: input.name,
+        name: input.name.trim(),
         industry: input.industry,
       },
     });
 
-    // Upsert AccountSettings
     await db.accountSettings.upsert({
       where: { accountId: input.accountId },
       update: {
@@ -90,7 +133,7 @@ export async function updateEmpresaDatos(input: {
   }
 }
 
-// ─── Umbrales ────────────────────────────────────────────────
+// ─── Umbrales · validación completa ───────────────────────────
 
 export async function updateEmpresaUmbrales(input: {
   accountId: string;
@@ -107,18 +150,94 @@ export async function updateEmpresaUmbrales(input: {
   const auth = await ensureCanManageAccount(input.accountId);
   if (!auth.ok) return auth;
 
-  // Validaciones
-  if (input.speedLimitUrban < 20 || input.speedLimitUrban > 130) {
+  // ── Velocidad ──
+  if (
+    !Number.isFinite(input.speedLimitUrban) ||
+    input.speedLimitUrban < 20 ||
+    input.speedLimitUrban > 130
+  ) {
     return { ok: false, error: "Velocidad urbana fuera de rango (20-130 km/h)." };
   }
-  if (input.speedLimitHighway < 40 || input.speedLimitHighway > 150) {
+  if (
+    !Number.isFinite(input.speedLimitHighway) ||
+    input.speedLimitHighway < 40 ||
+    input.speedLimitHighway > 150
+  ) {
     return { ok: false, error: "Velocidad ruta fuera de rango (40-150 km/h)." };
   }
   if (input.speedLimitHighway <= input.speedLimitUrban) {
-    return { ok: false, error: "La velocidad de ruta debe ser mayor que la urbana." };
+    return {
+      ok: false,
+      error: "La velocidad de ruta debe ser mayor que la urbana.",
+    };
   }
-  if (input.harshBrakingThreshold < 0.1 || input.harshBrakingThreshold > 1.0) {
+  if (
+    !Number.isFinite(input.speedTolerancePercent) ||
+    input.speedTolerancePercent < 0 ||
+    input.speedTolerancePercent > 50
+  ) {
+    return { ok: false, error: "Tolerancia fuera de rango (0-50%)." };
+  }
+
+  // ── G-force ──
+  if (
+    !Number.isFinite(input.harshBrakingThreshold) ||
+    input.harshBrakingThreshold < 0.1 ||
+    input.harshBrakingThreshold > 1.0
+  ) {
     return { ok: false, error: "Umbral de frenada fuera de rango (0.1g - 1.0g)." };
+  }
+  if (
+    !Number.isFinite(input.harshAccelerationThreshold) ||
+    input.harshAccelerationThreshold < 0.1 ||
+    input.harshAccelerationThreshold > 1.0
+  ) {
+    return {
+      ok: false,
+      error: "Umbral de aceleración fuera de rango (0.1g - 1.0g).",
+    };
+  }
+  if (
+    !Number.isFinite(input.harshCorneringThreshold) ||
+    input.harshCorneringThreshold < 0.1 ||
+    input.harshCorneringThreshold > 1.0
+  ) {
+    return {
+      ok: false,
+      error: "Umbral de curva fuera de rango (0.1g - 1.0g).",
+    };
+  }
+
+  // ── Operación ──
+  if (
+    !Number.isInteger(input.idlingMinDuration) ||
+    input.idlingMinDuration < 30 ||
+    input.idlingMinDuration > 3600
+  ) {
+    return {
+      ok: false,
+      error: "Tiempo mínimo de ralentí fuera de rango (30-3600 segundos).",
+    };
+  }
+  if (
+    !Number.isFinite(input.tripMinDistanceKm) ||
+    input.tripMinDistanceKm < 0.1 ||
+    input.tripMinDistanceKm > 5
+  ) {
+    return {
+      ok: false,
+      error: "Distancia mínima de viaje fuera de rango (0.1-5 km).",
+    };
+  }
+  if (
+    !Number.isInteger(input.tripMinDurationSec) ||
+    input.tripMinDurationSec < 30 ||
+    input.tripMinDurationSec > 600
+  ) {
+    return {
+      ok: false,
+      error: "Duración mínima de viaje fuera de rango (30-600 segundos).",
+    };
   }
 
   try {
@@ -169,27 +288,36 @@ export async function createAccountUser(input: {
   const auth = await ensureCanManageAccount(input.accountId);
   if (!auth.ok) return auth;
 
-  if (!input.firstName || !input.lastName) {
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const email = input.email.trim().toLowerCase();
+
+  if (!firstName || !lastName) {
     return { ok: false, error: "Nombre y apellido son obligatorios." };
   }
-  if (!/^\S+@\S+\.\S+$/.test(input.email)) {
+  if (firstName.length > 50 || lastName.length > 50) {
+    return { ok: false, error: "Nombre o apellido demasiado largos (máx 50 caracteres)." };
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
     return { ok: false, error: "Email inválido." };
+  }
+  if (email.length > 120) {
+    return { ok: false, error: "Email demasiado largo." };
   }
 
   // Verificar que el profileId sea CLIENT_ADMIN o OPERATOR
+  // (los demás roles · SA, MA · se gestionan via /admin, no acá)
   const profile = await db.profile.findUnique({ where: { id: input.profileId } });
   if (!profile || !["CLIENT_ADMIN", "OPERATOR"].includes(profile.systemKey)) {
     return { ok: false, error: "Perfil inválido." };
   }
 
-  // Verificar que el account exista
   const account = await db.account.findUnique({ where: { id: input.accountId } });
   if (!account) {
     return { ok: false, error: "Cuenta no encontrada." };
   }
 
-  // Verificar que no exista otro user con ese email
-  const existing = await db.user.findUnique({ where: { email: input.email } });
+  const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
     return { ok: false, error: "Ya existe un usuario con ese email." };
   }
@@ -197,9 +325,9 @@ export async function createAccountUser(input: {
   try {
     const user = await db.user.create({
       data: {
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
+        firstName,
+        lastName,
+        email,
         passwordHash: "supabase-auth-managed", // placeholder · auth real en Supabase
         organizationId: account.organizationId,
         accountId: input.accountId,
@@ -233,7 +361,7 @@ export async function updateAccountUser(input: {
 
   const targetUser = await db.user.findUnique({
     where: { id: input.userId },
-    select: { accountId: true },
+    include: { profile: true },
   });
 
   if (!targetUser?.accountId) {
@@ -244,9 +372,32 @@ export async function updateAccountUser(input: {
   if (!auth.ok) return auth;
 
   if (input.profileId) {
-    const profile = await db.profile.findUnique({ where: { id: input.profileId } });
-    if (!profile || !["CLIENT_ADMIN", "OPERATOR"].includes(profile.systemKey)) {
+    const newProfile = await db.profile.findUnique({
+      where: { id: input.profileId },
+    });
+    if (!newProfile || !["CLIENT_ADMIN", "OPERATOR"].includes(newProfile.systemKey)) {
       return { ok: false, error: "Perfil inválido." };
+    }
+
+    // ── S4 · proteger último CA ──
+    // Si el target era CLIENT_ADMIN y va a cambiar a algo distinto,
+    // verificar que no sea el último CA activo de la cuenta.
+    if (
+      targetUser.profile.systemKey === "CLIENT_ADMIN" &&
+      newProfile.systemKey !== "CLIENT_ADMIN" &&
+      targetUser.status === "ACTIVE"
+    ) {
+      const otherActiveCAs = await countActiveClientAdmins(
+        targetUser.accountId,
+        targetUser.id,
+      );
+      if (otherActiveCAs === 0) {
+        return {
+          ok: false,
+          error:
+            "No se puede degradar al último administrador de la cuenta. Crear otro CLIENT_ADMIN primero.",
+        };
+      }
     }
   }
 
@@ -273,12 +424,12 @@ export async function toggleUserStatus(input: {
   const session = await getSession();
 
   if (input.userId === session.user.id) {
-    return { ok: false, error: "No podés suspenderte a vos mismo." };
+    return { ok: false, error: "No podés cambiar tu propio estado." };
   }
 
   const targetUser = await db.user.findUnique({
     where: { id: input.userId },
-    select: { accountId: true },
+    include: { profile: true },
   });
 
   if (!targetUser?.accountId) {
@@ -287,6 +438,26 @@ export async function toggleUserStatus(input: {
 
   const auth = await ensureCanManageAccount(targetUser.accountId);
   if (!auth.ok) return auth;
+
+  // ── S4 · proteger último CA ──
+  // Si vamos a SUSPENDER a un CA activo, verificar que no sea el último.
+  if (
+    input.newStatus === "SUSPENDED" &&
+    targetUser.profile.systemKey === "CLIENT_ADMIN" &&
+    targetUser.status === "ACTIVE"
+  ) {
+    const otherActiveCAs = await countActiveClientAdmins(
+      targetUser.accountId,
+      targetUser.id,
+    );
+    if (otherActiveCAs === 0) {
+      return {
+        ok: false,
+        error:
+          "No se puede suspender al último administrador activo de la cuenta.",
+      };
+    }
+  }
 
   try {
     await db.user.update({
@@ -313,7 +484,7 @@ export async function deleteAccountUser(input: {
 
   const targetUser = await db.user.findUnique({
     where: { id: input.userId },
-    select: { accountId: true },
+    include: { profile: true },
   });
 
   if (!targetUser?.accountId) {
@@ -323,17 +494,43 @@ export async function deleteAccountUser(input: {
   const auth = await ensureCanManageAccount(targetUser.accountId);
   if (!auth.ok) return auth;
 
-  try {
-    // Hard delete · si tuviera relations bloqueantes, hacer soft delete
-    await db.user.delete({ where: { id: input.userId } });
+  // ── S4 · proteger último CA ──
+  if (
+    targetUser.profile.systemKey === "CLIENT_ADMIN" &&
+    targetUser.status === "ACTIVE"
+  ) {
+    const otherActiveCAs = await countActiveClientAdmins(
+      targetUser.accountId,
+      targetUser.id,
+    );
+    if (otherActiveCAs === 0) {
+      return {
+        ok: false,
+        error:
+          "No se puede eliminar al último administrador activo de la cuenta.",
+      };
+    }
+  }
 
+  try {
+    await db.user.delete({ where: { id: input.userId } });
     revalidatePath("/configuracion");
     return { ok: true };
   } catch (err) {
     console.error("[deleteAccountUser]", err);
+
+    // ── S4 · mensaje específico según relations bloqueantes ──
+    const errStr = String(err);
+    if (errStr.includes("foreign key") || errStr.includes("violates")) {
+      return {
+        ok: false,
+        error:
+          "No se puede eliminar · el usuario tiene datos relacionados (alarmas atendidas, asignaciones, etc.). Suspendelo en su lugar.",
+      };
+    }
     return {
       ok: false,
-      error: "Error al eliminar. Puede que el usuario tenga datos relacionados (alarmas atendidas, etc.) que impiden el borrado.",
+      error: "Error al eliminar el usuario.",
     };
   }
 }

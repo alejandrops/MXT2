@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -11,6 +11,7 @@ import {
   Pause,
   Play,
   X,
+  Info,
 } from "lucide-react";
 import {
   createAccountUser,
@@ -78,9 +79,15 @@ export function EmpresaUsuariosTab({
     { kind: "success" | "error"; text: string } | null
   >(null);
 
+  // Auto-clear feedback a los 4s
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
   function showFeedback(kind: "success" | "error", text: string) {
     setFeedback({ kind, text });
-    setTimeout(() => setFeedback(null), 4000);
   }
 
   return (
@@ -461,11 +468,19 @@ function CreateUserModal({
               placeholder="usuario@empresa.com"
               disabled={pending}
             />
-            <span className={sharedStyles.helpText}>
-              El usuario va a iniciar sesión con este email. Tenés que invitarlo
-              manualmente vía Supabase Auth (decisión del producto · sin invite
-              por mail por ahora).
-            </span>
+          </div>
+
+          <div className={styles.infoBox}>
+            <Info size={14} />
+            <div>
+              <strong>Importante · invite manual</strong>
+              <p>
+                Este formulario solo crea el usuario en la base de datos. Para
+                que pueda iniciar sesión, también hay que crearle la cuenta en
+                Supabase Auth con el mismo email. Tu administrador de Maxtracker
+                (Alejandro) lo gestiona.
+              </p>
+            </div>
           </div>
 
           <div className={sharedStyles.field}>

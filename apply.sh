@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote S3 · Pulido Configuración personal
+#  apply.sh · Lote S5 · Selector de cuenta para SA/MA
 #  ─────────────────────────────────────────────────────────────
 #
-#  Tres fixes de calidad sobre los tabs personales:
+#  Resuelve el problema de SA/MA viendo "No se pudo cargar..."
+#  en todos los tabs Empresa porque no tienen accountId.
 #
-#  1) PASSWORD CHANGE REAL (Supabase Auth)
-#     · Antes · solo guardaba hash dummy en User.passwordHash ·
-#       NO cambiaba el password real
-#     · Ahora · valida actual con signInWithPassword + actualiza
-#       con updateUser. Si la actual está mal · "Contraseña
-#       actual incorrecta"
-#     · En modo demo (AUTH_MODE=demo) sigue siendo cosmético
+#  Cambios:
 #
-#  2) EMAIL READ-ONLY EN MI PERFIL
-#     · Antes · permitía cambiar el email pero no se sincronizaba
-#       con Supabase Auth · quedaba inconsistente
-#     · Ahora · email es read-only · hint "Para cambiarlo,
-#       contactá soporte". Cambios en server side ignoran el
-#       campo email del input
+#  1) AccountSwitcher · componente nuevo · dropdown que aparece
+#     arriba del grupo "Empresa" en el sidebar · solo visible
+#     para SA/MA. Lista todas las cuentas de su organización.
+#     Click en una → ?account=<id> en URL, navegación cliente.
 #
-#  3) COMENTARIOS DE CÓDIGO ACTUALIZADOS
-#     · "Honesty notes" del SeguridadTab y comentario "Auth0"
-#       reemplazados con la realidad actual (Supabase Auth)
+#  2) page.tsx · resuelve targetAccountId via:
+#     · CA → su propia cuenta (session.account.id)
+#     · SA/MA → query param ?account=X · si falta, primera cuenta
+#       de su organización
 #
-#  Pre-requisitos:
-#   · S2 aplicado (logout, dark mode, layout con session)
+#  3) ConfiguracionShell · acepta props nuevas · renderea el
+#     switcher arriba del grupo Empresa solo para SA/MA. Función
+#     navigate() preserva el ?account al cambiar de section.
 #
+#  4) actions-empresa · hardening · SA/MA solo pueden mutar
+#     cuentas de SU organización (antes podían tocar cualquier
+#     cuenta del sistema, riesgo si escalan a multi-org).
+#
+#  Pre-requisitos: S1, S2, S3, S4 aplicados
 #  No requiere migration.
 # ═══════════════════════════════════════════════════════════════
 
@@ -38,7 +38,7 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="S3 · Pulido Configuración"
+LOTE_NAME="S5 · Selector de cuenta para SA/MA"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ ! -d "$SCRIPT_DIR/src" ]; then
@@ -87,9 +87,18 @@ apply_file() {
   fi
 }
 
-apply_file "src/app/(product)/configuracion/actions.ts"
-apply_file "src/app/(product)/configuracion/MiPerfilTab.tsx"
-apply_file "src/app/(product)/configuracion/SeguridadTab.tsx"
+echo -e "${CYAN}── Components ──${NC}"
+apply_file "src/app/(product)/configuracion/empresa/AccountSwitcher.tsx"
+apply_file "src/app/(product)/configuracion/empresa/AccountSwitcher.module.css"
+
+echo
+echo -e "${CYAN}── Page + Shell ──${NC}"
+apply_file "src/app/(product)/configuracion/page.tsx"
+apply_file "src/app/(product)/configuracion/ConfiguracionShell.tsx"
+
+echo
+echo -e "${CYAN}── Server actions (hardening) ──${NC}"
+apply_file "src/app/(product)/configuracion/actions-empresa.ts"
 
 echo
 echo -e "${CYAN}─── Resumen ───${NC}"
@@ -110,27 +119,31 @@ echo -e "${YELLOW}══ TESTING ══${NC}"
 echo
 echo "  npm run dev"
 echo
-echo "  TEST 1 · EMAIL READ-ONLY"
-echo "    /configuracion?section=perfil"
-echo "    El campo Email aparece grisado, no editable."
-echo "    Hint: 'No editable · para cambiarlo, contactá soporte'"
+echo "  TEST 1 · COMO SA · ver tabs Empresa"
+echo "    /configuracion?section=empresa-datos"
+echo "    Esperado: ya NO dice 'No se pudo cargar'"
+echo "    Esperado: en el sidebar, arriba del grupo EMPRESA, hay"
+echo "              un dropdown 'Viendo cuenta · [primera cuenta]'"
 echo
-echo "  TEST 2 · CAMBIO DE PASSWORD REAL"
-echo "    /configuracion?section=seguridad"
-echo "    En modo Supabase (AUTH_MODE=supabase):"
-echo "      · Pass actual MAL → 'Contraseña actual incorrecta'"
-echo "      · Pass actual BIEN + nueva válida → cambio real"
-echo "      · Después logout · login con la NUEVA → debería entrar"
-echo "      · Login con la VIEJA → 'Email o contraseña incorrectos'"
-echo "    En modo demo (AUTH_MODE=demo):"
-echo "      · Cualquier pass actual pasa (no se valida)"
-echo "      · Mensaje 'Contraseña actualizada (modo demo)'"
+echo "  TEST 2 · CAMBIAR DE CUENTA"
+echo "    Click en el dropdown 'Viendo cuenta'"
+echo "    Lista todas las cuentas de tu org (4 demo cuentas)"
+echo "    Click en otra → URL pasa a ?account=X&section=empresa-datos"
+echo "    El form muestra los datos de la nueva cuenta"
 echo
-echo "  TEST 3 · OTROS TABS SIN CAMBIOS"
-echo "    Notificaciones · 4 toggles → guardan OK"
-echo "    Preferencias · idioma + tema → guardan OK"
+echo "  TEST 3 · NAVEGAR ENTRE TABS PRESERVA ACCOUNT"
+echo "    Estás en empresa-datos viendo Frigoríficos Andinos"
+echo "    Click 'Umbrales y alarmas' en el sidebar"
+echo "    Esperado: URL = ?section=empresa-umbrales&account=<id>"
+echo "    Esperado: muestra umbrales de Frigoríficos (no la primera)"
 echo
-echo "  Si todo OK · push a producción:"
+echo "  TEST 4 · COMO CA · NO HAY DROPDOWN"
+echo "    Logout y login con un user CA (ej. admin@frigorificos-andinos.cl)"
+echo "    /configuracion?section=empresa-datos"
+echo "    Esperado: NO aparece el dropdown 'Viendo cuenta'"
+echo "    Esperado: ve solo su propia cuenta sin opción de cambiar"
+echo
+echo "  Si todo OK · push:"
 echo "     git add ."
-echo "     git commit -m 'fix(config): password change real + email read-only (S3)'"
+echo "     git commit -m 'feat(empresa): selector de cuenta para SA/MA (S5)'"
 echo "     git push origin main"

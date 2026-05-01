@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { updateEmpresaDatos } from "../actions-empresa";
@@ -57,6 +57,24 @@ export function EmpresaDatosTab({ account }: Props) {
   const [alertPhone, setAlertPhone] = useState(
     account.settings?.alertContactPhone ?? "",
   );
+
+  // Auto-clear feedback message a los 4s
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(t);
+  }, [feedback]);
+
+  // Si la industry guardada NO está en las opciones del dropdown,
+  // la agregamos como opción "current" para preservar el value
+  // y permitir al user verla en el form sin perderla al guardar.
+  const industryOptions = [...INDUSTRY_OPTIONS];
+  if (
+    account.industry &&
+    !INDUSTRY_OPTIONS.includes(account.industry)
+  ) {
+    industryOptions.push(account.industry);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,7 +152,7 @@ export function EmpresaDatosTab({ account }: Props) {
               disabled={pending}
             >
               <option value="">Sin especificar</option>
-              {INDUSTRY_OPTIONS.map((opt) => (
+              {industryOptions.map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
 import { updateEmpresaUmbrales } from "../actions-empresa";
@@ -66,6 +66,13 @@ export function EmpresaUmbralesTab({ account }: Props) {
   const [idling, setIdling] = useState(s?.idlingMinDuration ?? DEFAULTS.idlingMinDuration);
   const [tripDist, setTripDist] = useState(s?.tripMinDistanceKm ?? DEFAULTS.tripMinDistanceKm);
   const [tripDur, setTripDur] = useState(s?.tripMinDurationSec ?? DEFAULTS.tripMinDurationSec);
+
+  // Auto-clear feedback a los 4s
+  useEffect(() => {
+    if (!feedback) return;
+    const t = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(t);
+  }, [feedback]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

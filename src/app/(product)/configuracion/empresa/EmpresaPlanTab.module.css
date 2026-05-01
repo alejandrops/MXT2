@@ -142,3 +142,84 @@
 .upgradeCard a:hover {
   text-decoration: underline;
 }
+
+/* ─── S4 · Usage bars (uso vs límite) ─── */
+.usageGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.usageItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.usageLabel {
+  font-size: 11px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.usageValue {
+  font-family: var(--m);
+  font-size: 12px;
+  color: var(--t2);
+}
+
+.usageValue strong {
+  color: var(--t1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.usageBar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.usageBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 200ms ease-out, background-color 200ms ease-out;
+}
+
+.usageBarFill_ok {
+  background: var(--grn, #059669);
+}
+
+.usageBarFill_warning {
+  background: var(--ora, #f59e0b);
+}
+
+.usageBarFill_full {
+  background: var(--red, #dc2626);
+}
+
+.usageWarn {
+  font-size: 11px;
+  color: var(--ora-t, #78350f);
+  margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+  .usageGrid {
+    grid-template-columns: 1fr;
+  }
+}
