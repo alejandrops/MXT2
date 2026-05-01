@@ -3,16 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 // ═══════════════════════════════════════════════════════════════
-//  Server actions de Configuración personal
+//  Server actions de Configuración personal (S3 · pulido)
 //  ─────────────────────────────────────────────────────────────
 //  Operan sobre el User actual derivado de getSession(). Sin zod
-//  por ahora · validación manual con mensajes en español. Cuando
-//  necesitemos validación más rica, agregamos la dep.
+//  por ahora · validación manual con mensajes en español.
 //
-//  Cada action devuelve { ok: true } o { ok: false, errors }
-//  donde errors es un Record<string, string> con field → mensaje.
+//  Cambios S3:
+//   · `changePassword` · integración real con Supabase Auth.
+//     Valida la password actual con signInWithPassword() · si
+//     pasa, llama a updateUser({ password: nueva }).
+//   · `updateMiPerfil` · ignora cambios de email (email es
+//     read-only desde la UI · cambios manuales requieren
+//     soporte para sincronizar con Supabase Auth).
 // ═══════════════════════════════════════════════════════════════
 
 export interface ActionResult {
@@ -26,12 +31,11 @@ export interface ActionResult {
 export interface MiPerfilInput {
   firstName: string;
   lastName: string;
-  email: string;
+  /** Email se ignora · no se permite cambiar desde la UI */
+  email?: string;
   phone: string;
   documentNumber: string;
 }
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function trimOrNull(v: string | null | undefined): string | null {
   if (!v) return null;
@@ -47,7 +51,6 @@ export async function updateMiPerfil(
 
   const firstName = (input.firstName ?? "").trim();
   const lastName = (input.lastName ?? "").trim();
-  const email = (input.email ?? "").trim().toLowerCase();
   const phone = trimOrNull(input.phone);
   const documentNumber = trimOrNull(input.documentNumber);
 
@@ -58,31 +61,18 @@ export async function updateMiPerfil(
   if (lastName.length === 0) errors.lastName = "Requerido";
   else if (lastName.length > 50) errors.lastName = "Máximo 50 caracteres";
 
-  if (email.length === 0) errors.email = "Requerido";
-  else if (!EMAIL_RE.test(email)) errors.email = "Email inválido";
-  else if (email.length > 120) errors.email = "Máximo 120 caracteres";
-
-  if (phone && phone.length > 30)
-    errors.phone = "Máximo 30 caracteres";
-
+  if (phone && phone.length > 30) errors.phone = "Máximo 30 caracteres";
   if (documentNumber && documentNumber.length > 30)
     errors.documentNumber = "Máximo 30 caracteres";
-
-  // Verificar email único · si cambió y otro user lo tiene
-  if (!errors.email && email !== session.user.email) {
-    const existing = await db.user.findUnique({ where: { email } });
-    if (existing && existing.id !== session.user.id) {
-      errors.email = "Ya hay otro usuario con este email";
-    }
-  }
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors };
   }
 
+  // NO actualizamos el email · es read-only.
   await db.user.update({
     where: { id: session.user.id },
-    data: { firstName, lastName, email, phone, documentNumber },
+    data: { firstName, lastName, phone, documentNumber },
   });
 
   revalidatePath("/", "layout");
@@ -145,7 +135,6 @@ export async function updateNotificaciones(
 ): Promise<ActionResult> {
   const session = await getSession();
 
-  // Coerción defensiva · si llegó algo raro lo paso a false
   const data = {
     notifyAlarmHighCrit: input.notifyAlarmHighCrit === true,
     notifyScoreDrop: input.notifyScoreDrop === true,
@@ -162,7 +151,7 @@ export async function updateNotificaciones(
   return { ok: true, message: "Notificaciones actualizadas" };
 }
 
-// ── Cambio de contraseña ───────────────────────────────────────
+// ── Cambio de contraseña (S3 · Supabase real) ──────────────────
 
 export interface ChangePasswordInput {
   current: string;
@@ -180,15 +169,10 @@ export async function changePassword(
   const next = (input.next ?? "").trim();
   const repeat = (input.repeat ?? "").trim();
 
-  // Demo · pedimos algo no vacío en "actual" (4+ chars) pero NO
-  // validamos contra un valor real. Cuando viene Auth0 esta línea
-  // se reemplaza con la validación real.
+  // ── Validación local ──
   if (current.length === 0) {
     errors.current = "Requerido";
-  } else if (current.length < 4) {
-    errors.current = "Mínimo 4 caracteres";
   }
-
   if (next.length === 0) {
     errors.next = "Requerido";
   } else if (next.length < 8) {
@@ -198,7 +182,6 @@ export async function changePassword(
   } else if (next === current) {
     errors.next = "Tiene que ser distinta a la actual";
   }
-
   if (repeat !== next) {
     errors.repeat = "No coincide con la nueva contraseña";
   }
@@ -207,11 +190,59 @@ export async function changePassword(
     return { ok: false, errors };
   }
 
-  // Demo · "hash" dummy. Cuando viene Auth0 este reemplazo cambia.
-  await db.user.update({
-    where: { id: session.user.id },
-    data: { passwordHash: `demo:changed:${Date.now()}` },
-  });
+  // ── Modo de auth ──
+  const authMode = process.env.AUTH_MODE === "supabase" ? "supabase" : "demo";
 
-  return { ok: true, message: "Contraseña actualizada" };
+  if (authMode === "demo") {
+    // Modo demo · no validamos contra Supabase. Solo guardamos un
+    // hash dummy para que el cambio "se sienta real" en testing.
+    await db.user.update({
+      where: { id: session.user.id },
+      data: { passwordHash: `demo:changed:${Date.now()}` },
+    });
+    return { ok: true, message: "Contraseña actualizada (modo demo)" };
+  }
+
+  // ── Modo Supabase · validar actual + actualizar ──
+  try {
+    const supabase = await createServerSupabase();
+
+    // 1. Verificar password actual con signInWithPassword.
+    //    Esto crea una nueva sesión válida si la pass es correcta.
+    //    Si está mal, falla con error.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: session.user.email,
+      password: current,
+    });
+
+    if (signInError) {
+      return {
+        ok: false,
+        errors: { current: "Contraseña actual incorrecta" },
+      };
+    }
+
+    // 2. Actualizar password.
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: next,
+    });
+
+    if (updateError) {
+      console.error("[changePassword] updateUser failed:", updateError);
+      return {
+        ok: false,
+        errors: { next: updateError.message || "No se pudo actualizar la contraseña" },
+      };
+    }
+
+    return { ok: true, message: "Contraseña actualizada" };
+  } catch (err) {
+    console.error("[changePassword] unexpected error:", err);
+    return {
+      ok: false,
+      errors: {
+        current: "Error inesperado al cambiar la contraseña. Intentá de nuevo.",
+      },
+    };
+  }
 }

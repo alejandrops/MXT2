@@ -10,13 +10,14 @@ import styles from "./SeguridadTab.module.css";
 // ═══════════════════════════════════════════════════════════════
 //  Tab "Seguridad" · cambiar contraseña + sesiones activas
 //  ─────────────────────────────────────────────────────────────
-//  Validación · 4+ chars en actual · 8+ con letras y números en
-//  nueva · repetir = nueva. La actual NO se valida contra DB en
-//  demo (no hay auth real) · cuando viene Auth0 esa validación
-//  se reemplaza.
+//  Validación · 8+ chars con letras y números en nueva · repetir
+//  = nueva. La actual SE valida contra Supabase Auth via signIn ·
+//  si está mal, devuelve "Contraseña actual incorrecta".
 //
 //  Las sesiones activas son mock · no hay tabla de sesiones todavía.
 //  El botón "Cerrar" muestra un mensaje pero no hace nada real.
+//  TODO post-MVP: integrar con Supabase Auth para listar sesiones
+//  reales (endpoint admin · necesita SERVICE_ROLE_KEY).
 // ═══════════════════════════════════════════════════════════════
 
 interface Props {

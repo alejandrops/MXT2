@@ -25,7 +25,7 @@ export function MiPerfilTab({ session }: Props) {
 
   const [firstName, setFirstName] = useState(session.user.firstName);
   const [lastName, setLastName] = useState(session.user.lastName);
-  const [email, setEmail] = useState(session.user.email);
+  const email = session.user.email; // read-only · no setter
   const [phone, setPhone] = useState(session.user.phone ?? "");
   const [documentNumber, setDocumentNumber] = useState(
     session.user.documentNumber ?? "",
@@ -43,7 +43,6 @@ export function MiPerfilTab({ session }: Props) {
       const result = await updateMiPerfil({
         firstName,
         lastName,
-        email,
         phone,
         documentNumber,
       });
@@ -59,7 +58,6 @@ export function MiPerfilTab({ session }: Props) {
   const isDirty =
     firstName !== session.user.firstName ||
     lastName !== session.user.lastName ||
-    email !== session.user.email ||
     phone !== (session.user.phone ?? "") ||
     documentNumber !== (session.user.documentNumber ?? "");
 
@@ -131,15 +129,15 @@ export function MiPerfilTab({ session }: Props) {
 
         <Field
           label="Email"
-          required
+          hint="No editable · para cambiarlo, contactá soporte"
           error={errors.email}
         >
           <input
             type="email"
             className={styles.input}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isPending}
+            disabled
+            readOnly
             maxLength={120}
           />
         </Field>
