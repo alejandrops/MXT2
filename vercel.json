@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run vercel-build",
+  "framework": "nextjs",
+  "regions": ["gru1"],
+  "functions": {
+    "src/app/api/ingest/flespi/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/ingest/flespi/metrics/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}

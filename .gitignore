@@ -64,3 +64,9 @@ prisma/*.db-journal
 # TypeScript
 # ──────────────────────────────────
 *.tsbuildinfo
+.env
+
+# Backups de patches idempotentes
+*.bak-*
+package.json.bak-*
+prisma/schema.prisma.bak-*

@@ -1,48 +1,28 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote H2 · Supabase Auth (email + password)
+#  apply.sh · Lote H3 · Deploy a Vercel
 #  ─────────────────────────────────────────────────────────────
 #
-#  Reemplaza la cookie demo con autenticación real de Supabase
-#  para producción, manteniendo la cookie demo en dev local
-#  controlado por la env var AUTH_MODE.
+#  Prepara el repo para deploy a Vercel:
 #
-#  Archivos del lote:
-#
-#  Código (src/)
-#   · src/lib/supabase/client.ts       · cliente browser
-#   · src/lib/supabase/server.ts       · cliente Server Components/Actions
-#   · src/lib/session.ts               · UPDATED · soporta dos modos
-#   · src/middleware.ts                · refresh de sesión + protección
-#   · src/app/login/page.tsx           · pantalla de login
-#   · src/app/login/LoginForm.tsx      · client component del form
-#   · src/app/login/page.module.css
-#   · src/app/auth/callback/route.ts   · callback de Supabase
-#   · src/app/auth/signout/route.ts    · POST endpoint de logout
-#
-#  Schema (prisma/)
-#   · prisma/patches/patch-user-supabase-auth-id.sh · agrega
-#     campo `supabaseAuthId` a User
-#   · prisma/seed-prod-users.ts        · reset limpio · solo Alejandro
-#
-#  Documentación (docs/)
-#   · docs/operations/configurar-supabase-auth.md
+#  · vercel.json · config con region São Paulo + maxDuration en
+#    los endpoints de ingestion (default 10s no alcanza para
+#    batches grandes)
+#  · package.json · agrega script `vercel-build` que corre
+#    `prisma migrate deploy` antes del build (Vercel usa este
+#    script automáticamente cuando vercel.json apunta a él)
+#  · docs/operations/deploy-vercel.md · paso a paso del deploy,
+#    env vars, smoke tests, rollback
 #
 #  Pre-requisitos:
-#   · H1 aplicado (Postgres en Supabase)
-#   · Proyecto Supabase con Auth habilitado
+#   · H1 + H2 aplicados y funcionando local
+#   · Cuenta Vercel logueada con GitHub
+#   · Repo Maxtracker en GitHub privado con permisos otorgados
+#     a Vercel
 #
-#  IMPORTANTE: este lote NO ejecuta nada destructivo. Después
-#  de aplicarlo, hay que:
-#
-#   1. Instalar deps · npm install @supabase/supabase-js @supabase/ssr
-#   2. Aplicar el patch del schema
-#      bash prisma/patches/patch-user-supabase-auth-id.sh
-#   3. Crear migration
-#      npx prisma migrate dev --name add_supabase_auth_id
-#   4. (Opcional) Reset de users · npx tsx prisma/seed-prod-users.ts
-#   5. Configurar Supabase Auth · ver doc operations
-#   6. Editar .env con NEXT_PUBLIC_SUPABASE_URL, ANON_KEY, AUTH_MODE
+#  IMPORTANTE: este lote NO ejecuta el deploy. Solo prepara
+#  archivos. El deploy se hace desde el dashboard de Vercel
+#  siguiendo `docs/operations/deploy-vercel.md`.
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -53,15 +33,15 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="H2 · Supabase Auth"
+LOTE_NAME="H3 · Deploy a Vercel"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ ! -d "$SCRIPT_DIR/src" ]; then
-  echo "ERROR · No encuentro 'src' en $SCRIPT_DIR/src"
+if [ ! -d "$SCRIPT_DIR/scripts" ]; then
+  echo "ERROR · No encuentro 'scripts' en $SCRIPT_DIR/"
   exit 1
 fi
 
-if [ ! -d "src" ] || [ ! -f "package.json" ]; then
+if [ ! -f "package.json" ]; then
   echo "ERROR · No encuentro la raíz del proyecto Next.js."
   exit 1
 fi
@@ -105,37 +85,19 @@ apply_file() {
   fi
 }
 
-echo -e "${CYAN}── Supabase clients ──${NC}"
-apply_file "src/lib/supabase/client.ts"
-apply_file "src/lib/supabase/server.ts"
+echo -e "${CYAN}── Configuración Vercel ──${NC}"
+apply_file "vercel.json"
 
 echo
-echo -e "${CYAN}── Session adapter ──${NC}"
-apply_file "src/lib/session.ts"
-
-echo
-echo -e "${CYAN}── Middleware ──${NC}"
-apply_file "src/middleware.ts"
-
-echo
-echo -e "${CYAN}── Páginas ──${NC}"
-apply_file "src/app/login/page.tsx"
-apply_file "src/app/login/LoginForm.tsx"
-apply_file "src/app/login/page.module.css"
-apply_file "src/app/auth/callback/route.ts"
-apply_file "src/app/auth/signout/route.ts"
-
-echo
-echo -e "${CYAN}── Schema patch + seed ──${NC}"
-apply_file "prisma/patches/patch-user-supabase-auth-id.sh" "exec"
-apply_file "prisma/seed-prod-users.ts"
+echo -e "${CYAN}── Helper script ──${NC}"
+apply_file "scripts/patch-package-json-vercel.sh" "exec"
 
 echo
 echo -e "${CYAN}── Documentación ──${NC}"
-apply_file "docs/operations/configurar-supabase-auth.md"
+apply_file "docs/operations/deploy-vercel.md"
 
 echo
-echo -e "${CYAN}─── Resumen ───${NC}"
+echo -e "${CYAN}─── Resumen archivos ───${NC}"
 echo "  Nuevos:        $created"
 echo "  Actualizados:  $written"
 echo "  Sin cambios:   $unchanged"
@@ -145,35 +107,29 @@ echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
 echo -e "${YELLOW}══ PASOS POST-APLICACIÓN ══${NC}"
 echo
-echo "1. Instalar dependencias de Supabase:"
+echo "1. Patch del package.json (agrega vercel-build script):"
 echo
-echo "     npm install @supabase/supabase-js @supabase/ssr"
+echo "     bash scripts/patch-package-json-vercel.sh"
 echo
-echo "2. Patch del schema · agrega supabaseAuthId al User:"
+echo "2. Verificar que .env esté gitignored:"
 echo
-echo "     bash prisma/patches/patch-user-supabase-auth-id.sh"
+echo "     grep -E '^\\.env\$' .gitignore || echo '.env' >> .gitignore"
 echo
-echo "3. Crear migration:"
+echo "3. Commit y push:"
 echo
-echo "     npx prisma migrate dev --name add_supabase_auth_id"
+echo "     git add vercel.json package.json .gitignore"
+echo "     git commit -m 'chore(deploy): vercel config + vercel-build script (H3)'"
+echo "     git push origin main"
 echo
-echo "4. (RECOMENDADO) Reset users · arrancar limpio:"
+echo "4. Seguir el doc paso a paso para conectar Vercel:"
 echo
-echo "     npx tsx prisma/seed-prod-users.ts"
-echo
-echo "5. Seguir el doc paso a paso para configurar Supabase Auth:"
-echo
-echo "     cat docs/operations/configurar-supabase-auth.md"
+echo "     cat docs/operations/deploy-vercel.md"
 echo
 echo "   Resumen del doc:"
-echo "    · Habilitar Email provider en Supabase Auth"
-echo "    · Crear user en dashboard (Authentication → Users)"
-echo "    · Copiar UUID de auth.users → UPDATE \"User\" SET \"supabaseAuthId\""
-echo "    · Agregar a .env:"
-echo "        NEXT_PUBLIC_SUPABASE_URL=..."
-echo "        NEXT_PUBLIC_SUPABASE_ANON_KEY=..."
-echo "        AUTH_MODE=\"supabase\""
-echo
-echo "6. Probar:"
-echo "     rm -rf .next && npm run dev"
-echo "     → /login → email + password → debería entrar al producto"
+echo "    · Importar repo en Vercel (vercel.com/new)"
+echo "    · Configurar 6 env vars · DATABASE_URL, DIRECT_URL,"
+echo "      NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,"
+echo "      AUTH_MODE=supabase, FLESPI_INGEST_TOKEN"
+echo "    · Click Deploy → esperar 3-7 min"
+echo "    · Actualizar Site URL en Supabase Auth a la URL de Vercel"
+echo "    · Smoke tests · login + curl al endpoint público"
