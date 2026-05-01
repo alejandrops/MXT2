@@ -239,7 +239,7 @@ async function main() {
 
   console.log("Creando usuarios…");
   for (const spec of usersSpec) {
-    const profileId = profilesById[spec.profileKey].id;
+    const profileId = profilesById[spec.profileKey]!.id;
     await db.user.upsert({
       where: { email: spec.email },
       update: {

@@ -112,7 +112,7 @@ export function DistributionView({ data }: Props) {
       if (cell.value > cur) maxByCol[cell.col] = cell.value;
     }
   }
-  const maxRowMax = Math.max(0, ...data.rows.map((r) => r.max));
+  const maxRowMax = Math.max(0, ...data.rows.flatMap((r) => r.cells.map((c) => c.value)));
 
   // ── Anomalías por assetId · O(1) lookup ──────────────────────
   const anomaliesByAsset = new Map<string, AnomalyRow>();
@@ -223,7 +223,7 @@ export function DistributionView({ data }: Props) {
                     className={`${styles.th} ${styles.alignRight} ${
                       lbl?.isWeekend ? styles.thWeekend : ""
                     } ${lbl?.isToday ? styles.thToday : ""}`}
-                    title={lbl?.fullLabel}
+                    title={lbl?.label}
                   >
                     {lbl?.label ?? i + 1}
                   </th>
