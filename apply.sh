@@ -1,36 +1,32 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote S6 · Cambiar password de otros users (admin)
+#  apply.sh · Lote L0 · Datos consistentes
 #  ─────────────────────────────────────────────────────────────
 #
-#  Permite a CA / SA / MA cambiar la pass de cualquier user de
-#  su cuenta sin saber la pass actual. Útil cuando un user
-#  olvidó su password (no hay reset por email todavía).
+#  Resuelve los bugs B2-B6 (datos contradictorios) instalando:
 #
-#  Cambios:
+#  1) prisma/generate-weekly-stats.ts (NUEVO script)
+#     Genera AssetWeeklyStats desde AssetDriverDay + Event + Trip.
+#     Esta tabla está vacía porque el seed-viajes.ts la borra
+#     pero no la regenera. Sin esto, la sección Reportes muestra
+#     0 vehículos y Scorecard muestra 0 conductores.
 #
-#  1) Cliente admin Supabase · src/lib/supabase/admin.ts
-#     · Usa SERVICE_ROLE_KEY (admin API) · solo server-side
+#  2) src/lib/asset-status.ts (NUEVO helper)
+#     Función deriveAssetState() · única fuente de verdad para
+#     "moviendo / detenido / sin señal" en TODA la app. Reemplaza
+#     el patrón anterior donde cada pantalla calculaba distinto.
 #
-#  2) Server action setUserPassword en actions-empresa.ts
-#     · Verifica permisos (mismo patrón que las otras actions)
-#     · Bloquea cambiar la propia password (eso va por Seguridad)
-#     · Llama supabase.auth.admin.updateUserById({ password })
+#  3) prisma/refresh-live-positions.ts (NUEVO script)
+#     Mueve los vehículos · simula tracker en vivo. Sincroniza
+#     Asset.status con el estado derivado de LivePosition. Ejecutar
+#     manualmente cuando quieras refrescar la demo.
 #
-#  3) Componente SetPasswordModal · empresa/SetPasswordModal.tsx
-#     · Form con nueva pass + repetir
-#     · Validación 8+ chars, letras y números
-#     · Toggle ojo · ver/ocultar password
-#     · Warning sobre comunicar la nueva pass al user
+#  Después de aplicar, ejecutar EN ORDEN:
+#    1. npx tsx prisma/generate-weekly-stats.ts  · ~1 min
+#    2. npx tsx prisma/refresh-live-positions.ts · ~30 seg
 #
-#  4) Botón "Cambiar contraseña" en cada row de la tabla
-#     · Icon KeyRound · entre Suspender y Eliminar
-#     · No aparece para el current user (vos mismo)
-#
-#  Pre-requisitos:
-#   · SUPABASE_SERVICE_ROLE_KEY en .env (Vercel + local)
-#   · @supabase/supabase-js instalado (debería estar via @supabase/ssr)
-#   · S5 aplicado
+#  Pre-requisitos: Lotes S1-S6 aplicados.
+#  No requiere migration · usa schema existente.
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -39,14 +35,13 @@ CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 GREY='\033[0;90m'
-RED='\033[0;31m'
 NC='\033[0m'
 
-LOTE_NAME="S6 · Set password de otros users"
+LOTE_NAME="L0 · Datos consistentes"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ ! -d "$SCRIPT_DIR/src" ]; then
-  echo "ERROR · No encuentro 'src' en $SCRIPT_DIR/"
+if [ ! -d "$SCRIPT_DIR/src" ] && [ ! -d "$SCRIPT_DIR/prisma" ]; then
+  echo "ERROR · No encuentro 'src' ni 'prisma' en $SCRIPT_DIR/"
   exit 1
 fi
 
@@ -57,18 +52,6 @@ fi
 
 echo -e "${CYAN}═══ Lote $LOTE_NAME ═══${NC}"
 echo
-
-# ── Pre-check · SERVICE_ROLE_KEY ──
-if [ -f ".env" ] && ! grep -q "^SUPABASE_SERVICE_ROLE_KEY=" .env; then
-  echo -e "${YELLOW}⚠ WARNING · SUPABASE_SERVICE_ROLE_KEY no está en .env${NC}"
-  echo "   Sin esa key, el feature falla en runtime."
-  echo "   Encontrala en: Supabase Dashboard > Project Settings > API"
-  echo "   La etiqueta dice 'service_role' (NO 'anon public')."
-  echo "   Agregala como: SUPABASE_SERVICE_ROLE_KEY=eyJhb..."
-  echo
-  echo "   También agregala en Vercel: Settings > Environment Variables"
-  echo
-fi
 
 written=0
 unchanged=0
@@ -103,18 +86,13 @@ apply_file() {
   fi
 }
 
-echo -e "${CYAN}── Lib · cliente admin Supabase ──${NC}"
-apply_file "src/lib/supabase/admin.ts"
+echo -e "${CYAN}── Scripts prisma ──${NC}"
+apply_file "prisma/generate-weekly-stats.ts"
+apply_file "prisma/refresh-live-positions.ts"
 
 echo
-echo -e "${CYAN}── Server actions ──${NC}"
-apply_file "src/app/(product)/configuracion/actions-empresa.ts"
-
-echo
-echo -e "${CYAN}── UI ──${NC}"
-apply_file "src/app/(product)/configuracion/empresa/SetPasswordModal.tsx"
-apply_file "src/app/(product)/configuracion/empresa/SetPasswordModal.module.css"
-apply_file "src/app/(product)/configuracion/empresa/EmpresaUsuariosTab.tsx"
+echo -e "${CYAN}── Lib · helper de estado ──${NC}"
+apply_file "src/lib/asset-status.ts"
 
 echo
 echo -e "${CYAN}─── Resumen ───${NC}"
@@ -123,50 +101,70 @@ echo "  Actualizados:  $written"
 echo "  Sin cambios:   $unchanged"
 echo
 
-if [ -d ".next" ]; then
-  rm -rf .next
-  echo -e "  ${GREY}.next eliminado${NC}"
-  echo
-fi
-
 echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
-echo -e "${YELLOW}══ TESTING ══${NC}"
+echo -e "${YELLOW}══ EJECUTAR AHORA (en orden) ══${NC}"
 echo
-echo "  Antes de testear:"
-echo "    1) Asegurate de tener SUPABASE_SERVICE_ROLE_KEY en .env"
-echo "    2) Si la agregaste recién, reinicia npm run dev"
+echo -e "  ${CYAN}1) Generar AssetWeeklyStats${NC} (~1 min)"
+echo "     npx tsx prisma/generate-weekly-stats.ts"
 echo
-echo "  TEST 1 · Cambiar password de un user demo"
-echo "    /configuracion?section=empresa-usuarios"
-echo "    Click en el icon de llave (🔑) de un user (no el tuyo)"
-echo "    Modal: 'Cambiar contraseña'"
-echo "    Poné nueva pass: Test1234nueva"
-echo "    Esperado: 'Contraseña actualizada para [Nombre]...'"
+echo -e "  ${CYAN}2) Refrescar LivePositions${NC} (~30 seg)"
+echo "     npx tsx prisma/refresh-live-positions.ts"
 echo
-echo "  TEST 2 · Verificar que la nueva password funciona"
-echo "    Logout → login con el email del user modificado + nueva pass"
-echo "    Esperado: entra · puede usar la app"
-echo "    Login con la pass VIEJA → 'Email o contraseña incorrectos'"
+echo -e "${YELLOW}══ VERIFICACIÓN ══${NC}"
 echo
-echo "  TEST 3 · El icon NO aparece para vos mismo"
-echo "    En la tabla, mirá tu propia fila"
-echo "    Esperado: NO hay icon 🔑 (ni Pause ni Trash) · solo se ve 'Vos'"
+echo "  Después de los 2 scripts, ejecutá este check:"
 echo
-echo "  TEST 4 · CA puede cambiar pass de OPs/CAs de SU cuenta"
-echo "    Logout · login como CA (admin@frigorificos-andinos.cl)"
-echo "    Empresa > Usuarios y permisos"
-echo "    Esperado: ve solo users de Frigoríficos · puede cambiar passwords"
+cat << 'CHECK'
+  npx tsx -e "
+  const { PrismaClient } = require('@prisma/client');
+  const db = new PrismaClient();
+  Promise.all([
+    db.assetWeeklyStats.count(),
+    db.asset.groupBy({ by: ['status'], _count: true }),
+  ]).then(([wsCount, statusGroups]) => {
+    console.log('AssetWeeklyStats:', wsCount, '(esperado: ~2000)');
+    console.log('Asset status:');
+    statusGroups.forEach(g => console.log('  ', g.status + ':', g._count));
+    db.\$disconnect();
+  });
+  "
+CHECK
 echo
-echo "  TEST 5 · Validación de la nueva password"
-echo "    Probá pass de 5 chars → error '8+ caracteres'"
-echo "    Probá 'abcdefgh' (sin números) → error 'letras y números'"
-echo "    Probá pass distinta en repetir → error 'no coinciden'"
+echo "  Esperado:"
+echo "    AssetWeeklyStats: ~1500-3000 (no 0)"
+echo "    Asset status: distribución entre MOVING/IDLE/STOPPED"
+echo
+echo -e "${YELLOW}══ TESTING EN UI ══${NC}"
+echo
+echo "  TEST 1 · Reportes ya muestra vehículos"
+echo "    /actividad/reportes"
+echo "    Antes: 0 vehículos"
+echo "    Después: 120 vehículos"
+echo
+echo "  TEST 2 · Scorecard ya muestra conductores"
+echo "    /actividad/scorecard"
+echo "    Antes: 0 conductores"
+echo "    Después: lista con scores"
+echo
+echo "  TEST 3 · Mapa muestra vehículos en movimiento"
+echo "    /seguimiento/mapa"
+echo "    Esperado: vehículos con velocidad real"
+echo "    KPI strip: 'X en mov.', 'Y detenidos', etc. con números > 0"
+echo
+echo "  TEST 4 · Catálogos consistente con Mapa"
+echo "    /catalogos/vehiculos"
+echo "    Antes: todos 'Sin señal' (OFFLINE)"
+echo "    Después: distribución MOVING / IDLE / STOPPED igual que Mapa"
 echo
 echo "  Si todo OK · push:"
 echo "     git add ."
-echo "     git commit -m 'feat(empresa): admin set password de otros users (S6)'"
+echo "     git commit -m 'fix(data): weekly stats + live status sync (L0)'"
 echo "     git push origin main"
 echo
-echo "  ⚠ NO te olvides de agregar SUPABASE_SERVICE_ROLE_KEY"
-echo "    también en Vercel (Settings > Environment Variables)"
+echo -e "${YELLOW}══ NOTA SOBRE PRODUCCIÓN ══${NC}"
+echo
+echo "  ⚠ Estos scripts conectan a la DB del .env (Supabase São Paulo"
+echo "    en tu caso). Lo que ejecutás localmente afecta producción."
+echo "    Los 2 scripts son IDEMPOTENTES y SEGUROS · podés correrlos"
+echo "    todas las veces que quieras."
