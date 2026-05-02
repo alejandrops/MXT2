@@ -96,7 +96,6 @@ const MODULES: ModuleDef[] = [
       { label: "Reportes", href: "/actividad/reportes" },
       { label: "Scorecard", href: "/actividad/scorecard" },
       { label: "Viajes", href: "/actividad/viajes" },
-      { label: "API", href: "/actividad/api" },
     ],
   },
   {
@@ -282,10 +281,10 @@ export function Sidebar() {
           {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           {!collapsed && <span>Colapsar</span>}
         </button>
-        <Link href="/configuracion" className={styles.configBtn}>
+        <button className={styles.configBtn} disabled>
           <Settings size={15} />
           {!collapsed && <span>Configuración</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );

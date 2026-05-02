@@ -2,7 +2,7 @@
 
 import { Activity, AlertTriangle, Clock, Gauge, Map, Truck } from "lucide-react";
 import type { TripKpis } from "@/lib/queries/trips";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatKm, formatNumber, safeRound } from "@/lib/format";
 import styles from "./TripsKpiStrip.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -17,20 +17,20 @@ export function TripsKpiStrip({ kpis }: TripsKpiStripProps) {
   const distance = formatKm(kpis.totalDistanceKm);
   const duration = formatDuration(kpis.totalDurationMs);
   const idle = formatDuration(kpis.totalIdleMs);
-  const avgSpeed = Math.round(kpis.avgSpeedKmh);
+  const avgSpeed = safeRound(kpis.avgSpeedKmh);
 
   return (
     <div className={styles.strip}>
       <Kpi
         icon={<Map size={14} />}
         label="Viajes"
-        value={kpis.totalTrips.toLocaleString("es-AR")}
+        value={formatNumber(kpis.totalTrips)}
         accent="blue"
       />
       <Kpi
         icon={<Truck size={14} />}
         label="Vehículos activos"
-        value={kpis.vehiclesActive.toLocaleString("es-AR")}
+        value={formatNumber(kpis.vehiclesActive)}
         accent="purple"
       />
       <Divider />
@@ -65,7 +65,7 @@ export function TripsKpiStrip({ kpis }: TripsKpiStripProps) {
       <Kpi
         icon={<AlertTriangle size={14} />}
         label="Eventos"
-        value={kpis.totalEvents.toLocaleString("es-AR")}
+        value={formatNumber(kpis.totalEvents)}
         sub={
           kpis.totalHighSeverityEvents > 0
             ? `${kpis.totalHighSeverityEvents} críticos`
@@ -146,22 +146,4 @@ function Kpi({
 
 function Divider() {
   return <div className={styles.divider} aria-hidden="true" />;
-}
-
-function formatKm(km: number): { value: string; unit: string } {
-  if (km >= 1000) {
-    return {
-      value: (km / 1000).toLocaleString("es-AR", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      }),
-      unit: "Mm",
-    };
-  }
-  return {
-    value: km.toLocaleString("es-AR", {
-      maximumFractionDigits: 0,
-    }),
-    unit: "km",
-  };
 }

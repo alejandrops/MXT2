@@ -45,6 +45,20 @@ const PAGE_LABELS: Record<string, string> = {
   reporte: "Reporte",
   analisis: "Análisis",
   reportes: "Reportes",
+  scorecard: "Scorecard",
+  evolucion: "Evolución",
+  resumen: "Resumen",
+  configuracion: "Configuración",
+  empresa: "Empresa",
+  perfil: "Mi perfil",
+  seguridad: "Seguridad",
+  preferencias: "Preferencias",
+  catalogos: "Catálogos",
+  seguimiento: "Seguimiento",
+  actividad: "Actividad",
+  direccion: "Dirección",
+  boletin: "Boletín",
+  "vista-ejecutiva": "Vista ejecutiva",
 };
 
 interface TopbarUser {

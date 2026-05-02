@@ -178,14 +178,20 @@ export function initials(firstName: string, lastName: string): string {
 // ── Number formatting (es-AR) ──────────────────────────────────
 
 const numberFormatter = new Intl.NumberFormat("es-AR");
-export function formatNumber(n: number): string {
+export function formatNumber(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "0";
   return numberFormatter.format(n);
 }
 
 /**
  * Format a duration in milliseconds as e.g. "9h 42m" or "47m" or "1d 3h".
+ *
+ * Defensivo · si recibe undefined/null/NaN devuelve "0m" en lugar de
+ * "NaNm" o crashear. Esto evita el bug B7/BC4 donde "Ver NaN más"
+ * aparecía cuando los KPIs aún no estaban calculados.
  */
-export function formatDuration(ms: number): string {
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return "0m";
   const totalMin = Math.round(ms / 60_000);
   if (totalMin < 60) return `${totalMin}m`;
   const hours = Math.floor(totalMin / 60);
@@ -196,4 +202,46 @@ export function formatDuration(ms: number): string {
   const days = Math.floor(hours / 24);
   const remH = hours % 24;
   return remH === 0 ? `${days}d` : `${days}d ${remH}h`;
+}
+
+/**
+ * Format kilometers with auto-scale a Mm (megámetros = 1000 km).
+ * Devuelve { value, unit } para usar en KPI strips donde el unit
+ * va separado del número.
+ *
+ * Defensivo · si recibe undefined/null/NaN devuelve { value: "0",
+ * unit: "km" } en lugar de NaN. Evita el "Ver NaN más" del bug
+ * B7/BC4 cuando los KPIs no están listos.
+ */
+export function formatKm(
+  km: number | null | undefined,
+): { value: string; unit: string } {
+  if (km == null || !Number.isFinite(km) || km < 0) {
+    return { value: "0", unit: "km" };
+  }
+  if (km >= 1000) {
+    return {
+      value: (km / 1000).toLocaleString("es-AR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+      unit: "Mm",
+    };
+  }
+  return {
+    value: km.toLocaleString("es-AR", {
+      maximumFractionDigits: 0,
+    }),
+    unit: "km",
+  };
+}
+
+/**
+ * Round defensivo · evita NaN cuando recibe undefined/null. Para
+ * usar en lugar de Math.round() directo donde el dato puede no
+ * estar listo.
+ */
+export function safeRound(n: number | null | undefined): number {
+  if (n == null || !Number.isFinite(n)) return 0;
+  return Math.round(n);
 }

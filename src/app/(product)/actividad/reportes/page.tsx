@@ -7,8 +7,6 @@ import {
   type ActivityMetric,
   type ScopeFilters,
 } from "@/lib/queries";
-import { resolveAccountScope } from "@/lib/queries/tenant-scope";
-import { getSession } from "@/lib/session";
 import { ReportesClient } from "./ReportesClient";
 import styles from "./page.module.css";
 
@@ -30,7 +28,7 @@ import styles from "./page.module.css";
 //    · drivers-metrics · multi-métrica conductores
 //
 //  URL params:
-//    g       · granularity · default month-days
+//    g       · granularity · default week-days
 //    d       · anchor ISO
 //    m       · metric (en time o visual)
 //    grp     · group ids
@@ -95,7 +93,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
   const granularity: AnalysisGranularity =
     gRaw && (VALID_G as string[]).includes(gRaw)
       ? (gRaw as AnalysisGranularity)
-      : "month-days";
+      : "week-days";
 
   const mRaw = get("m");
   const metric: ActivityMetric =
@@ -109,13 +107,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
   ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
   const anchor = get("d") ?? todayIso;
 
-  // Multi-tenant scope (U1c)
-  const session = await getSession();
-  const scopedAccountId = resolveAccountScope(session, "actividad", null);
-
-
   const scope: ScopeFilters = {
-    accountId: scopedAccountId,
     groupIds: csv("grp"),
     vehicleTypes: csv("type"),
     personIds: csv("driver"),

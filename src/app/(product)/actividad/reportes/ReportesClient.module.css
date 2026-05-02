@@ -2,12 +2,22 @@
    ReportesClient · 2 toggles ortogonales
    ═══════════════════════════════════════════════════════════════ */
 
+.modesWrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--brd);
+}
+
 .axesWrap {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 24px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   background: var(--bg);
   border-bottom: 1px solid var(--brd);
 }

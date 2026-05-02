@@ -24,6 +24,7 @@
   align-items: baseline;
   gap: 5px;
   font-family: var(--m);
+  flex-shrink: 0;
 }
 
 .kpiDimmed {
@@ -54,6 +55,7 @@
   color: var(--t3);
   text-transform: lowercase;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .kpiSpacer {

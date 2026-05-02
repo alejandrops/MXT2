@@ -1,32 +1,56 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  apply.sh · Lote L0 · Datos consistentes
+#  apply.sh · Lote L1 · Hotfixes UI
 #  ─────────────────────────────────────────────────────────────
 #
-#  Resuelve los bugs B2-B6 (datos contradictorios) instalando:
+#  Resuelve los bugs reportados por Jere e IA en la auditoría:
 #
-#  1) prisma/generate-weekly-stats.ts (NUEVO script)
-#     Genera AssetWeeklyStats desde AssetDriverDay + Event + Trip.
-#     Esta tabla está vacía porque el seed-viajes.ts la borra
-#     pero no la regenera. Sin esto, la sección Reportes muestra
-#     0 vehículos y Scorecard muestra 0 conductores.
+#  1) BUG B7/BC4 · NaN en Actividad > Viajes
+#     "Ver NaN más" · defensa con (totalDays ?? 0) - (days?.length ?? 0)
+#     Math.max(0, ...) para no mostrar negativos.
+#     File · src/app/(product)/actividad/viajes/TripsClient.tsx
 #
-#  2) src/lib/asset-status.ts (NUEVO helper)
-#     Función deriveAssetState() · única fuente de verdad para
-#     "moviendo / detenido / sin señal" en TODA la app. Reemplaza
-#     el patrón anterior donde cada pantalla calculaba distinto.
+#  2) BUG B8 · Boletín pantalla blanca
+#     Refactor del index a función pura getLastClosedPeriod().
+#     Si después del lote sigue blanco, hay que debugar el [period].
+#     File · src/app/(product)/direccion/boletin/page.tsx
 #
-#  3) prisma/refresh-live-positions.ts (NUEVO script)
-#     Mueve los vehículos · simula tracker en vivo. Sincroniza
-#     Asset.status con el estado derivado de LivePosition. Ejecutar
-#     manualmente cuando quieras refrescar la demo.
+#  3) BUG BC5 · "ABIER" truncado en Torre de Control
+#     .kpi { flex-shrink: 0 } evita que se aprete cuando el
+#     header es angosto.
+#     File · seguimiento/torre-de-control/TorreClient.module.css
 #
-#  Después de aplicar, ejecutar EN ORDEN:
-#    1. npx tsx prisma/generate-weekly-stats.ts  · ~1 min
-#    2. npx tsx prisma/refresh-live-positions.ts · ~30 seg
+#  4) BUG BC6 · KPI strip Mapa cortado ("en mov.", "detenidos")
+#     Mismo fix · .kpi flex-shrink + .kpiLabel nowrap.
+#     File · seguimiento/mapa/FleetTrackingClient.module.css
 #
-#  Pre-requisitos: Lotes S1-S6 aplicados.
-#  No requiere migration · usa schema existente.
+#  5) BUG BC8 · Campana se solapa con avatar
+#     Aumenta gap del topbar de 10px (--gap-sm) a 14px hardcoded.
+#     File · components/shell/Topbar.module.css
+#
+#  6) BUG BC9 · Breadcrumb "scorecard" en minúscula
+#     Agrega scorecard, evolucion, resumen, configuracion, etc.
+#     al diccionario PAGE_LABELS.
+#     File · components/shell/Topbar.tsx
+#
+#  7) UX · Default período "Semana" en lugar de "Mes"
+#     Cuando entrás a /actividad/reportes, default es week-days
+#     no month-days. Útil porque mes-en-curso (día 1-2) está vacío.
+#     File · src/app/(product)/actividad/reportes/page.tsx
+#
+#  8) UX · Margen del header MODO/SUJETO/VISTA
+#     El TS usa styles.modesWrap pero el CSS solo definía axesWrap.
+#     Resultado · sin estilo · pegado al borde. Agregamos modesWrap
+#     al CSS con padding 12px 24px.
+#     File · src/app/(product)/actividad/reportes/ReportesClient.module.css
+#
+#  9) UX · Quitar API del sidebar Actividad
+#     Decidido · API va a Configuración más adelante. Por ahora
+#     simplemente lo sacamos del sidebar.
+#     File · components/shell/Sidebar.tsx
+#
+#  Pre-requisitos · S1-S6 + L0 aplicados.
+#  No requiere migration. Solo cambios de código.
 # ═══════════════════════════════════════════════════════════════
 
 set -e
@@ -37,11 +61,11 @@ YELLOW='\033[0;33m'
 GREY='\033[0;90m'
 NC='\033[0m'
 
-LOTE_NAME="L0 · Datos consistentes"
+LOTE_NAME="L1 · Hotfixes UI"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ ! -d "$SCRIPT_DIR/src" ] && [ ! -d "$SCRIPT_DIR/prisma" ]; then
-  echo "ERROR · No encuentro 'src' ni 'prisma' en $SCRIPT_DIR/"
+if [ ! -d "$SCRIPT_DIR/src" ]; then
+  echo "ERROR · No encuentro 'src' en $SCRIPT_DIR/"
   exit 1
 fi
 
@@ -86,13 +110,25 @@ apply_file() {
   fi
 }
 
-echo -e "${CYAN}── Scripts prisma ──${NC}"
-apply_file "prisma/generate-weekly-stats.ts"
-apply_file "prisma/refresh-live-positions.ts"
+echo -e "${CYAN}── Bugs cr\u00edticos ──${NC}"
+apply_file "src/app/(product)/actividad/viajes/TripsClient.tsx"
+apply_file "src/app/(product)/direccion/boletin/page.tsx"
 
 echo
-echo -e "${CYAN}── Lib · helper de estado ──${NC}"
-apply_file "src/lib/asset-status.ts"
+echo -e "${CYAN}── Bugs de comportamiento (CSS) ──${NC}"
+apply_file "src/app/(product)/seguimiento/torre-de-control/TorreClient.module.css"
+apply_file "src/app/(product)/seguimiento/mapa/FleetTrackingClient.module.css"
+apply_file "src/components/shell/Topbar.module.css"
+apply_file "src/components/shell/Topbar.tsx"
+
+echo
+echo -e "${CYAN}── UX · Reportes ──${NC}"
+apply_file "src/app/(product)/actividad/reportes/page.tsx"
+apply_file "src/app/(product)/actividad/reportes/ReportesClient.module.css"
+
+echo
+echo -e "${CYAN}── UX · Sidebar ──${NC}"
+apply_file "src/components/shell/Sidebar.tsx"
 
 echo
 echo -e "${CYAN}─── Resumen ───${NC}"
@@ -101,70 +137,64 @@ echo "  Actualizados:  $written"
 echo "  Sin cambios:   $unchanged"
 echo
 
+if [ -d ".next" ]; then
+  rm -rf .next
+  echo -e "  ${GREY}.next eliminado${NC}"
+  echo
+fi
+
 echo -e "${GREEN}✓ Lote $LOTE_NAME aplicado.${NC}"
 echo
-echo -e "${YELLOW}══ EJECUTAR AHORA (en orden) ══${NC}"
+echo -e "${YELLOW}══ TESTING ══${NC}"
 echo
-echo -e "  ${CYAN}1) Generar AssetWeeklyStats${NC} (~1 min)"
-echo "     npx tsx prisma/generate-weekly-stats.ts"
+echo "  TEST 1 · NaN en Viajes (B7/BC4)"
+echo "    /actividad/viajes con muchos viajes"
+echo "    Antes · botón decía 'Ver NaN más'"
+echo "    Después · 'Ver 20 más' o 'Ver 0 más' o desaparece"
 echo
-echo -e "  ${CYAN}2) Refrescar LivePositions${NC} (~30 seg)"
-echo "     npx tsx prisma/refresh-live-positions.ts"
+echo "  TEST 2 · Boletín NO pantalla blanca (B8)"
+echo "    /direccion/boletin"
+echo "    Esperado · redirect a /direccion/boletin/2026-04 funciona"
+echo "    Si sigue blanco · DevTools > Console y mandame errores"
 echo
-echo -e "${YELLOW}══ VERIFICACIÓN ══${NC}"
+echo "  TEST 3 · Torre de Control sin truncados (BC5)"
+echo "    /seguimiento/torre-de-control"
+echo "    KPI strip muestra 'ABIERTAS' completo (no 'ABIER')"
+echo "    Achicar viewport · KPIs hacen wrap, no truncan"
 echo
-echo "  Después de los 2 scripts, ejecutá este check:"
-echo
-cat << 'CHECK'
-  npx tsx -e "
-  const { PrismaClient } = require('@prisma/client');
-  const db = new PrismaClient();
-  Promise.all([
-    db.assetWeeklyStats.count(),
-    db.asset.groupBy({ by: ['status'], _count: true }),
-  ]).then(([wsCount, statusGroups]) => {
-    console.log('AssetWeeklyStats:', wsCount, '(esperado: ~2000)');
-    console.log('Asset status:');
-    statusGroups.forEach(g => console.log('  ', g.status + ':', g._count));
-    db.\$disconnect();
-  });
-  "
-CHECK
-echo
-echo "  Esperado:"
-echo "    AssetWeeklyStats: ~1500-3000 (no 0)"
-echo "    Asset status: distribución entre MOVING/IDLE/STOPPED"
-echo
-echo -e "${YELLOW}══ TESTING EN UI ══${NC}"
-echo
-echo "  TEST 1 · Reportes ya muestra vehículos"
-echo "    /actividad/reportes"
-echo "    Antes: 0 vehículos"
-echo "    Después: 120 vehículos"
-echo
-echo "  TEST 2 · Scorecard ya muestra conductores"
-echo "    /actividad/scorecard"
-echo "    Antes: 0 conductores"
-echo "    Después: lista con scores"
-echo
-echo "  TEST 3 · Mapa muestra vehículos en movimiento"
+echo "  TEST 4 · Mapa KPIs no cortados (BC6)"
 echo "    /seguimiento/mapa"
-echo "    Esperado: vehículos con velocidad real"
-echo "    KPI strip: 'X en mov.', 'Y detenidos', etc. con números > 0"
+echo "    KPIs 'en mov.', 'detenidos', 'apagados', 'sin comm'"
+echo "    Texto completo, no recortado"
 echo
-echo "  TEST 4 · Catálogos consistente con Mapa"
-echo "    /catalogos/vehiculos"
-echo "    Antes: todos 'Sin señal' (OFFLINE)"
-echo "    Después: distribución MOVING / IDLE / STOPPED igual que Mapa"
+echo "  TEST 5 · Topbar sin solape (BC8)"
+echo "    Mirá la campana al lado del avatar arriba a la derecha"
+echo "    Esperado · hay 14px de gap, no se tocan"
+echo
+echo "  TEST 6 · Breadcrumb capitalizado (BC9)"
+echo "    Navegá a /actividad/scorecard"
+echo "    Breadcrumb dice 'Actividad / Scorecard'"
+echo "    Antes · 'actividad / scorecard' (minúscula)"
+echo "    Idem · /actividad/evolucion → 'Actividad / Evolución'"
+echo "           /configuracion → 'Configuración'"
+echo
+echo "  TEST 7 · Reportes default Semana"
+echo "    /actividad/reportes (sin query params)"
+echo "    Esperado · botón 'Semana' destacado, datos del rango semanal"
+echo "    Antes · 'Mes' destacado, mes-en-curso vacío"
+echo
+echo "  TEST 8 · Reportes header con margen"
+echo "    /actividad/reportes"
+echo "    El header MODO/SUJETO/VISTA ya no está pegado al borde"
+echo "    Antes · texto pegado a la izquierda del viewport"
+echo "    Después · 24px de margen"
+echo
+echo "  TEST 9 · API ya NO en sidebar Actividad"
+echo "    Sidebar > Actividad"
+echo "    Items · Reportes / Scorecard / Viajes (3 items)"
+echo "    Antes · 4 items con API que daba 404"
 echo
 echo "  Si todo OK · push:"
 echo "     git add ."
-echo "     git commit -m 'fix(data): weekly stats + live status sync (L0)'"
+echo "     git commit -m 'fix(ui): hotfixes L1 · NaN, truncados, default semana, breadcrumbs'"
 echo "     git push origin main"
-echo
-echo -e "${YELLOW}══ NOTA SOBRE PRODUCCIÓN ══${NC}"
-echo
-echo "  ⚠ Estos scripts conectan a la DB del .env (Supabase São Paulo"
-echo "    en tu caso). Lo que ejecutás localmente afecta producción."
-echo "    Los 2 scripts son IDEMPOTENTES y SEGUROS · podés correrlos"
-echo "    todas las veces que quieras."

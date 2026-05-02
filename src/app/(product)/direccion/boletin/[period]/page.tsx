@@ -8,8 +8,6 @@ import { BlockD_TopVehiculos } from "@/components/maxtracker/boletin/BlockD_TopV
 import { BlockE_TopConductores } from "@/components/maxtracker/boletin/BlockE_TopConductores";
 import { BlockF_Seguridad } from "@/components/maxtracker/boletin/BlockF_Seguridad";
 import { BlockG_Conduccion } from "@/components/maxtracker/boletin/BlockG_Conduccion";
-import { BlockH_AnomaliasEstadisticas } from "@/components/maxtracker/boletin/BlockH_AnomaliasEstadisticas";
-import { BlockJ_Highlights } from "@/components/maxtracker/boletin/BlockJ_Highlights";
 import styles from "./BoletinPage.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -60,12 +58,41 @@ export default async function BoletinPage({ params }: PageProps) {
   const prevMonthStartUtc = new Date(Date.UTC(year, month - 2, 1, 3, 0, 0));
   const prevMonthEndUtc = monthStartUtc;
 
-  const data = await loadBoletinData({
-    monthStart: monthStartUtc,
-    monthEnd: nextMonthStartUtc,
-    prevStart: prevMonthStartUtc,
-    prevEnd: prevMonthEndUtc,
-  });
+  // L1 · defensa anti-pantalla-blanca (B8)
+  // Si loadBoletinData tira (data ausente, query timeout, etc.),
+  // mostramos un mensaje en lugar de pantalla en blanco.
+  let data: BoletinData;
+  try {
+    data = await loadBoletinData({
+      monthStart: monthStartUtc,
+      monthEnd: nextMonthStartUtc,
+      prevStart: prevMonthStartUtc,
+      prevEnd: prevMonthEndUtc,
+    });
+  } catch (err) {
+    console.error("[BoletinPage] loadBoletinData failed:", err);
+    return (
+      <div className={styles.boletin}>
+        <div
+          style={{
+            padding: "48px 24px",
+            textAlign: "center",
+            color: "var(--t2)",
+          }}
+        >
+          <h2 style={{ marginBottom: 12, color: "var(--tx)" }}>
+            No pudimos cargar el boletín
+          </h2>
+          <p style={{ marginBottom: 6 }}>
+            Hubo un problema generando el boletín de {period}.
+          </p>
+          <p style={{ fontSize: 13 }}>
+            Probá recargar la página o elegí otro período.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Período anterior y siguiente para navigator
   const prevPeriod = `${month === 1 ? year - 1 : year}-${String(
@@ -109,16 +136,22 @@ export default async function BoletinPage({ params }: PageProps) {
         <BlockF_Seguridad data={data} />
         <BlockG_Conduccion data={data} />
 
-        <BlockH_AnomaliasEstadisticas data={data} />
-
-        {/* Bloque I · Sostenibilidad · placeholder hasta que exista el módulo */}
+        {/* Placeholders para bloques H-J · entregados en próximos lotes */}
+        <BlockPlaceholder
+          letter="H"
+          title="Anomalías estadísticas"
+          hint="Vehículos con desvío >2σ del baseline · próximo lote"
+        />
         <BlockPlaceholder
           letter="I"
           title="Sostenibilidad · combustible"
           hint="Cuando el módulo esté construido"
         />
-
-        <BlockJ_Highlights data={data} />
+        <BlockPlaceholder
+          letter="J"
+          title="Highlights y observaciones"
+          hint="Texto editorial generado · próximo lote"
+        />
       </article>
     </div>
   );
@@ -200,10 +233,6 @@ export interface VehicleRow {
   plate: string | null;
   groupName: string | null;
   distanceKm: number;
-  /** Minutos en marcha · útil para Bloque H (anomalías) */
-  activeMin: number;
-  /** Cantidad de viajes · útil para Bloque H (anomalías) */
-  tripCount: number;
   eventCount: number;
   /** Eventos por cada 100 km · ranking se hace por esto */
   eventsPer100km: number;
@@ -424,8 +453,6 @@ async function loadBoletinData(args: {
       plate: a.plate,
       groupName: a.groupName,
       distanceKm: a.distanceKm,
-      activeMin: a.activeMin,
-      tripCount: a.tripCount,
       eventCount,
       eventsPer100km,
     };
