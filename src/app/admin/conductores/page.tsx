@@ -236,7 +236,7 @@ export default async function AdminConductoresPage({ searchParams }: PageProps) 
                   ? [
                       {
                         label: "Asignación",
-                        value: ASSIGNMENT_LABELS[assignmentFilter],
+                        value: ASSIGNMENT_LABELS[assignmentFilter] ?? assignmentFilter,
                       },
                     ]
                   : []),
@@ -244,7 +244,7 @@ export default async function AdminConductoresPage({ searchParams }: PageProps) 
                   ? [
                       {
                         label: "Licencia",
-                        value: LICENSE_LABELS[licenseFilter],
+                        value: LICENSE_LABELS[licenseFilter] ?? licenseFilter,
                       },
                     ]
                   : []),

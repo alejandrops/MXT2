@@ -3,30 +3,83 @@
 //  ─────────────────────────────────────────────────────────────
 //  All queries are async functions returning typed results. Each
 //  page Server Component calls them directly via `await`.
+//
+//  L2B-2 · multi-tenant scope agregado a las 4 queries del módulo.
+//  Pre-L2B-2 todas contaban cross-tenant · CA / OP veían datos de
+//  otros clientes (cross-tenant leak crítico). Ahora cada query
+//  acepta `scope?: FleetScope` con default `{ accountId: null }`
+//  para mantener backward compat con callers que no pasan scope
+//  (ej · /debug que sí quiere ver cross-tenant).
+//
+//  La query de alarmas se delega a `getFleetOpenAlarmsCount` del
+//  módulo unificado · single source of truth.
 // ═══════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import {
+  getFleetOpenAlarmsCount,
+  type FleetScope,
+} from "./fleet-metrics";
+import { NEVER_MATCHING_ACCOUNT } from "./tenant-scope";
 import type {
   AlarmWithRefs,
   DriverScoreRow,
   SafetyKpis,
 } from "@/types/domain";
+import type { Prisma } from "@prisma/client";
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Top-line KPIs for the Dashboard D header.
- *
- * Lote 1.2: simple aggregations over current state. Lote 3 will
- * replace the safety score with a precomputed daily snapshot
- * (KpiDailySnapshot entity).
- *
- * NOTE (Sub-lote 3.2.1): Dashboard D belongs to módulo Seguridad,
- * so alarm counts filter by `domain: "SEGURIDAD"`. The driver
- * safety score still uses Conducción events (that's where harsh
- * driving lives), so we don't filter it.
+ * Default scope · sin filtro · cross-tenant. Usado por /debug y
+ * por callers viejos que aún no pasan scope explícito.
  */
-export async function getSafetyKpis(): Promise<SafetyKpis> {
+const DEFAULT_SCOPE: FleetScope = { accountId: null };
+
+// ───────────────────────────────────────────────────────────────
+//  Helpers internos · WHEREs por scope
+// ───────────────────────────────────────────────────────────────
+
+/** Persons del scope · accountId directo. */
+function personWhereForScope(scope: FleetScope): Prisma.PersonWhereInput {
+  if (scope.accountId === NEVER_MATCHING_ACCOUNT) {
+    return { id: NEVER_MATCHING_ACCOUNT };
+  }
+  if (scope.accountId === null) return {};
+  return { accountId: scope.accountId };
+}
+
+/**
+ * Events del scope · Event.accountId no existe en schema · se filtra
+ * vía relación `asset.accountId`.
+ */
+function eventWhereForScope(scope: FleetScope): Prisma.EventWhereInput {
+  if (scope.accountId === NEVER_MATCHING_ACCOUNT) {
+    return { asset: { id: NEVER_MATCHING_ACCOUNT } };
+  }
+  if (scope.accountId === null) return {};
+  return { asset: { accountId: scope.accountId } };
+}
+
+/** Asset del scope · accountId directo. */
+function assetWhereForScope(scope: FleetScope): Prisma.AssetWhereInput {
+  if (scope.accountId === NEVER_MATCHING_ACCOUNT) {
+    return { id: NEVER_MATCHING_ACCOUNT };
+  }
+  if (scope.accountId === null) return {};
+  return { accountId: scope.accountId };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  getSafetyKpis · 4 KPIs del header del Dashboard D
+//  ─────────────────────────────────────────────────────────────
+//  Top-line KPIs · alarmas abiertas, assets críticos, eventos 24h,
+//  fleet safety score (promedio).
+// ═══════════════════════════════════════════════════════════════
+
+export async function getSafetyKpis(
+  scope: FleetScope = DEFAULT_SCOPE,
+): Promise<SafetyKpis> {
   const yesterday = new Date(Date.now() - MS_DAY);
 
   const [
@@ -35,15 +88,24 @@ export async function getSafetyKpis(): Promise<SafetyKpis> {
     events24hCount,
     avgScoreAgg,
   ] = await Promise.all([
-    db.alarm.count({
-      where: { status: "OPEN", domain: "SEGURIDAD" },
+    // L2B-2 · delega a fleet-metrics · single source of truth
+    getFleetOpenAlarmsCount(scope, { domain: "SEGURIDAD" }),
+    db.person.count({
+      where: {
+        ...personWhereForScope(scope),
+        safetyScore: { lt: 60 },
+      },
     }),
-    db.person.count({ where: { safetyScore: { lt: 60 } } }),
-    // Events 24h shows ALL events (both domains) on the dashboard
-    // header — it's a "what's happening" indicator. Domain-specific
-    // counts live elsewhere.
-    db.event.count({ where: { occurredAt: { gte: yesterday } } }),
-    db.person.aggregate({ _avg: { safetyScore: true } }),
+    db.event.count({
+      where: {
+        ...eventWhereForScope(scope),
+        occurredAt: { gte: yesterday },
+      },
+    }),
+    db.person.aggregate({
+      where: personWhereForScope(scope),
+      _avg: { safetyScore: true },
+    }),
   ]);
 
   return {
@@ -54,16 +116,32 @@ export async function getSafetyKpis(): Promise<SafetyKpis> {
   };
 }
 
-/**
- * The newest N open alarms with asset and (optional) person refs
- * already joined. Ordered by triggeredAt desc.
- *
- * Filters by SEGURIDAD domain only — this powers Dashboard D and
- * Libro B alarm panels in the Seguridad module.
- */
-export async function getOpenAlarms(limit = 20): Promise<AlarmWithRefs[]> {
+// ═══════════════════════════════════════════════════════════════
+//  getOpenAlarms · lista de alarmas abiertas para el Dashboard D
+//  ─────────────────────────────────────────────────────────────
+//  Filtra por domain SEGURIDAD · powers Dashboard D y Libro B
+//  alarm panels en el módulo Seguridad. Para Conducción se necesita
+//  pasar otro domain explícito (futuro).
+// ═══════════════════════════════════════════════════════════════
+
+export async function getOpenAlarms(
+  limit = 20,
+  scope: FleetScope = DEFAULT_SCOPE,
+): Promise<AlarmWithRefs[]> {
+  // Alarm tiene accountId directo · no se necesita join.
+  const accountWhere: Prisma.AlarmWhereInput =
+    scope.accountId === NEVER_MATCHING_ACCOUNT
+      ? { id: NEVER_MATCHING_ACCOUNT }
+      : scope.accountId
+        ? { accountId: scope.accountId }
+        : {};
+
   return db.alarm.findMany({
-    where: { status: "OPEN", domain: "SEGURIDAD" },
+    where: {
+      ...accountWhere,
+      status: "OPEN",
+      domain: "SEGURIDAD",
+    },
     orderBy: { triggeredAt: "desc" },
     take: limit,
     include: {
@@ -73,14 +151,20 @@ export async function getOpenAlarms(limit = 20): Promise<AlarmWithRefs[]> {
   });
 }
 
-/**
- * Worst-N drivers by safety score (lowest first). Used in the
- * Dashboard D side panel.
- */
-export async function getWorstDrivers(limit = 5): Promise<DriverScoreRow[]> {
+// ═══════════════════════════════════════════════════════════════
+//  getWorstDrivers · top-N peor safetyScore
+//  ─────────────────────────────────────────────────────────────
+//  Powers el panel "Top conductores · peor score" del Dashboard D.
+// ═══════════════════════════════════════════════════════════════
+
+export async function getWorstDrivers(
+  limit = 5,
+  scope: FleetScope = DEFAULT_SCOPE,
+): Promise<DriverScoreRow[]> {
   const since = new Date(Date.now() - 30 * MS_DAY);
 
   const drivers = await db.person.findMany({
+    where: personWhereForScope(scope),
     orderBy: { safetyScore: "asc" },
     take: limit,
     select: {
@@ -105,10 +189,10 @@ export async function getWorstDrivers(limit = 5): Promise<DriverScoreRow[]> {
   }));
 }
 
-/**
- * Top-N assets by event count over the last 30 days. Powers the
- * "assets con más eventos" panel on Dashboard D.
- */
+// ═══════════════════════════════════════════════════════════════
+//  getTopAssetsByEvents · top-N assets con más eventos en 30d
+// ═══════════════════════════════════════════════════════════════
+
 export interface AssetEventCountRow {
   id: string;
   name: string;
@@ -116,13 +200,19 @@ export interface AssetEventCountRow {
   eventCount30d: number;
 }
 
-export async function getTopAssetsByEvents(limit = 5): Promise<AssetEventCountRow[]> {
+export async function getTopAssetsByEvents(
+  limit = 5,
+  scope: FleetScope = DEFAULT_SCOPE,
+): Promise<AssetEventCountRow[]> {
   const since = new Date(Date.now() - 30 * MS_DAY);
 
-  // GroupBy is fine here since we only need counts per asset.
+  // GroupBy filtrado por scope vía relación asset.accountId.
   const grouped = await db.event.groupBy({
     by: ["assetId"],
-    where: { occurredAt: { gte: since } },
+    where: {
+      ...eventWhereForScope(scope),
+      occurredAt: { gte: since },
+    },
     _count: { _all: true },
     orderBy: { _count: { assetId: "desc" } },
     take: limit,
@@ -130,9 +220,13 @@ export async function getTopAssetsByEvents(limit = 5): Promise<AssetEventCountRo
 
   if (grouped.length === 0) return [];
 
-  // Hydrate the asset metadata in one query.
+  // Hydrate metadata · scope ya aplicado al groupBy, los assets
+  // resultantes están todos dentro del scope.
   const assets = (await db.asset.findMany({
-    where: { id: { in: grouped.map((g) => g.assetId) } },
+    where: {
+      ...assetWhereForScope(scope),
+      id: { in: grouped.map((g) => g.assetId) },
+    },
     select: { id: true, name: true, plate: true },
   })) as { id: string; name: string; plate: string | null }[];
   const byId = new Map(assets.map((a) => [a.id, a]));

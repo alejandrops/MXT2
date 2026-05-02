@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import type { VehicleType } from "@prisma/client";
 
 // AR offset (UTC-3 · sin DST)
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -244,7 +245,7 @@ export async function getActivityPivot(
     where: {
       mobilityType: "MOBILE",
       ...(params.groupId ? { groupId: params.groupId } : {}),
-      ...(params.vehicleType ? { vehicleType: params.vehicleType } : {}),
+      ...(params.vehicleType ? { vehicleType: params.vehicleType as VehicleType } : {}),
     },
     select: {
       id: true,

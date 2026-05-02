@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { TELEMETRY_EVENT_TYPES } from "@/lib/format";
 import { BoletinHeader } from "@/components/maxtracker/boletin/BoletinHeader";
 import { BlockA_ResumenEjecutivo } from "@/components/maxtracker/boletin/BlockA_ResumenEjecutivo";
 import { BlockB_SaludOperativa } from "@/components/maxtracker/boletin/BlockB_SaludOperativa";
@@ -233,6 +234,10 @@ export interface VehicleRow {
   plate: string | null;
   groupName: string | null;
   distanceKm: number;
+  /** Minutos activos · necesario para BlockH (anomalías estadísticas) */
+  activeMin: number;
+  /** Cantidad de viajes en el período · necesario para BlockH y BlockJ */
+  tripCount: number;
   eventCount: number;
   /** Eventos por cada 100 km · ranking se hace por esto */
   eventsPer100km: number;
@@ -254,7 +259,7 @@ async function loadBoletinData(args: {
   prevStart: Date;
   prevEnd: Date;
 }): Promise<BoletinData> {
-  const TELEMETRY_TYPES = ["IGNITION_ON", "IGNITION_OFF"];
+  
 
   const [
     currDays,
@@ -307,13 +312,13 @@ async function loadBoletinData(args: {
     db.event.count({
       where: {
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
       },
     }),
     db.event.count({
       where: {
         occurredAt: { gte: args.prevStart, lt: args.prevEnd },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
       },
     }),
     db.alarm.count({
@@ -330,7 +335,7 @@ async function loadBoletinData(args: {
       by: ["assetId"],
       where: {
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
       },
       _count: { _all: true },
     }),
@@ -339,7 +344,7 @@ async function loadBoletinData(args: {
       by: ["personId"],
       where: {
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
         personId: { not: null },
       },
       _count: { _all: true },
@@ -381,7 +386,7 @@ async function loadBoletinData(args: {
       by: ["type"],
       where: {
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
       },
       _count: { _all: true },
     }),
@@ -402,12 +407,14 @@ async function loadBoletinData(args: {
     .map(([day, distanceKm]) => ({ day, distanceKm }));
 
   // Eventos por assetId · para joinear con vehículos/grupos
+  // El groupBy() pidió `_count: { _all: true }` · _count._all viene garantizado.
+  // Cast porque Prisma 6 tipa _count como union "true | { _all?: number }".
   const eventsByAssetMap = new Map<string, number>();
-  for (const e of eventsByAsset) {
+  for (const e of eventsByAsset as { assetId: string; _count: { _all: number } }[]) {
     eventsByAssetMap.set(e.assetId, e._count._all);
   }
   const eventsByPersonMap = new Map<string, number>();
-  for (const e of eventsByPerson) {
+  for (const e of eventsByPerson as { personId: string | null; _count: { _all: number } }[]) {
     if (e.personId) eventsByPersonMap.set(e.personId, e._count._all);
   }
 
@@ -453,6 +460,8 @@ async function loadBoletinData(args: {
       plate: a.plate,
       groupName: a.groupName,
       distanceKm: a.distanceKm,
+      activeMin: a.activeMin,
+      tripCount: a.tripCount,
       eventCount,
       eventsPer100km,
     };
@@ -572,7 +581,9 @@ async function loadBoletinData(args: {
     LOW: 0,
   };
   for (const a of alarmsForPeriod) {
-    if (a.severity in sevCount) sevCount[a.severity]++;
+    if (a.severity in sevCount) {
+      sevCount[a.severity] = (sevCount[a.severity] ?? 0) + 1;
+    }
   }
   const bySeverity = Object.entries(sevCount).map(([severity, count]) => ({
     severity,
@@ -585,7 +596,9 @@ async function loadBoletinData(args: {
     SEGURIDAD: 0,
   };
   for (const a of alarmsForPeriod) {
-    if (a.domain in domCount) domCount[a.domain]++;
+    if (a.domain in domCount) {
+      domCount[a.domain] = (domCount[a.domain] ?? 0) + 1;
+    }
   }
   const byDomain = Object.entries(domCount).map(([domain, count]) => ({
     domain,
@@ -613,7 +626,9 @@ async function loadBoletinData(args: {
     .slice(0, 5);
 
   // ── Eventos por tipo · top tipos para Bloque G ──────────────
-  const eventsByType = eventsByTypeRaw
+  // groupBy con _count: { _all: true } · cast porque Prisma 6 tipa _count
+  // como union (idem patrones arriba).
+  const eventsByType = (eventsByTypeRaw as { type: string; _count: { _all: number } }[])
     .map((e) => ({ type: e.type, count: e._count._all }))
     .sort((x, y) => y.count - x.count);
 

@@ -140,10 +140,10 @@ export async function getSimCounts(): Promise<SimCounts> {
 
   return {
     total,
-    stock: map.STOCK,
-    active: map.ACTIVE,
-    suspended: map.SUSPENDED,
-    cancelled: map.CANCELLED,
+    stock: map.STOCK ?? 0,
+    active: map.ACTIVE ?? 0,
+    suspended: map.SUSPENDED ?? 0,
+    cancelled: map.CANCELLED ?? 0,
   };
 }
 

@@ -47,7 +47,8 @@ export function decimate<T>(points: T[], maxPoints: number): T[] {
   const step = (points.length - 1) / (maxPoints - 1);
   const out: T[] = [];
   for (let i = 0; i < maxPoints; i++) {
-    out.push(points[Math.round(i * step)]);
+    // Math · round(i*step) con i ∈ [0, maxPoints-1] · resultado ∈ [0, points.length-1]
+    out.push(points[Math.round(i * step)]!);
   }
   return out;
 }

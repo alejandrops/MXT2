@@ -218,10 +218,10 @@ export async function getDeviceCounts(): Promise<DeviceCounts> {
     long,
     offline,
     primary,
-    stock: statusMap.STOCK,
-    installed: statusMap.INSTALLED,
-    inRepair: statusMap.IN_REPAIR,
-    decommissioned: statusMap.DECOMMISSIONED,
+    stock: statusMap.STOCK ?? 0,
+    installed: statusMap.INSTALLED ?? 0,
+    inRepair: statusMap.IN_REPAIR ?? 0,
+    decommissioned: statusMap.DECOMMISSIONED ?? 0,
   };
 }
 

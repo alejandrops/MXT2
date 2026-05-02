@@ -515,3 +515,43 @@ export async function listDriversForFilter(
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  getPersonRelationCounts · pre-delete check (L1.5b)
+//  ─────────────────────────────────────────────────────────────
+//  Cuenta las relaciones de un Person para decidir si se puede
+//  eliminar de manera segura. Si total > 0, el caller debe rechazar
+//  el delete y mostrar un mensaje al user con el detalle.
+//
+//  Usado por · /catalogos/conductores/actions.ts::deletePerson
+// ═══════════════════════════════════════════════════════════════
+
+export interface PersonRelationCounts {
+  drivenAssets: number;
+  trips: number;
+  events: number;
+  alarms: number;
+  assetDriverDays: number;
+  total: number;
+}
+
+export async function getPersonRelationCounts(
+  personId: string,
+): Promise<PersonRelationCounts> {
+  const [drivenAssets, trips, events, alarms, assetDriverDays] = await Promise.all([
+    db.asset.count({ where: { currentDriverId: personId } }),
+    db.trip.count({ where: { personId } }),
+    db.event.count({ where: { personId } }),
+    db.alarm.count({ where: { personId } }),
+    db.assetDriverDay.count({ where: { personId } }),
+  ]);
+
+  return {
+    drivenAssets,
+    trips,
+    events,
+    alarms,
+    assetDriverDays,
+    total: drivenAssets + trips + events + alarms + assetDriverDays,
+  };
+}

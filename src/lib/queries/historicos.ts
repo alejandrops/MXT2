@@ -250,7 +250,10 @@ export async function getDailyTrajectory(
     }),
   ]);
 
-  const points: TrajectoryPoint[] = positionsRaw;
+  const points: TrajectoryPoint[] = positionsRaw.map((p) => ({
+    ...p,
+    heading: p.heading ?? 0,
+  }));
   const events: TrajectoryEvent[] = eventsRaw;
 
   // ── Aggregate stats ────────────────────────────────────────

@@ -89,6 +89,7 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
     const list: {
       tripId: string;
       assetId: string;
+      assetName: string;
       points: { lat: number; lng: number }[];
     }[] = [];
     for (const day of days) {
@@ -97,6 +98,7 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
           list.push({
             tripId: item.id,
             assetId: day.assetId,
+            assetName: day.assetName,
             points: [
               { lat: item.startLat, lng: item.startLng },
               { lat: item.endLat, lng: item.endLng },
@@ -136,10 +138,19 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
         )}
         <DaysList
           days={days}
-          selectedItemId={selectedItemId}
-          onSelectItem={(id) =>
-            setSelectedItemId(id === selectedItemId ? null : id)
-          }
+          selectedDayId={selection?.day.id ?? null}
+          onSelectDay={(dayId) => {
+            // Click en fila de día · si ya está seleccionado, deselecciona.
+            // Si no, selecciona el primer item (trip o stop) del día como
+            // selección por defecto · DRY del modelo "selección por item".
+            if (dayId === null || dayId === selection?.day.id) {
+              setSelectedItemId(null);
+              return;
+            }
+            const day = days.find((d) => d.id === dayId);
+            const firstItem = day?.items[0];
+            setSelectedItemId(firstItem?.id ?? null);
+          }}
         />
       </div>
 
@@ -148,7 +159,8 @@ export function TripsClient({ days, totalDays, currentCap }: Props) {
         {selection ? (
           <TripDetailPanel
             day={selection.day}
-            item={selection.item}
+            selectedItemId={selection.item.id}
+            onSelectItem={setSelectedItemId}
             onClose={() => setSelectedItemId(null)}
           />
         ) : (

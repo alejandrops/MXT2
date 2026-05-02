@@ -100,14 +100,16 @@ export function parseCsv(text: string): CsvParseResult {
     return { headers: [], rows: [], delimiter: ",", totalLines: 0 };
   }
 
-  const delimiter = detectDelimiter(lines[0]);
-  const headers = splitCsvLine(lines[0], delimiter).map((h) =>
+  // Post-guard length>0 · lines[0] garantizado · non-null assertion
+  const delimiter = detectDelimiter(lines[0]!);
+  const headers = splitCsvLine(lines[0]!, delimiter).map((h) =>
     h.toLowerCase().trim(),
   );
 
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const fields = splitCsvLine(lines[i], delimiter);
+    // Loop bound i < lines.length · lines[i] garantizado
+    const fields = splitCsvLine(lines[i]!, delimiter);
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => {
       row[h] = (fields[idx] ?? "").trim();

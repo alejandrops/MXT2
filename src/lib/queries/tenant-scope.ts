@@ -73,7 +73,8 @@ export function resolveAccountScope(
   // Ignoramos lo que pidió la UI · si el user cambia el filtro a
   // otro account, igual se le aplica el suyo. La UI del filtro
   // debería ocultarse para estos users.
-  return allowed[0];
+  // Post-guard `allowed.length === 0` arriba · allowed[0] está garantizado.
+  return allowed[0]!;
 }
 
 /**

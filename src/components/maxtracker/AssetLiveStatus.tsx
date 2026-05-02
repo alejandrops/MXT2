@@ -77,7 +77,7 @@ export function AssetLiveStatus({ asset }: AssetLiveStatusProps) {
         <StateCell
           icon={<Compass size={11} />}
           label="Rumbo"
-          value={last ? `${degToCardinal(last.heading)} · ${last.heading}°` : "—"}
+          value={last && last.heading != null ? `${degToCardinal(last.heading)} · ${last.heading}°` : "—"}
         />
         <StateCell
           icon={<Radio size={11} />}

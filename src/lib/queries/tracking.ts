@@ -199,7 +199,7 @@ export async function getFleetLive(
         groupName: a.group?.name ?? null,
         lat: last.lat,
         lng: last.lng,
-        heading: last.heading,
+        heading: last.heading ?? 0,
         speedKmh: last.speedKmh,
         ignition: last.ignition,
         recordedAt: last.recordedAt,
@@ -401,7 +401,7 @@ export async function getFleetReplay(
       }
       const replayDayMidnight = localArMidnight(last.recordedAt.getTime());
       const dayEnd = replayDayMidnight + 24 * 60 * 60 * 1000;
-      const points = await db.position.findMany({
+      const pointsRaw = await db.position.findMany({
         where: {
           assetId: a.id,
           recordedAt: {
@@ -419,6 +419,11 @@ export async function getFleetReplay(
           ignition: true,
         },
       });
+      // ReplayPoint requiere heading: number · default 0 (norte)
+      const points = pointsRaw.map((p) => ({
+        ...p,
+        heading: p.heading ?? 0,
+      }));
       return {
         id: a.id,
         name: a.name,

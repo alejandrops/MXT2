@@ -141,8 +141,15 @@ export async function listAssets(
 
 // ═══════════════════════════════════════════════════════════════
 //  Status counts (KPI strip on Lista A)
+//  ─────────────────────────────────────────────────────────────
+//  @deprecated · L2B-1 · usar `getFleetStatusDistribution` desde
+//  `src/lib/queries/fleet-metrics.ts` · esa versión deriva el estado
+//  de LivePosition (no del Asset.status denormalizado que podía
+//  estar stale). La función queda exportada hasta cerrar L2B
+//  completo · entonces se remueve junto con sus tests.
 // ═══════════════════════════════════════════════════════════════
 
+/** @deprecated · usar getFleetStatusDistribution (L2B-1) */
 export async function getAssetStatusCounts(
   filters: { accountId?: string | null } = {},
 ): Promise<Record<AssetStatus, number>> {
@@ -344,22 +351,35 @@ function computeTripCount(positions: PositionLite[]): number {
 
 export async function getAccountsForFilter(
   /**
-   * Scope opcional · si se provee un accountId, devuelve solo esa
-   * account (caso CA y OP, que solo ven su propia). Sin scope,
-   * devuelve todas (caso SA y MA cross-account).
+   * Scope opcional · acepta:
+   *  - `string`     · forzar a esa account (CA / OP con scope OWN_ACCOUNT)
+   *  - `string[]`   · forzar a un set de accounts (futuro · holdings)
+   *  - `null`/omit  · sin filtro (SA / MA cross-account)
    *
    * La página llamadora debería computarlo así:
    *
+   *     // user con scope simple (un solo account)
    *     const scopedAccountId = resolveAccountScope(session, mod, null);
    *     const accounts = await getAccountsForFilter(scopedAccountId);
    *
-   * Para SA y MA, scopedAccountId será null → devuelve todas.
-   * Para CA y OP, scopedAccountId será su accountId → devuelve [esa].
+   *     // user con scope múltiple (admin · array de N accounts)
+   *     const scopedAccountIds = getScopedAccountIds(session, mod);
+   *     const accounts = await getAccountsForFilter(scopedAccountIds);
+   *
+   * Para SA y MA, el scope será `null` → devuelve todas.
    */
-  accountId?: string | null,
+  accountId?: string | string[] | null,
 ): Promise<{ id: string; name: string }[]> {
+  let where: { id?: string | { in: string[] } } | undefined;
+  if (Array.isArray(accountId)) {
+    where = accountId.length > 0 ? { id: { in: accountId } } : undefined;
+  } else if (accountId) {
+    where = { id: accountId };
+  } else {
+    where = undefined;
+  }
   return db.account.findMany({
-    where: accountId ? { id: accountId } : undefined,
+    where,
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

@@ -83,12 +83,12 @@ export function BlockF_Seguridad({ data }: Props) {
                 value: s.count,
                 cls:
                   s.severity === "CRITICAL"
-                    ? styles.sevCritical
+                    ? styles.sevCritical!
                     : s.severity === "HIGH"
-                      ? styles.sevHigh
+                      ? styles.sevHigh!
                       : s.severity === "MEDIUM"
-                        ? styles.sevMedium
-                        : styles.sevLow,
+                        ? styles.sevMedium!
+                        : styles.sevLow!,
               }))}
               total={alarms.total}
             />
@@ -103,8 +103,8 @@ export function BlockF_Seguridad({ data }: Props) {
                 value: d.count,
                 cls:
                   d.domain === "SEGURIDAD"
-                    ? styles.domSec
-                    : styles.domCond,
+                    ? styles.domSec!
+                    : styles.domCond!,
               }))}
               total={alarms.total}
             />

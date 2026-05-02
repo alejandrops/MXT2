@@ -112,7 +112,9 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+  // Tipo objeto literal (no Record) · evita `string | undefined` por
+  // noUncheckedIndexedAccess al acceder openSections.identification, etc.
+  const [openSections, setOpenSections] = useState({
     identification: true,
     commercial: true,
     license: true,
@@ -154,8 +156,9 @@ export function AdminDriverDrawer({ driver, accountOptions }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirmingDelete]);
 
+  type SectionKey = keyof typeof openSections;
   function toggle(key: string) {
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key as SectionKey] }));
   }
 
   function buildInput(): AdminDriverUpdateInput {

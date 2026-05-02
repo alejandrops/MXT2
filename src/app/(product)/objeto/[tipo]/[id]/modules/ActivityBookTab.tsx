@@ -1,4 +1,6 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
+import { TELEMETRY_EVENT_TYPES } from "@/lib/format";
 import { KpiCard, EmptyState } from "@/components/maxtracker/ui";
 import type { AnalysisGranularity } from "@/lib/queries";
 import type { ObjectType } from "@/lib/object-modules";
@@ -508,41 +510,29 @@ async function loadActivityData(
   const toDt = new Date(`${toDate}T03:00:00Z`);
   toDt.setUTCDate(toDt.getUTCDate() + 1);
 
-  const TELEMETRY_TYPES = ["IGNITION_ON", "IGNITION_OFF"];
 
-  let dayWhere: {
-    day: { gte: Date; lt: Date };
-    assetId?: string;
-    personId?: string;
-    asset?: { groupId: string };
-  };
-  let eventWhere: {
-    occurredAt: { gte: Date; lt: Date };
-    type: { notIn: string[] };
-    assetId?: string;
-    personId?: string;
-    asset?: { groupId: string };
-  };
+  let dayWhere: Prisma.AssetDriverDayWhereInput;
+  let eventWhere: Prisma.EventWhereInput;
 
   if (type === "vehiculo") {
     dayWhere = { day: { gte: fromDt, lt: toDt }, assetId: id };
     eventWhere = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       assetId: id,
     };
   } else if (type === "conductor") {
     dayWhere = { day: { gte: fromDt, lt: toDt }, personId: id };
     eventWhere = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       personId: id,
     };
   } else {
     dayWhere = { day: { gte: fromDt, lt: toDt }, asset: { groupId: id } };
     eventWhere = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       asset: { groupId: id },
     };
   }
@@ -608,7 +598,6 @@ async function loadPeerStats(
   const toDt = new Date(`${toDate}T03:00:00Z`);
   toDt.setUTCDate(toDt.getUTCDate() + 1);
 
-  const TELEMETRY_TYPES = ["IGNITION_ON", "IGNITION_OFF"];
 
   const [days, events] = await Promise.all([
     db.assetDriverDay.findMany({
@@ -630,7 +619,7 @@ async function loadPeerStats(
     db.event.findMany({
       where: {
         occurredAt: { gte: fromDt, lt: toDt },
-        type: { notIn: TELEMETRY_TYPES },
+        type: { notIn: TELEMETRY_EVENT_TYPES },
       },
       select: {
         assetId: true,
@@ -771,32 +760,25 @@ async function loadEvents(
   const toDt = new Date(`${toDate}T03:00:00Z`);
   toDt.setUTCDate(toDt.getUTCDate() + 1);
 
-  const TELEMETRY_TYPES = ["IGNITION_ON", "IGNITION_OFF"];
 
-  let where: {
-    occurredAt: { gte: Date; lt: Date };
-    type: { notIn: string[] };
-    assetId?: string;
-    personId?: string;
-    asset?: { groupId: string };
-  };
+  let where: Prisma.EventWhereInput;
 
   if (type === "vehiculo") {
     where = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       assetId: id,
     };
   } else if (type === "conductor") {
     where = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       personId: id,
     };
   } else {
     where = {
       occurredAt: { gte: fromDt, lt: toDt },
-      type: { notIn: TELEMETRY_TYPES },
+      type: { notIn: TELEMETRY_EVENT_TYPES },
       asset: { groupId: id },
     };
   }

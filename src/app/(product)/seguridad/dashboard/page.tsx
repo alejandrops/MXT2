@@ -4,6 +4,8 @@ import {
   getTopAssetsByEvents,
   getWorstDrivers,
 } from "@/lib/queries";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getSession } from "@/lib/session";
 import {
   AlarmCard,
   AssetEventCard,
@@ -19,6 +21,9 @@ import styles from "./page.module.css";
 //  ─────────────────────────────────────────────────────────────
 //  Sub-lote 1.3: Real dashboard with live data from the seed.
 //
+//  L2B-2 · multi-tenant scope aplicado · CA / OP ven solo su
+//  account, SA / MA cross-account.
+//
 //  Layout:
 //    · KPI strip (4 tiles, full width)
 //    · Two-column body
@@ -33,11 +38,16 @@ import styles from "./page.module.css";
 export const dynamic = "force-dynamic";
 
 export default async function SeguridadDashboardPage() {
+  // L2B-2 · resolver scope multi-tenant para todas las queries
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "seguridad", null);
+  const scope = { accountId: scopedAccountId };
+
   const [kpis, alarms, drivers, assets] = await Promise.all([
-    getSafetyKpis(),
-    getOpenAlarms(15),
-    getWorstDrivers(5),
-    getTopAssetsByEvents(5),
+    getSafetyKpis(scope),
+    getOpenAlarms(15, scope),
+    getWorstDrivers(5, scope),
+    getTopAssetsByEvents(5, scope),
   ]);
 
   return (

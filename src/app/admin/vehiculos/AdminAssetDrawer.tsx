@@ -149,7 +149,8 @@ export function AdminAssetDrawer({
   );
   const [status, setStatus] = useState(asset.status);
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+  // Tipo objeto literal · evita undefined por noUncheckedIndexedAccess
+  const [openSections, setOpenSections] = useState({
     identification: true,
     commercial: true,
     devices: true,
@@ -182,8 +183,9 @@ export function AdminAssetDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, confirmingDelete]);
 
+  type SectionKey = keyof typeof openSections;
   function toggle(key: string) {
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key as SectionKey] }));
   }
 
   const filteredGroups = groupOptions.filter((g) => g.accountId === accountId);

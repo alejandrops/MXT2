@@ -178,10 +178,10 @@ export async function getUserCounts(opts: {
     total,
     active,
     suspended: total - active,
-    superAdmin: byKey.SUPER_ADMIN,
-    maxtrackerAdmin: byKey.MAXTRACKER_ADMIN,
-    clientAdmin: byKey.CLIENT_ADMIN,
-    operator: byKey.OPERATOR,
+    superAdmin: byKey.SUPER_ADMIN ?? 0,
+    maxtrackerAdmin: byKey.MAXTRACKER_ADMIN ?? 0,
+    clientAdmin: byKey.CLIENT_ADMIN ?? 0,
+    operator: byKey.OPERATOR ?? 0,
   };
 }
 

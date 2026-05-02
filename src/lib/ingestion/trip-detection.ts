@@ -204,18 +204,19 @@ function extractLastIgnitionOnRun(
   positions: PositionPoint[],
 ): PositionPoint[] {
   // Buscar el último índice con ignition=true
+  // Loop bound i ∈ [0, length-1] · positions[i]! garantizado por bound check.
   let lastOnIdx = -1;
   for (let i = positions.length - 1; i >= 0; i--) {
-    if (positions[i].ignition) {
+    if (positions[i]!.ignition) {
       lastOnIdx = i;
       break;
     }
   }
   if (lastOnIdx === -1) return [];
 
-  // Ir hacia atrás mientras siga siendo ignition=true
+  // Ir hacia atrás mientras siga siendo ignition=true · firstOnIdx-1 ≥ 0 garantizado por guard
   let firstOnIdx = lastOnIdx;
-  while (firstOnIdx > 0 && positions[firstOnIdx - 1].ignition) {
+  while (firstOnIdx > 0 && positions[firstOnIdx - 1]!.ignition) {
     firstOnIdx--;
   }
 
@@ -239,8 +240,28 @@ interface TripStats {
 }
 
 function computeTripStats(points: PositionPoint[]): TripStats {
-  const first = points[0];
-  const last = points[points.length - 1];
+  // Guard · contrato del caller dice que viene con length≥1, pero TS no lo sabe.
+  // Si llegara vacío, retornar stats neutras en vez de crashear.
+  if (points.length === 0) {
+    const now = new Date();
+    return {
+      startedAt: now,
+      endedAt: now,
+      durationMs: 0,
+      distanceKm: 0,
+      avgSpeedKmh: 0,
+      maxSpeedKmh: 0,
+      idleMs: 0,
+      startLat: 0,
+      startLng: 0,
+      endLat: 0,
+      endLng: 0,
+      positionCount: 0,
+      polyline: [],
+    };
+  }
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
   const startedAt = first.recordedAt;
   const endedAt = last.recordedAt;
   const durationMs = endedAt.getTime() - startedAt.getTime();
@@ -251,12 +272,12 @@ function computeTripStats(points: PositionPoint[]): TripStats {
   let speedSum = 0;
 
   for (let i = 0; i < points.length; i++) {
-    const p = points[i];
+    const p = points[i]!;
     if (p.speedKmh > maxSpeedKmh) maxSpeedKmh = p.speedKmh;
     speedSum += p.speedKmh;
 
     if (i > 0) {
-      const prev = points[i - 1];
+      const prev = points[i - 1]!;
       distanceKm += haversineKm(prev.lat, prev.lng, p.lat, p.lng);
 
       // Sumar idle si la velocidad promedio del tramo es baja

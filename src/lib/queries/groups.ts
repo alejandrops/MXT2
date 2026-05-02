@@ -93,9 +93,87 @@ export interface GroupForFilter {
   name: string;
 }
 
-export async function listGroupsForFilter(): Promise<GroupForFilter[]> {
+export async function listGroupsForFilter(
+  /** Si se pasa, filtra grupos a ese account. Para users con scope
+   *  OWN_ACCOUNT (CA, OP). Para SA/MA, pasar null o omitir. */
+  accountId?: string | null,
+): Promise<GroupForFilter[]> {
   return db.group.findMany({
+    where: accountId ? { accountId } : undefined,
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  getGroupRelationCounts · pre-delete check (L1.5b)
+//  ─────────────────────────────────────────────────────────────
+//  Cuenta subgrupos directos y vehículos asignados al grupo. Si
+//  total > 0, el caller debe rechazar el delete · el user tiene
+//  que reasignar primero.
+//
+//  Usado por · /catalogos/grupos/actions.ts::deleteGroup
+// ═══════════════════════════════════════════════════════════════
+
+export interface GroupRelationCounts {
+  childGroups: number;
+  vehicles: number;
+  total: number;
+}
+
+export async function getGroupRelationCounts(
+  groupId: string,
+): Promise<GroupRelationCounts> {
+  const [childGroups, vehicles] = await Promise.all([
+    db.group.count({ where: { parentId: groupId } }),
+    db.asset.count({ where: { groupId } }),
+  ]);
+
+  return {
+    childGroups,
+    vehicles,
+    total: childGroups + vehicles,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  getGroupDescendantIds · ciclo prevention (L1.5b)
+//  ─────────────────────────────────────────────────────────────
+//  Devuelve TODOS los IDs descendientes (recursivo) de un grupo
+//  raíz. Usado para validar que al editar un grupo y asignarle un
+//  parent, el parent propuesto NO sea un descendiente del grupo
+//  actual (eso crearía un ciclo).
+//
+//  Implementación · BFS iterativo sobre Group.parentId. Para la
+//  jerarquía actual (max 2 niveles · ADR-001) se ejecuta en O(1)
+//  iteraciones. La implementación es general por si se aumenta
+//  la profundidad en el futuro.
+//
+//  Usado por · /catalogos/grupos/actions.ts::updateGroup
+// ═══════════════════════════════════════════════════════════════
+
+export async function getGroupDescendantIds(
+  groupId: string,
+): Promise<string[]> {
+  const descendants: string[] = [];
+  let frontier: string[] = [groupId];
+
+  // Cap defensivo · evita loop infinito si la DB tiene un ciclo
+  // accidental (no debería existir por ADR-001 pero queda como guard).
+  const MAX_DEPTH = 16;
+  let depth = 0;
+
+  while (frontier.length > 0 && depth < MAX_DEPTH) {
+    const children = await db.group.findMany({
+      where: { parentId: { in: frontier } },
+      select: { id: true },
+    });
+    const childIds = children.map((c) => c.id);
+    if (childIds.length === 0) break;
+    descendants.push(...childIds);
+    frontier = childIds;
+    depth++;
+  }
+
+  return descendants;
 }

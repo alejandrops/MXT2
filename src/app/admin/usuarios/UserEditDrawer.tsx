@@ -96,7 +96,7 @@ export function UserEditDrawer({
   const defaultProfileId = isEdit
     ? initialUser!.profileId
     : assignableProfiles.length === 1
-      ? assignableProfiles[0].id
+      ? assignableProfiles[0]!.id
       : "";
 
   // Default accountId: en create con CA, forzar el del actor

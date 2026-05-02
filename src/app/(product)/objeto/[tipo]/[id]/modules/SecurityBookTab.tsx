@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import { KpiCard, EmptyState } from "@/components/maxtracker/ui";
 import type { AnalysisGranularity } from "@/lib/queries";
 import type { ObjectType } from "@/lib/object-modules";
@@ -297,10 +298,10 @@ function LifecycleBreakdown({
   total: number;
 }) {
   const items: { key: keyof typeof counts; label: string; cls: string }[] = [
-    { key: "OPEN", label: "Sin atender", cls: styles.lcOpen },
-    { key: "ATTENDED", label: "Atendidas", cls: styles.lcAttended },
-    { key: "CLOSED", label: "Cerradas", cls: styles.lcClosed },
-    { key: "DISMISSED", label: "Descartadas", cls: styles.lcDismissed },
+    { key: "OPEN", label: "Sin atender", cls: styles.lcOpen! },
+    { key: "ATTENDED", label: "Atendidas", cls: styles.lcAttended! },
+    { key: "CLOSED", label: "Cerradas", cls: styles.lcClosed! },
+    { key: "DISMISSED", label: "Descartadas", cls: styles.lcDismissed! },
   ];
 
   return (
@@ -443,12 +444,7 @@ async function loadActiveAlarmsCount(
   type: ObjectType,
   id: string,
 ): Promise<number> {
-  let where: {
-    status: string;
-    assetId?: string;
-    personId?: string;
-    asset?: { groupId: string };
-  };
+  let where: Prisma.AlarmWhereInput;
 
   if (type === "vehiculo") {
     where = { status: "OPEN", assetId: id };
@@ -588,10 +584,10 @@ function severityShort(s: string): string {
 }
 
 function sevClass(s: string): string {
-  if (s === "CRITICAL") return styles.sevCritical;
-  if (s === "HIGH") return styles.sevHigh;
-  if (s === "MEDIUM") return styles.sevMedium;
-  return styles.sevLow;
+  if (s === "CRITICAL") return styles.sevCritical!;
+  if (s === "HIGH") return styles.sevHigh!;
+  if (s === "MEDIUM") return styles.sevMedium!;
+  return styles.sevLow!;
 }
 
 function statusLabel(s: string): string {
@@ -605,10 +601,10 @@ function statusLabel(s: string): string {
 }
 
 function statusClass(s: string): string {
-  if (s === "OPEN") return styles.statusOpen;
-  if (s === "ATTENDED") return styles.statusAttended;
-  if (s === "CLOSED") return styles.statusClosed;
-  return styles.statusDismissed;
+  if (s === "OPEN") return styles.statusOpen!;
+  if (s === "ATTENDED") return styles.statusAttended!;
+  if (s === "CLOSED") return styles.statusClosed!;
+  return styles.statusDismissed!;
 }
 
 function humanizeDomain(d: string): string {

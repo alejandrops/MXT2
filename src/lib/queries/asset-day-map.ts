@@ -172,7 +172,7 @@ export async function getAssetDayMap(
     dateISO: dayYmd,
     isToday: dayYmd === todayYmd,
     points,
-    lastPosition: last,
+    lastPosition: last ? { ...last, heading: last.heading ?? 0 } : null,
     stats: {
       pointCount: points.length,
       distanceKm: Math.round(distanceKm * 10) / 10,

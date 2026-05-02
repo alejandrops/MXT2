@@ -1,9 +1,9 @@
 import {
   getAccountsForFilter,
-  getAssetStatusCounts,
   getGroupsForFilter,
   listAssets,
 } from "@/lib/queries";
+import { getFleetStatusDistribution } from "@/lib/queries/fleet-metrics";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import {
@@ -62,23 +62,18 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
       sortBy: params.sort,
       sortDir: params.dir,
     }),
-    getAssetStatusCounts({ accountId: scopedAccountId }),
+    // L2B-1 · `getFleetStatusDistribution` reemplaza al previo
+    // `getAssetStatusCounts` · deriva de LivePosition vía deriveAssetState.
+    getFleetStatusDistribution({ accountId: scopedAccountId }),
     getAccountsForFilter(scopedAccountId),
     getGroupsForFilter(scopedAccountId),
   ]);
-
-  const totalCount =
-    statusCounts.MOVING +
-    statusCounts.IDLE +
-    statusCounts.STOPPED +
-    statusCounts.OFFLINE +
-    statusCounts.MAINTENANCE;
 
   return (
     <div className={styles.page}>
       {/* ── KPI Strip · status distribution ────────────────── */}
       <div className={styles.kpiStrip}>
-        <KpiTile label="Total" value={formatNumber(totalCount)} />
+        <KpiTile label="Total" value={formatNumber(statusCounts.total)} />
         <KpiTile
           label="En movimiento"
           value={statusCounts.MOVING}

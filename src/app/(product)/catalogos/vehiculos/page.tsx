@@ -1,9 +1,9 @@
 import {
   getAccountsForFilter,
-  getAssetStatusCounts,
   getGroupsForFilter,
   listAssets,
 } from "@/lib/queries";
+import { getFleetStatusDistribution } from "@/lib/queries/fleet-metrics";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import {
@@ -27,6 +27,13 @@ import styles from "./page.module.css";
 //     Param · pasa por resolveAccountScope, que para users con
 //     scope OWN_ACCOUNT (CA, OP) fuerza al accountId del session.
 //   · Para users cross-account (SA, MA) respeta el filtro de la UI.
+//
+//  Status distribution (L2B-1):
+//   · Usa fleet-metrics.getFleetStatusDistribution() · deriva estado
+//     de LivePosition (no del Asset.status denormalizado · que podía
+//     estar stale si refresh-live-positions no corría).
+//   · Bug B6 a nivel código resuelto · todas las pantallas que
+//     muestran "estado de la flota" leen del mismo módulo.
 //
 //  Layout:
 //    · KPI strip (5 status counts: Moving / Idle / Stopped /
@@ -72,23 +79,18 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
       sortBy: params.sort,
       sortDir: params.dir,
     }),
-    getAssetStatusCounts({ accountId: scopedAccountId }),
+    // L2B-1 · `getFleetStatusDistribution` reemplaza al previo
+    // `getAssetStatusCounts` · deriva de LivePosition vía deriveAssetState.
+    getFleetStatusDistribution({ accountId: scopedAccountId }),
     getAccountsForFilter(),
     getGroupsForFilter(),
   ]);
-
-  const totalCount =
-    statusCounts.MOVING +
-    statusCounts.IDLE +
-    statusCounts.STOPPED +
-    statusCounts.OFFLINE +
-    statusCounts.MAINTENANCE;
 
   return (
     <div className={styles.page}>
       {/* ── KPI Strip · status distribution ────────────────── */}
       <div className={styles.kpiStrip}>
-        <KpiTile label="Total" value={formatNumber(totalCount)} />
+        <KpiTile label="Total" value={formatNumber(statusCounts.total)} />
         <KpiTile
           label="En movimiento"
           value={statusCounts.MOVING}

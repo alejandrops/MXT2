@@ -172,10 +172,12 @@ function humanStatus(s: string): string {
 }
 
 function statusClass(s: string): string {
-  if (s === "MOVING") return styles.statusMoving;
-  if (s === "IDLE") return styles.statusIdle;
-  if (s === "STOPPED") return styles.statusStopped;
-  if (s === "OFFLINE") return styles.statusOffline;
-  if (s === "MAINTENANCE") return styles.statusMaintenance;
-  return styles.statusOffline;
+  // CSS modules con `noUncheckedIndexedAccess` retornan string|undefined.
+  // Las clases status* están definidas en el .module.css · non-null assertion.
+  if (s === "MOVING") return styles.statusMoving!;
+  if (s === "IDLE") return styles.statusIdle!;
+  if (s === "STOPPED") return styles.statusStopped!;
+  if (s === "OFFLINE") return styles.statusOffline!;
+  if (s === "MAINTENANCE") return styles.statusMaintenance!;
+  return styles.statusOffline!;
 }

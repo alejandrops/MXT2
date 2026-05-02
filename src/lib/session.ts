@@ -41,6 +41,10 @@ export interface SessionData {
     lastName: string;
     fullName: string;
     email: string;
+    /** Teléfono opcional · usado por la pantalla de "Mi perfil". */
+    phone: string | null;
+    /** DNI / documento · usado por "Mi perfil" y backoffice. */
+    documentNumber: string | null;
     organizationId: string;
     accountId: string | null;
     initials: string;
@@ -62,6 +66,8 @@ export interface SessionData {
     id: string;
     name: string;
     slug: string;
+    /** Plan comercial (BASE / PRO / ENTERPRISE) · null si user cross-account. */
+    tier: "BASE" | "PRO" | "ENTERPRISE";
   } | null;
   organization: {
     id: string;
@@ -183,7 +189,7 @@ type UserWithRelations = NonNullable<
   Awaited<ReturnType<typeof db.user.findFirst>>
 > & {
   profile: { id: string; systemKey: string; nameLabel: string; permissions: unknown };
-  account: { id: string; name: string; slug: string } | null;
+  account: { id: string; name: string; slug: string; tier: string } | null;
   organization: { id: string; name: string };
 };
 
@@ -199,6 +205,8 @@ function mapUser(u: UserWithRelations, authMode: AuthMode): SessionData {
       lastName: u.lastName,
       fullName,
       email: u.email,
+      phone: u.phone ?? null,
+      documentNumber: u.documentNumber ?? null,
       organizationId: u.organizationId,
       accountId: u.accountId,
       initials,
@@ -217,7 +225,12 @@ function mapUser(u: UserWithRelations, authMode: AuthMode): SessionData {
       permissions: u.profile.permissions,
     },
     account: u.account
-      ? { id: u.account.id, name: u.account.name, slug: u.account.slug }
+      ? {
+          id: u.account.id,
+          name: u.account.name,
+          slug: u.account.slug,
+          tier: u.account.tier as "BASE" | "PRO" | "ENTERPRISE",
+        }
       : null,
     organization: { id: u.organization.id, name: u.organization.name },
     authMode,

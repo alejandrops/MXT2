@@ -16,6 +16,19 @@ import type {
   Severity,
 } from "@/types/domain";
 
+// ─── Eventos de telemetría · ignición ─────────────────────────
+//
+//  Estos tipos NO se cuentan como "eventos de conducción/seguridad" ·
+//  son señales de operación del vehículo. Se filtran en queries que
+//  agregan eventos para reportes/boletín.
+//
+//  Tipado como `EventType[]` para que Prisma `notIn` lo acepte sin cast.
+
+export const TELEMETRY_EVENT_TYPES: EventType[] = [
+  "IGNITION_ON",
+  "IGNITION_OFF",
+];
+
 // ── Spanish labels for enum types ──────────────────────────────
 
 export const ALARM_DOMAIN_LABEL: Record<AlarmDomain, string> = {

@@ -143,5 +143,6 @@ export async function getAssetLiveStatus(
     commState,
     msSinceLastSeen,
     openAlarms,
+    primaryDevice,
   };
 }

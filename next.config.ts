@@ -1,13 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // ⚠️ Temporal · ignorar errors de typecheck/lint en build de producción.
-  // Hay code que necesita cleanup post-deploy (proyecto migró a strict TS
-  // pero parte del código pre-strict quedó con tipos sueltos). Tracking
-  // en lote L1 (futuro · TypeScript cleanup).
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // L1.5c · `typescript.ignoreBuildErrors` removido · typecheck ya pasa
+  // limpio (L1.5a + L1.5b cerraron los 119 errores preexistentes).
+  // De ahora en más, errors de TS rompen el build (lo deseable).
   eslint: {
     ignoreDuringBuilds: true,
   },
