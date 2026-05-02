@@ -534,3 +534,97 @@ export async function deleteAccountUser(input: {
     };
   }
 }
+
+// ─── S6 · Set password de otro user (admin only) ─────────────
+
+export async function setUserPassword(input: {
+  userId: string;
+  newPassword: string;
+}): Promise<ActionResult> {
+  const session = await getSession();
+
+  // No usar este flujo para cambiar la propia · ahí va el de
+  // /configuracion?section=seguridad (que pide la actual)
+  if (input.userId === session.user.id) {
+    return {
+      ok: false,
+      error:
+        "No podés cambiar tu propia contraseña desde acá. Usá Configuración > Seguridad.",
+    };
+  }
+
+  const targetUser = await db.user.findUnique({
+    where: { id: input.userId },
+    select: {
+      accountId: true,
+      email: true,
+      supabaseAuthId: true,
+    },
+  });
+
+  if (!targetUser?.accountId) {
+    return { ok: false, error: "Usuario no encontrado." };
+  }
+
+  const auth = await ensureCanManageAccount(targetUser.accountId);
+  if (!auth.ok) return auth;
+
+  // ── Validación de la nueva password ──
+  const newPass = input.newPassword.trim();
+  if (newPass.length < 8) {
+    return { ok: false, error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+  if (!/[a-zA-Z]/.test(newPass) || !/[0-9]/.test(newPass)) {
+    return { ok: false, error: "La contraseña debe incluir letras y números." };
+  }
+
+  // ── Necesita supabaseAuthId ──
+  if (!targetUser.supabaseAuthId) {
+    return {
+      ok: false,
+      error:
+        "Este usuario no tiene cuenta de Supabase Auth. Tenés que crear primero el user en Supabase Auth (Dashboard > Authentication > Users > Add user) con el email " +
+        targetUser.email +
+        " · una vez creado, copiá el ID generado y pegalo en la columna supabaseAuthId del user en la base de datos.",
+    };
+  }
+
+  // ── Modo de auth ──
+  const authMode = process.env.AUTH_MODE === "supabase" ? "supabase" : "demo";
+
+  if (authMode === "demo") {
+    // Cosmético en modo demo · no hay Supabase Auth real
+    return {
+      ok: true,
+      data: undefined,
+    };
+  }
+
+  // ── Llamar al admin API de Supabase ──
+  try {
+    const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      targetUser.supabaseAuthId,
+      { password: newPass },
+    );
+
+    if (error) {
+      console.error("[setUserPassword] supabase admin error:", error);
+      return {
+        ok: false,
+        error: error.message || "No se pudo actualizar la contraseña.",
+      };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error("[setUserPassword] unexpected error:", err);
+    const msg = err instanceof Error ? err.message : "Error inesperado.";
+    return {
+      ok: false,
+      error: msg,
+    };
+  }
+}

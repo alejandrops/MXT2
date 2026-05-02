@@ -12,6 +12,7 @@ import {
   Play,
   X,
   Info,
+  KeyRound,
 } from "lucide-react";
 import {
   createAccountUser,
@@ -21,6 +22,7 @@ import {
 } from "../actions-empresa";
 import sharedStyles from "../ConfiguracionPage.module.css";
 import styles from "./EmpresaUsuariosTab.module.css";
+import { SetPasswordModal } from "./SetPasswordModal";
 
 // ═══════════════════════════════════════════════════════════════
 //  Tab Empresa · Usuarios y permisos (S1)
@@ -75,6 +77,7 @@ export function EmpresaUsuariosTab({
 }: Props) {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
+  const [setPassUser, setSetPassUser] = useState<AccountUser | null>(null);
   const [feedback, setFeedback] = useState<
     { kind: "success" | "error"; text: string } | null
   >(null);
@@ -150,6 +153,7 @@ export function EmpresaUsuariosTab({
               assignableProfiles={assignableProfiles}
               onFeedback={showFeedback}
               onChange={() => router.refresh()}
+              onSetPass={() => setSetPassUser(user)}
             />
           ))}
           {users.length === 0 && (
@@ -174,6 +178,16 @@ export function EmpresaUsuariosTab({
           }}
         />
       )}
+
+      {setPassUser && (
+        <SetPasswordModal
+          user={setPassUser}
+          onClose={() => setSetPassUser(null)}
+          onSuccess={(message) => {
+            showFeedback("success", message);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -186,6 +200,7 @@ interface UserRowProps {
   assignableProfiles: AssignableProfile[];
   onFeedback: (kind: "success" | "error", text: string) => void;
   onChange: () => void;
+  onSetPass: () => void;
 }
 
 function UserRow({
@@ -194,6 +209,7 @@ function UserRow({
   assignableProfiles,
   onFeedback,
   onChange,
+  onSetPass,
 }: UserRowProps) {
   const [pending, startTransition] = useTransition();
   const [editingProfile, setEditingProfile] = useState(false);
@@ -342,6 +358,15 @@ function UserRow({
         <div className={styles.rowActions}>
           {!isCurrentUser && (
             <>
+              <button
+                type="button"
+                onClick={onSetPass}
+                className={styles.iconBtn}
+                disabled={pending}
+                title="Cambiar contraseña"
+              >
+                <KeyRound size={14} />
+              </button>
               <button
                 type="button"
                 onClick={handleToggleStatus}

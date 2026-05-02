@@ -205,6 +205,7 @@ export function ConfiguracionShell({
           account,
           accountUsers,
           assignableProfiles,
+          usage,
         )}
       </main>
     </div>
@@ -217,6 +218,7 @@ function renderSection(
   account: AccountWithSettings | null,
   accountUsers: AccountUser[] | null,
   assignableProfiles: AssignableProfile[] | null,
+  usage: { vehicles: number; users: number } | null,
 ) {
   switch (section) {
     case "perfil":
