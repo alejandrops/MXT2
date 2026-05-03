@@ -3,6 +3,7 @@ import {
   loadReportesData,
   parseReportesParams,
 } from "../_lib/loadReportesData";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "../reportes/page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -38,7 +39,9 @@ export default async function ResumenPage({ searchParams }: PageProps) {
   const result = await loadReportesData({ ...params, modo: effectiveModo });
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Resumen de actividad" />
+      <div className="appPage">
       {result.kind === "visual" && params.subject === "vehicles" ? (
         <ReportesClient
           layout="metrics"
@@ -67,5 +70,6 @@ export default async function ResumenPage({ searchParams }: PageProps) {
         <p>Estado inválido · refrescá la página.</p>
       )}
     </div>
+  </>
   );
 }

@@ -8,6 +8,7 @@ import { getSession } from "@/lib/session";
 import { AlarmCard, AlarmFilterBar, KpiTile, Pagination } from "@/components/maxtracker";
 import { parseAlarmsParams, buildAlarmsHref } from "@/lib/url-alarms";
 import { formatNumber } from "@/lib/format";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -73,7 +74,9 @@ export default async function AlarmasInboxPage({ searchParams }: PageProps) {
     statusCounts.DISMISSED;
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Alarmas" />
+      <div className="appPage">
       {/* ── KPI strip ───────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile
@@ -127,5 +130,6 @@ export default async function AlarmasInboxPage({ searchParams }: PageProps) {
         />
       )}
     </div>
+  </>
   );
 }

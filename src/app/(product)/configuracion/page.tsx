@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { ConfiguracionShell } from "./ConfiguracionShell";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./ConfiguracionPage.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -161,7 +162,9 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Configuración" />
+      <div className="appPage">
       <ConfiguracionShell
         session={session}
         activeSection={requestedSection}
@@ -175,5 +178,6 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
         isPlatformAdmin={isPlatformAdmin}
       />
     </div>
+  </>
   );
 }

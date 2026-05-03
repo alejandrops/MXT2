@@ -40,7 +40,7 @@ export function AlarmCard({ alarm }: AlarmCardProps) {
 
   return (
     <Link
-      href={`/catalogos/vehiculos/${alarm.assetId}`}
+      href={`/objeto/vehiculo/${alarm.assetId}`}
       className={`${styles.card} ${severityClass}`}
     >
       <span className={styles.dot} />

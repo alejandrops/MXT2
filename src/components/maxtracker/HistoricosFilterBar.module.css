@@ -1,3 +1,22 @@
+/* ═══════════════════════════════════════════════════════════════
+   HistoricosFilterBar · L3.E cleanup
+   ─────────────────────────────────────────────────────────────
+   Solo container con padding/borde tipo card y align-items
+   flex-start para alinear los labels arriba (mismo patrón que
+   AssetFilterBar, AlarmFilterBar, etc).
+
+   Removidas en L3.E (eran del HistoricosFilterBar legacy pre-L3.C):
+     · .select / .selectActive / .selectLabel / .selectNative
+     · .dateInput
+     · .timeInput
+     · .select:has(.timeInput)
+     · .clearBtn
+
+   Esos estilos eran para inputs nativos date/time que ya no
+   existen · DayWithTimePicker (L3-IA) los reemplazó por presets
+   semánticos.
+   ═══════════════════════════════════════════════════════════════ */
+
 .bar {
   display: flex;
   align-items: flex-start;

@@ -94,7 +94,7 @@ export function FleetSmallMultiples({ data, formatValue }: Props) {
             return (
               <Link
                 key={row.assetId}
-                href={`/catalogos/vehiculos/${row.assetId}`}
+                href={`/objeto/vehiculo/${row.assetId}`}
                 className={`${styles.card} ${anomalyClass}`}
               >
                 <header className={styles.cardHeader}>

@@ -2,6 +2,7 @@ import { getFleetReplay } from "@/lib/queries";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import { FleetTrackingClient } from "./FleetTrackingClient";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -29,8 +30,11 @@ export default async function MapaSeguimientoPage() {
   const { assets, groups } = await getFleetReplay(new Date(), scopedAccountId);
 
   return (
-    <div className={styles.page}>
-      <FleetTrackingClient initialAssets={assets} groups={groups} />
-    </div>
+    <>
+      <PageHeader variant="module" title="Mapa" />
+      <div className={`${styles.page} appPageFull`}>
+        <FleetTrackingClient initialAssets={assets} groups={groups} />
+      </div>
+    </>
   );
 }

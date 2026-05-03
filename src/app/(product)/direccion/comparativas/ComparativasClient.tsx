@@ -12,6 +12,7 @@ import { FleetSlopeChart } from "@/components/maxtracker/analysis/FleetSlopeChar
 import { MetricSelector } from "@/components/maxtracker/activity/MetricSelector";
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./ComparativasClient.module.css";
 
 const BASE_PATH = "/direccion/comparativas";
@@ -86,17 +87,13 @@ export function ComparativasClient({ data }: Props) {
   const isAnchorToday = data.anchorIso === todayIso;
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Comparativas</h1>
-          <p className={styles.sub}>
-            Slope chart · variación entre 2 períodos consecutivos. Cada
-            vehículo es una línea con pendiente · ideal para detectar quiénes
-            mejoraron o empeoraron significativamente.
-          </p>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        variant="module"
+        title="Comparativas"
+        subtitle="Slope chart · variación entre 2 períodos consecutivos. Cada vehículo es una línea con pendiente · ideal para detectar quiénes mejoraron o empeoraron significativamente."
+      />
+      <div className="appPage">
 
       <div className={styles.toolbar}>
         <MetricSelector value={data.metric} onChange={(m) => nav({ m })} />
@@ -120,6 +117,7 @@ export function ComparativasClient({ data }: Props) {
       <div className={styles.body}>
         <FleetSlopeChart data={data} formatValue={formatValue} />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

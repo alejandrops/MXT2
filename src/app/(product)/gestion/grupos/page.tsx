@@ -7,6 +7,7 @@ import {
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import { KpiTile } from "@/components/maxtracker";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -42,7 +43,9 @@ export default async function GruposPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Grupos" />
+      <div className="appPage">
       {/* ── KPI strip ──────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile label="Grupos totales" value={counts.totalGroups} />
@@ -137,5 +140,6 @@ export default async function GruposPage({ searchParams }: PageProps) {
         </div>
       )}
     </div>
+  </>
   );
 }

@@ -17,6 +17,7 @@ import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator"
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { ExportMenu, granularityToPeriod } from "@/components/maxtracker/ui";
 import { downloadCsv, csvNum, csvFilename } from "@/lib/utils/csv";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./DistributionView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -126,6 +127,13 @@ export function DistributionView({ data }: Props) {
     data.metric === "speedingCount" ||
     data.metric === "idleMin";
 
+  // L10 · count metrics formatean como int en Excel · el resto decimal
+  const isCount =
+    data.metric === "eventCount" ||
+    data.metric === "highEventCount" ||
+    data.metric === "speedingCount" ||
+    data.metric === "tripCount";
+
   // ── CSV export · usando util compartido ──────────────────────
   function exportCsv() {
     const headers = ["Vehículo", "Patente", "Grupo", "Δ%", "z"];
@@ -161,6 +169,55 @@ export function DistributionView({ data }: Props) {
     });
   }
 
+  // ── Excel export (L10) ──────────────────────────────────────
+  async function exportXlsx() {
+    // Construir columns + rows como en CSV pero con tipos
+    const columns: { header: string; width?: number; format?: "int" | "decimal1" | "text" }[] = [
+      { header: "Vehículo", width: 28 },
+      { header: "Patente", width: 12 },
+      { header: "Grupo", width: 20 },
+      { header: "Δ %", width: 10, format: "decimal1" },
+      { header: "z", width: 8, format: "decimal1" },
+    ];
+    for (let i = 0; i < data.colCount; i++) {
+      const lbl = data.colLabels.find((l) => l.col === i);
+      columns.push({
+        header: lbl?.label ?? `Col ${i + 1}`,
+        width: 14,
+        format: isCount ? "int" : "decimal1",
+      });
+    }
+    columns.push({
+      header: "Total",
+      width: 14,
+      format: isCount ? "int" : "decimal1",
+    });
+
+    const rows = data.rows.map((row) => {
+      const anomaly = anomaliesByAsset.get(row.assetId);
+      const cells: (string | number | null)[] = [
+        row.assetName,
+        row.assetPlate ?? "",
+        row.groupName ?? "",
+        row.previousDeltaPct === null ? null : row.previousDeltaPct * 100,
+        anomaly ? anomaly.zScore : null,
+      ];
+      for (let i = 0; i < data.colCount; i++) {
+        const c = row.cells.find((x) => x.col === i);
+        cells.push(c ? c.value : 0);
+      }
+      cells.push(row.total);
+      return cells;
+    });
+
+    await exportReportesXlsx({
+      subject: `Reporte ${data.granularity} · ${data.anchorIso}`,
+      sheetName: `reporte_${data.granularity}_${data.anchorIso}`,
+      columns,
+      rows,
+    });
+  }
+
   const printPeriod = granularityToPeriod(data.granularity);
 
   return (
@@ -177,7 +234,11 @@ export function DistributionView({ data }: Props) {
         />
         <div className={styles.toolbarSpacer} />
         <MetricSelector value={data.metric} onChange={setMetric} />
-        <ExportMenu onExportCsv={exportCsv} printPeriod={printPeriod} />
+        <ExportMenu
+          onExportCsv={exportCsv}
+          onExportXlsx={exportXlsx}
+          printPeriod={printPeriod}
+        />
       </div>
 
       {/* ── Scope filters ──────────────────────────────────── */}

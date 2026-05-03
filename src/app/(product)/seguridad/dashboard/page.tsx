@@ -13,6 +13,7 @@ import {
   KpiTile,
   SectionHeader,
 } from "@/components/maxtracker";
+import { PageHeader } from "@/components/maxtracker/ui";
 import { formatNumber } from "@/lib/format";
 import styles from "./page.module.css";
 
@@ -51,7 +52,13 @@ export default async function SeguridadDashboardPage() {
   ]);
 
   return (
-    <div className={styles.dashboard}>
+    <>
+      <PageHeader
+        variant="module"
+        title="Dashboard de seguridad"
+        subtitle="Estado en tiempo real · alarmas activas, assets críticos y eventos recientes"
+      />
+      <div className="appPage">
       {/* ── KPI Strip ──────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile
@@ -144,6 +151,7 @@ export default async function SeguridadDashboardPage() {
           </section>
         </aside>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

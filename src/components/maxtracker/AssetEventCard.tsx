@@ -21,7 +21,7 @@ interface AssetEventCardProps {
 export function AssetEventCard({ asset }: AssetEventCardProps) {
   return (
     <Link
-      href={`/catalogos/vehiculos/${asset.id}`}
+      href={`/objeto/vehiculo/${asset.id}`}
       className={styles.card}
     >
       <div className={styles.body}>

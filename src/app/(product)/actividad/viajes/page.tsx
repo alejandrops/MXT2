@@ -12,6 +12,8 @@ import { parseTripsParams } from "@/lib/url-trips";
 import { TripsFilterBar } from "@/components/maxtracker/TripsFilterBar";
 import { TripsKpiStrip } from "@/components/maxtracker/TripsKpiStrip";
 import { TripsClient } from "./TripsClient";
+import { TripsExportButton } from "./TripsExportButton";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -85,7 +87,9 @@ export default async function ViajesPage({ searchParams }: PageProps) {
   const kpis = aggregateTripKpis(tripsForKpis);
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Viajes" />
+      <div className="appPage--dense">
       <TripsFilterBar
         current={params}
         assets={assets}
@@ -93,7 +97,10 @@ export default async function ViajesPage({ searchParams }: PageProps) {
         drivers={drivers}
       />
 
-      <TripsKpiStrip kpis={kpis} />
+      <div className={styles.kpiRow}>
+        <TripsKpiStrip kpis={kpis} />
+        <TripsExportButton params={params} />
+      </div>
 
       <div className={styles.bodyWrap}>
         <TripsClient
@@ -103,5 +110,6 @@ export default async function ViajesPage({ searchParams }: PageProps) {
         />
       </div>
     </div>
+  </>
   );
 }

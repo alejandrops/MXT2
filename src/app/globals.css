@@ -332,3 +332,45 @@ a {
 [data-theme="light"] {
   color-scheme: light;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   L5.A · Container patterns globales para pantallas
+   ─────────────────────────────────────────────────────────────
+   Coherencia: todas las pantallas usan una de estas 2 clases.
+
+   .appPage         · default · scroll vertical, padding estándar
+                      Ej: catálogos, alarmas, reportes, boletín
+   .appPageFull     · sin scroll · pantalla completa
+                      Ej: torre de control, mapa, historial
+
+   Ambas asumen que arriba viene el PageHeader (que tiene su
+   propio padding y border-bottom). Estas clases NO incluyen el
+   padding del header · solo el del contenido debajo.
+   ═══════════════════════════════════════════════════════════════ */
+
+.appPage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 40px;
+  width: 100%;
+  max-width: 1280px;
+  box-sizing: border-box;
+}
+
+.appPageFull {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: calc(100vh - var(--th, 50px) - var(--ph, 56px));
+  /* --th: topbar height · --ph: PageHeader height (estimada) */
+  width: 100%;
+  gap: 0;
+  /* sin padding · cada child decide */
+}
+
+/* Variante densa (menos padding · para pantallas con filter bar
+   alto que ya da air) */
+.appPage--dense {
+  padding: 12px 20px 24px;
+  gap: 10px;
+}

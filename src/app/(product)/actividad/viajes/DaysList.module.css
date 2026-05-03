@@ -165,3 +165,27 @@
   color: #DC2626;
   font-weight: 500;
 }
+
+/* L11 · drill-down links · subrayado en hover, color heredado */
+
+.assetLink,
+.driverLink {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.assetLink:hover,
+.driverLink:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--accBlu, #2563eb);
+  text-underline-offset: 2px;
+}
+
+.assetLink:focus-visible,
+.driverLink:focus-visible {
+  outline: 2px solid var(--accBlu, #2563eb);
+  outline-offset: 1px;
+  border-radius: 2px;
+}

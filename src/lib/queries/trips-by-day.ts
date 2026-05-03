@@ -70,6 +70,8 @@ export interface Day {
   assetName: string;
   assetPlate: string | null;
   driverName: string | null;
+  /** Person ID del conductor · necesario para drill-down · null si día sin conductor */
+  driverId: string | null;
   /** Métricas resumen del día */
   totalDistanceKm: number;
   tripCount: number;
@@ -222,6 +224,7 @@ export async function listTripsAndStopsByDay(
         driverName: t.person
           ? `${t.person.firstName} ${t.person.lastName}`.trim()
           : null,
+        driverId: t.personId ?? null,
         totalDistanceKm: 0,
         tripCount: 0,
         stopCount: 0,

@@ -167,7 +167,7 @@ export function DriverCard({ driver }: { driver: DriverInfo }) {
     <>
       <SectionHeader label="Conductor" />
       <Link
-        href={`/catalogos/conductores/${driver.id}`}
+        href={`/objeto/conductor/${driver.id}`}
         className={styles.driverCard}
       >
         <span className={styles.avatar} aria-hidden="true">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Day } from "@/lib/queries/trips-by-day";
 import styles from "./DaysList.module.css";
 
@@ -12,6 +13,10 @@ import styles from "./DaysList.module.css";
 //
 //  Click en fila → onSelectDay(dayId) → abre panel lateral con
 //  timeline cronológica del día. Click otra vez = deselecciona.
+//
+//  L11 · drill-down · click en nombre del vehículo o conductor
+//  navega al libro del objeto · usa e.stopPropagation() para no
+//  abrir también el panel lateral.
 //
 //  Header sticky para que las columnas siempre se vean al scroll.
 // ═══════════════════════════════════════════════════════════════
@@ -104,13 +109,29 @@ function Row({
     >
       <td className={styles.tdDay}>{formatDay(day.dayIso)}</td>
       <td className={styles.tdAsset}>
-        <span className={styles.assetName}>{day.assetName}</span>
-        {day.assetPlate && (
-          <span className={styles.plate}> · {day.assetPlate}</span>
-        )}
+        <Link
+          href={`/objeto/vehiculo/${day.assetId}`}
+          className={styles.assetLink}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className={styles.assetName}>{day.assetName}</span>
+          {day.assetPlate && (
+            <span className={styles.plate}> · {day.assetPlate}</span>
+          )}
+        </Link>
       </td>
       <td className={styles.tdDriver}>
-        {day.driverName ?? <span className={styles.dim}>—</span>}
+        {day.driverId && day.driverName ? (
+          <Link
+            href={`/objeto/conductor/${day.driverId}`}
+            className={styles.driverLink}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {day.driverName}
+          </Link>
+        ) : (
+          <span className={styles.dim}>—</span>
+        )}
       </td>
       <td className={styles.tdNum}>
         {formatKm(day.totalDistanceKm)}

@@ -13,6 +13,7 @@ import { MetricSelector } from "@/components/maxtracker/activity/MetricSelector"
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import styles from "./CorrelacionesClient.module.css";
+import { PageHeader } from "@/components/maxtracker/ui";
 
 const BASE_PATH = "/direccion/correlaciones";
 
@@ -88,16 +89,13 @@ export function CorrelacionesClient({
   const isAnchorToday = data.anchorIso === todayIso;
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Correlaciones</h1>
-          <p className={styles.sub}>
-            Scatter · cada vehículo es un punto. Permite explorar
-            correlaciones entre dos métricas a nivel de flota.
-          </p>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        variant="module"
+        title="Correlaciones"
+        subtitle="Scatter · cada vehículo es un punto. Permite explorar correlaciones entre dos métricas a nivel de flota."
+      />
+      <div className="appPage">
 
       <div className={styles.toolbar}>
         <span className={styles.axisLabel}>Eje X</span>
@@ -138,7 +136,8 @@ export function CorrelacionesClient({
           formatValue={formatValue}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -108,7 +108,7 @@ export function FleetHeatmap({ data, onDrill, formatValue }: Props) {
                 <tr key={row.assetId} className={styles.row}>
                   <td className={styles.tdAsset}>
                     <Link
-                      href={`/catalogos/vehiculos/${row.assetId}`}
+                      href={`/objeto/vehiculo/${row.assetId}`}
                       className={styles.assetLink}
                     >
                       <span className={styles.assetName}>

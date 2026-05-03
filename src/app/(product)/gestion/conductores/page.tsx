@@ -16,6 +16,7 @@ import {
   parseDriversParams,
 } from "@/lib/url-drivers";
 import { formatNumber } from "@/lib/format";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -59,7 +60,9 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Conductores" />
+      <div className="appPage">
       {/* ── KPI strip ─────────────────────────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile label="Total" value={formatNumber(counts.total)} />
@@ -106,5 +109,6 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
         buildHref={(page) => buildDriversHref(params, { page })}
       />
     </div>
+  </>
   );
 }

@@ -42,12 +42,28 @@ export function TripDetailPanel({
       <header className={styles.panelHeader}>
         <div className={styles.titleWrap}>
           <h3 className={styles.title}>
-            {formatDay(day.dayIso)} · {day.assetName}
+            {formatDay(day.dayIso)} ·{" "}
+            <Link
+              href={`/objeto/vehiculo/${day.assetId}`}
+              className={styles.titleLink}
+            >
+              {day.assetName}
+            </Link>
           </h3>
           <span className={styles.subtitle}>
             {day.assetPlate && <>{day.assetPlate}</>}
             {day.assetPlate && day.driverName && <> · </>}
-            {day.driverName && <>{day.driverName}</>}
+            {day.driverName &&
+              (day.driverId ? (
+                <Link
+                  href={`/objeto/conductor/${day.driverId}`}
+                  className={styles.subtitleLink}
+                >
+                  {day.driverName}
+                </Link>
+              ) : (
+                <>{day.driverName}</>
+              ))}
           </span>
         </div>
         <button

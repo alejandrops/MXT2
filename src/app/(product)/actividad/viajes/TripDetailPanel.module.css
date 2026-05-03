@@ -345,3 +345,27 @@
 .replayLink:hover {
   text-decoration: underline;
 }
+
+/* L11 · drill-down · links en header del panel */
+
+.titleLink,
+.subtitleLink {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 80ms ease;
+}
+
+.titleLink:hover,
+.subtitleLink:hover {
+  color: var(--accBlu, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.titleLink:focus-visible,
+.subtitleLink:focus-visible {
+  outline: 2px solid var(--accBlu, #2563eb);
+  outline-offset: 1px;
+  border-radius: 2px;
+}

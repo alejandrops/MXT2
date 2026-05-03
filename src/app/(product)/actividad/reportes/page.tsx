@@ -8,6 +8,7 @@ import {
   type ScopeFilters,
 } from "@/lib/queries";
 import { ReportesClient } from "./ReportesClient";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -134,13 +135,16 @@ export default async function ReportesPage({ searchParams }: PageProps) {
     });
 
     return (
-      <div className={styles.page}>
-        <ReportesClient
-          modo="visual"
-          vista={vista}
-          visualData={data}
-        />
-      </div>
+      <>
+        <PageHeader variant="module" title="Reportes" />
+        <div className="appPage">
+          <ReportesClient
+            modo="visual"
+            vista={vista}
+            visualData={data}
+          />
+        </div>
+      </>
     );
   }
 
@@ -174,14 +178,17 @@ export default async function ReportesPage({ searchParams }: PageProps) {
       scope,
     });
     return (
-      <div className={styles.page}>
+      <>
+        <PageHeader variant="module" title="Reportes" />
+        <div className="appPage">
         <ReportesClient
           modo="tabla"
           subject="vehicles"
           layout="time"
           data={data}
         />
-      </div>
+        </div>
+      </>
     );
   }
   if (subject === "vehicles" && layout === "metrics") {
@@ -192,14 +199,17 @@ export default async function ReportesPage({ searchParams }: PageProps) {
       scope,
     });
     return (
-      <div className={styles.page}>
+      <>
+        <PageHeader variant="module" title="Reportes" />
+        <div className="appPage">
         <ReportesClient
           modo="tabla"
           subject="vehicles"
           layout="metrics"
           multiData={multiData}
         />
-      </div>
+        </div>
+      </>
     );
   }
   if (subject === "drivers" && layout === "time") {
@@ -210,14 +220,17 @@ export default async function ReportesPage({ searchParams }: PageProps) {
       scope,
     });
     return (
-      <div className={styles.page}>
+      <>
+        <PageHeader variant="module" title="Reportes" />
+        <div className="appPage">
         <ReportesClient
           modo="tabla"
           subject="drivers"
           layout="time"
           driversData={driversData}
         />
-      </div>
+        </div>
+      </>
     );
   }
   // drivers + metrics
@@ -228,13 +241,16 @@ export default async function ReportesPage({ searchParams }: PageProps) {
     scope,
   });
   return (
-    <div className={styles.page}>
-      <ReportesClient
-        modo="tabla"
-        subject="drivers"
-        layout="metrics"
-        driversMultiData={driversMultiData}
-      />
-    </div>
+    <>
+      <PageHeader variant="module" title="Reportes" />
+      <div className="appPage">
+        <ReportesClient
+          modo="tabla"
+          subject="drivers"
+          layout="metrics"
+          driversMultiData={driversMultiData}
+        />
+      </div>
+    </>
   );
 }

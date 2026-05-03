@@ -3,6 +3,7 @@ import {
   loadReportesData,
   parseReportesParams,
 } from "../_lib/loadReportesData";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "../reportes/page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -38,7 +39,9 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
   const result = await loadReportesData({ ...params, modo: effectiveModo });
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Evolución temporal" />
+      <div className="appPage">
       {result.kind === "visual" && params.subject === "vehicles" ? (
         <ReportesClient
           layout="time"
@@ -70,5 +73,6 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
         <p>Estado inválido · refrescá la página.</p>
       )}
     </div>
+  </>
   );
 }

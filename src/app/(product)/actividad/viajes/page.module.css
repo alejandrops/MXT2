@@ -37,3 +37,17 @@
   min-height: 0;
   min-width: 0;
 }
+
+/* L10 · KPI strip + Export button en línea */
+.kpiRow {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kpiRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}

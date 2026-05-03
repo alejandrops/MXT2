@@ -13,6 +13,7 @@ import {
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { ExportMenu, granularityToPeriod } from "@/components/maxtracker/ui";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./DriversMultiMetricView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -138,6 +139,43 @@ export function DriversMultiMetricView({ data }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  // ── Excel export (L10) ──────────────────────────────────────
+  async function exportXlsx() {
+    const columns: { header: string; width?: number; format?: "int" | "decimal1" | "text" }[] = [
+      { header: "Conductor", width: 28 },
+      { header: "Vehículos", width: 10, format: "int" },
+    ];
+    for (const c of COLS) {
+      columns.push({ header: c.label, width: 14, format: "decimal1" });
+      columns.push({ header: `Δ% ${c.short}`, width: 10, format: "decimal1" });
+    }
+
+    const rows = data.rows.map((r) => {
+      const cells: (string | number | null)[] = [r.personName, r.vehiclesUsed];
+      for (const c of COLS) {
+        const cell = r.metrics[c.key];
+        cells.push(cell.value);
+        cells.push(cell.deltaPct === null ? null : cell.deltaPct * 100);
+      }
+      return cells;
+    });
+
+    const footCells: (string | number | null)[] = ["Total flota", ""];
+    for (const c of COLS) {
+      const t = data.totals[c.key];
+      footCells.push(t.value);
+      footCells.push(t.deltaPct === null ? null : t.deltaPct * 100);
+    }
+    rows.push(footCells);
+
+    await exportReportesXlsx({
+      subject: `Reporte conductores multi-métrica · ${data.granularity} · ${data.anchorIso}`,
+      sheetName: `conductores_multi_${data.granularity}_${data.anchorIso}`,
+      columns,
+      rows,
+    });
+  }
+
   return (
     <>
       {/* Toolbar */}
@@ -153,6 +191,7 @@ export function DriversMultiMetricView({ data }: Props) {
         <div className={styles.toolbarSpacer} />
         <ExportMenu
           onExportCsv={exportCsv}
+          onExportXlsx={exportXlsx}
           printPeriod={granularityToPeriod(data.granularity)}
         />
       </div>

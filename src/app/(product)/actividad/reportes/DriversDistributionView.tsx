@@ -17,6 +17,7 @@ import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator"
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { ExportMenu, granularityToPeriod } from "@/components/maxtracker/ui";
 import { downloadCsv, csvNum, csvFilename as csvFn } from "@/lib/utils/csv";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./DriversDistributionView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -183,6 +184,67 @@ export function DriversDistributionView({ data }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  // ── Excel export (L10) ──────────────────────────────────────
+  async function exportXlsx() {
+    const cols =
+      data.colLabels.length === data.colCount
+        ? data.colLabels.map((l) => l.label)
+        : Array.from({ length: data.colCount }, (_, i) => {
+            const lbl = data.colLabels.find((l) => l.col === i);
+            return lbl?.label ?? `Col ${i + 1}`;
+          });
+
+    const columns: { header: string; width?: number; format?: "int" | "decimal1" | "text" }[] = [
+      { header: "Conductor", width: 28 },
+      { header: "Vehículos", width: 10, format: "int" },
+      { header: "Δ %", width: 10, format: "decimal1" },
+      { header: "z-score", width: 10, format: "decimal1" },
+    ];
+    for (const c of cols) {
+      columns.push({ header: c, width: 14, format: "decimal1" });
+    }
+    columns.push({ header: "Total", width: 14, format: "decimal1" });
+
+    const rows = data.rows.map((r) => {
+      const anomaly = anomalyById.get(r.personId);
+      const cells: (string | number | null)[] = [
+        r.personName,
+        r.vehiclesUsed,
+        r.previousDeltaPct === null ? null : r.previousDeltaPct * 100,
+        anomaly ? anomaly.zScore : null,
+      ];
+      for (let i = 0; i < data.colCount; i++) {
+        const c = r.cells.find((x) => x.col === i);
+        cells.push(c?.value ?? 0);
+      }
+      cells.push(r.total);
+      return cells;
+    });
+
+    // Footer · Total flota
+    const footCells: (string | number | null)[] = ["Total flota", "", null, null];
+    for (let i = 0; i < data.colCount; i++) {
+      let sum = 0;
+      let max = 0;
+      for (const r of data.rows) {
+        const c = r.cells.find((x) => x.col === i);
+        if (!c) continue;
+        sum += c.value;
+        if (c.value > max) max = c.value;
+      }
+      footCells.push(data.metric === "maxSpeedKmh" ? max : sum);
+    }
+    footCells.push(data.total);
+    rows.push(footCells);
+
+    await exportReportesXlsx({
+      subject: `Reporte conductores · ${data.granularity} · ${data.anchorIso}`,
+      sheetName: `conductores_${data.granularity}_${data.anchorIso}`,
+      columns,
+      rows,
+    });
+  }
+
   return (
     <>
       {/* ── Toolbar · navigator + metric + export ───────────── */}
@@ -199,6 +261,7 @@ export function DriversDistributionView({ data }: Props) {
         <MetricSelector value={data.metric} onChange={setMetric} />
         <ExportMenu
           onExportCsv={exportCsv}
+          onExportXlsx={exportXlsx}
           printPeriod={granularityToPeriod(data.granularity)}
         />
       </div>

@@ -7,6 +7,7 @@ import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import { parseTorreUrl } from "@/lib/url-torre";
 import { TorreClient } from "./TorreClient";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -57,14 +58,17 @@ export default async function TorreDeControlPage({ searchParams }: PageProps) {
     : null;
 
   return (
-    <div className={styles.page}>
-      <TorreClient
-        urlState={urlState}
-        queue={queue}
-        kpis={kpis}
-        detail={detail}
-        activeAlarmId={activeAlarmId}
-      />
-    </div>
+    <>
+      <PageHeader variant="module" title="Torre de control" />
+      <div className={`${styles.page} appPageFull`}>
+        <TorreClient
+          urlState={urlState}
+          queue={queue}
+          kpis={kpis}
+          detail={detail}
+          activeAlarmId={activeAlarmId}
+        />
+      </div>
+    </>
   );
 }

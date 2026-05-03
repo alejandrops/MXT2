@@ -1,33 +1,32 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Download, ChevronDown, FileText, Printer } from "lucide-react";
+import {
+  Download,
+  ChevronDown,
+  FileText,
+  Printer,
+  FileSpreadsheet,
+} from "lucide-react";
 import type { AnalysisGranularity } from "@/lib/queries";
 import styles from "./ExportMenu.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  ExportMenu · unifica CSV + Imprimir en un solo punto
+//  ExportMenu · L10 · CSV + Excel + Imprimir
 //  ─────────────────────────────────────────────────────────────
 //  Reemplaza:
 //    · botones "Exportar CSV" individuales en cada View
 //    · botón "Imprimible mensual" hardcodeado
 //    · PrintMenu standalone
 //
-//  Comportamiento:
-//    · si solo se pasa onExportCsv (sin printPeriod) · botón directo
-//      "Exportar CSV"
-//    · si solo se pasa printPeriod (sin onExportCsv) · botón directo
-//      "Imprimir"
-//    · si ambos se pasan · dropdown "Exportar ▾" con 2 opciones
+//  Comportamiento (post-L10):
+//    · si solo se pasa onExportCsv · botón directo "Exportar CSV"
+//    · si solo se pasa onExportXlsx · botón directo "Exportar Excel"
+//    · si solo se pasa printPeriod · botón directo "Imprimir"
+//    · 2 o más opciones · dropdown "Exportar ▾"
 //
-//  Esto colapsa naturalmente: pantallas que solo exportan CSV
-//  ven un botón simple, pantallas con ambas capacidades ven el
-//  dropdown · cero ruido.
-//
-//  Imprimir abre el imprimible HTML en pestaña nueva. Desde ahí
-//  el usuario elige "Imprimir" (papel) o "Guardar como PDF"
-//  (archivo) en el diálogo del SO. No hay generación PDF en
-//  servidor en MVP.
+//  Imprimir abre el imprimible HTML en pestaña nueva. Excel
+//  triggea download via fetch + Blob.
 // ═══════════════════════════════════════════════════════════════
 
 export type PrintPeriodKey = "semanal" | "mensual" | "anual";
@@ -37,6 +36,8 @@ const DEFAULT_PRINT_BASE = "/actividad/reportes/imprimible";
 interface Props {
   /** Handler para exportar CSV · si null, no aparece la opción */
   onExportCsv?: (() => void) | null;
+  /** Handler para exportar Excel · si null, no aparece la opción */
+  onExportXlsx?: (() => void) | null;
   /** Período del imprimible · si null, no aparece la opción */
   printPeriod?: PrintPeriodKey | null;
   /** Override del path base del imprimible */
@@ -45,14 +46,16 @@ interface Props {
 
 export function ExportMenu({
   onExportCsv,
+  onExportXlsx,
   printPeriod,
   printBasePath = DEFAULT_PRINT_BASE,
 }: Props) {
   const hasCsv = !!onExportCsv;
+  const hasXlsx = !!onExportXlsx;
   const hasPrint = printPeriod != null;
 
   // Nada que mostrar
-  if (!hasCsv && !hasPrint) return null;
+  if (!hasCsv && !hasXlsx && !hasPrint) return null;
 
   function handlePrint() {
     if (!printPeriod) return;
@@ -60,41 +63,57 @@ export function ExportMenu({
     window.open(href, "_blank", "noopener,noreferrer");
   }
 
-  // Solo CSV · botón directo
-  if (hasCsv && !hasPrint) {
-    return (
-      <button
-        type="button"
-        className={styles.button}
-        onClick={onExportCsv}
-        title="Exportar a CSV"
-      >
-        <Download size={13} />
-        <span>Exportar CSV</span>
-      </button>
-    );
+  // 1 sola opción · botón directo
+  const optionsCount = (hasCsv ? 1 : 0) + (hasXlsx ? 1 : 0) + (hasPrint ? 1 : 0);
+
+  if (optionsCount === 1) {
+    if (hasCsv) {
+      return (
+        <button
+          type="button"
+          className={styles.button}
+          onClick={onExportCsv}
+          title="Exportar a CSV"
+        >
+          <Download size={13} />
+          <span>Exportar CSV</span>
+        </button>
+      );
+    }
+    if (hasXlsx) {
+      return (
+        <button
+          type="button"
+          className={styles.button}
+          onClick={onExportXlsx}
+          title="Exportar a Excel"
+        >
+          <FileSpreadsheet size={13} />
+          <span>Exportar Excel</span>
+        </button>
+      );
+    }
+    if (hasPrint) {
+      return (
+        <button
+          type="button"
+          className={styles.button}
+          onClick={handlePrint}
+          title="Imprimir o guardar como PDF"
+        >
+          <Printer size={13} />
+          <span>Imprimir</span>
+        </button>
+      );
+    }
   }
 
-  // Solo Print · botón directo
-  if (!hasCsv && hasPrint) {
-    return (
-      <button
-        type="button"
-        className={styles.button}
-        onClick={handlePrint}
-        title="Imprimir o guardar como PDF"
-      >
-        <Printer size={13} />
-        <span>Imprimir</span>
-      </button>
-    );
-  }
-
-  // Ambas · dropdown
+  // 2+ opciones · dropdown
   return (
     <Dropdown
-      onCsv={onExportCsv!}
-      onPrint={handlePrint}
+      onCsv={hasCsv ? onExportCsv : null}
+      onXlsx={hasXlsx ? onExportXlsx : null}
+      onPrint={hasPrint ? handlePrint : null}
     />
   );
 }
@@ -103,10 +122,12 @@ export function ExportMenu({
 
 function Dropdown({
   onCsv,
+  onXlsx,
   onPrint,
 }: {
-  onCsv: () => void;
-  onPrint: () => void;
+  onCsv: (() => void) | null | undefined;
+  onXlsx: (() => void) | null | undefined;
+  onPrint: (() => void) | null | undefined;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -130,11 +151,15 @@ function Dropdown({
   }, [open]);
 
   function handleCsv() {
-    onCsv();
+    onCsv?.();
+    setOpen(false);
+  }
+  function handleXlsx() {
+    onXlsx?.();
     setOpen(false);
   }
   function handlePrint() {
-    onPrint();
+    onPrint?.();
     setOpen(false);
   }
 
@@ -157,24 +182,39 @@ function Dropdown({
 
       {open && (
         <div className={styles.menu} role="menu">
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.menuItem}
-            onClick={handleCsv}
-          >
-            <FileText size={13} className={styles.menuIcon} />
-            <span>CSV</span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.menuItem}
-            onClick={handlePrint}
-          >
-            <Printer size={13} className={styles.menuIcon} />
-            <span>Imprimir / PDF</span>
-          </button>
+          {onCsv && (
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.menuItem}
+              onClick={handleCsv}
+            >
+              <FileText size={13} className={styles.menuIcon} />
+              <span>CSV</span>
+            </button>
+          )}
+          {onXlsx && (
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.menuItem}
+              onClick={handleXlsx}
+            >
+              <FileSpreadsheet size={13} className={styles.menuIcon} />
+              <span>Excel (.xlsx)</span>
+            </button>
+          )}
+          {onPrint && (
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.menuItem}
+              onClick={handlePrint}
+            >
+              <Printer size={13} className={styles.menuIcon} />
+              <span>Imprimir / PDF</span>
+            </button>
+          )}
         </div>
       )}
     </div>

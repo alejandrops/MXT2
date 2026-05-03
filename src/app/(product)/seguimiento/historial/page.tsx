@@ -12,6 +12,7 @@ import {
 } from "@/lib/url-historicos";
 import { RoutePlayback } from "./RoutePlayback";
 import { HistoricosLastSeenSync } from "./HistoricosLastSeenSync";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -77,38 +78,41 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
     : null;
 
   return (
-    <div className={styles.page}>
-      <HistoricosFilterBar
-        current={{
-          assetId: effectiveAssetId,
-          date: effectiveDate,
-          fromTime: params.fromTime,
-          toTime: params.toTime,
-        }}
-        assets={assets}
-      />
+    <>
+      <PageHeader variant="module" title="Historial" />
+      <div className={`${styles.page} appPageFull`}>
+        <HistoricosFilterBar
+          current={{
+            assetId: effectiveAssetId,
+            date: effectiveDate,
+            fromTime: params.fromTime,
+            toTime: params.toTime,
+          }}
+          assets={assets}
+        />
 
-      {/* Client-side: if URL had no assetId but localStorage has
-          a last-seen asset, redirect there. Otherwise · just save
-          the current selection for next time. */}
-      <HistoricosLastSeenSync
-        urlHadAssetId={params.assetId !== null}
-        currentAssetId={effectiveAssetId}
-        currentDate={effectiveDate}
-        availableAssetIds={assets.map((a) => a.id)}
-      />
+        {/* Client-side: if URL had no assetId but localStorage has
+            a last-seen asset, redirect there. Otherwise · just save
+            the current selection for next time. */}
+        <HistoricosLastSeenSync
+          urlHadAssetId={params.assetId !== null}
+          currentAssetId={effectiveAssetId}
+          currentDate={effectiveDate}
+          availableAssetIds={assets.map((a) => a.id)}
+        />
 
-      {!effectiveAssetId ? (
-        <div className={styles.prompt}>
-          No hay vehículos disponibles para mostrar.
-        </div>
-      ) : !trajectory ? (
-        <div className={styles.prompt}>
-          No se encontró el asset solicitado.
-        </div>
-      ) : (
-        <RoutePlayback trajectory={trajectory} />
-      )}
-    </div>
+        {!effectiveAssetId ? (
+          <div className={styles.prompt}>
+            No hay vehículos disponibles para mostrar.
+          </div>
+        ) : !trajectory ? (
+          <div className={styles.prompt}>
+            No se encontró el asset solicitado.
+          </div>
+        ) : (
+          <RoutePlayback trajectory={trajectory} />
+        )}
+      </div>
+    </>
   );
 }

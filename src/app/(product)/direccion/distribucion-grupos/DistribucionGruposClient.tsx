@@ -13,6 +13,7 @@ import { MetricSelector } from "@/components/maxtracker/activity/MetricSelector"
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import styles from "./DistribucionGruposClient.module.css";
+import { PageHeader } from "@/components/maxtracker/ui";
 
 const BASE_PATH = "/direccion/distribucion-grupos";
 
@@ -86,17 +87,13 @@ export function DistribucionGruposClient({ data }: Props) {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Distribución por grupo</h1>
-          <p className={styles.sub}>
-            Box plot · cada grupo de vehículos como caja con su Q1, mediana, Q3
-            y outliers. Útil para detectar heterogeneidad operativa
-            intragrupal.
-          </p>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        variant="module"
+        title="Distribución por grupo"
+        subtitle="Box plot · cada grupo de vehículos como caja con su Q1, mediana, Q3 y outliers. Útil para detectar heterogeneidad operativa intragrupal."
+      />
+      <div className="appPage">
 
       <div className={styles.toolbar}>
         <MetricSelector
@@ -123,6 +120,7 @@ export function DistribucionGruposClient({ data }: Props) {
       <div className={styles.body}>
         <FleetBoxPlot data={data} formatValue={formatValue} />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

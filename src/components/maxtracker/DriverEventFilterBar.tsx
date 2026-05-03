@@ -95,7 +95,7 @@ export function DriverEventFilterBar({
 
       {hasActiveDriverEventsFilters(current) && (
         <Link
-          href={`/catalogos/conductores/${personId}?tab=eventos`}
+          href={`/objeto/conductor/${personId}?m=seguridad`}
           className={styles.clearAll}
           scroll={false}
         >

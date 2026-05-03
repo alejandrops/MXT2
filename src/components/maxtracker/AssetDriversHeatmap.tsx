@@ -13,7 +13,7 @@ import styles from "./AssetDriversHeatmap.module.css";
 //    · Columnas = semanas (52-53), oldest left, newest right
 //    · Color = paleta determinística por chofer (colorSlot 0..5)
 //    · Intensidad = km de la semana / maxWeekKm (4 niveles + 0)
-//    · Click en celda con datos → navega a /catalogos/conductores/[id]
+//    · Click en celda con datos → navega a /objeto/conductor/[id]
 //    · Hover muestra tooltip con nombre, semana y km
 // ═══════════════════════════════════════════════════════════════
 
@@ -77,7 +77,7 @@ export function AssetDriversHeatmap({ data }: Props) {
   }
 
   const handleCellClick = (cell: CellInfo) => {
-    router.push(`/catalogos/conductores/${cell.personId}`);
+    router.push(`/objeto/conductor/${cell.personId}`);
   };
 
   return (
@@ -113,7 +113,7 @@ export function AssetDriversHeatmap({ data }: Props) {
                 type="button"
                 className={styles.driverNameBtn}
                 onClick={() =>
-                  router.push(`/catalogos/conductores/${driver.personId}`)
+                  router.push(`/objeto/conductor/${driver.personId}`)
                 }
                 title={`Ver detalle de ${driver.firstName} ${driver.lastName}`}
               >

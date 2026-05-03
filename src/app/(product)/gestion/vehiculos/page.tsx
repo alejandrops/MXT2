@@ -14,6 +14,7 @@ import {
 } from "@/components/maxtracker";
 import { parseAssetsParams, buildAssetsHref } from "@/lib/url";
 import { formatNumber } from "@/lib/format";
+import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -70,7 +71,9 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className={styles.page}>
+    <>
+      <PageHeader variant="module" title="Vehículos" />
+      <div className="appPage">
       {/* ── KPI Strip · status distribution ────────────────── */}
       <div className={styles.kpiStrip}>
         <KpiTile label="Total" value={formatNumber(statusCounts.total)} />
@@ -114,5 +117,6 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
         buildHref={(page) => buildAssetsHref(params, { page })}
       />
     </div>
+  </>
   );
 }

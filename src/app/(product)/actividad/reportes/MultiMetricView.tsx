@@ -14,6 +14,7 @@ import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator"
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { ExportMenu, granularityToPeriod } from "@/components/maxtracker/ui";
 import { downloadCsv, csvNum, csvFilename } from "@/lib/utils/csv";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./MultiMetricView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -125,6 +126,49 @@ export function MultiMetricView({ data }: Props) {
     });
   }
 
+  // ── Excel export (L10) ──────────────────────────────────────
+  async function exportXlsx() {
+    const columns: { header: string; width?: number; format?: "int" | "decimal1" | "text" }[] = [
+      { header: "Vehículo", width: 28 },
+      { header: "Patente", width: 12 },
+      { header: "Grupo", width: 20 },
+    ];
+    for (const c of COLS) {
+      columns.push({ header: c.label, width: 14, format: "decimal1" });
+      columns.push({ header: `Δ% ${c.short}`, width: 10, format: "decimal1" });
+    }
+
+    const rows = data.rows.map((r) => {
+      const cells: (string | number | null)[] = [
+        r.assetName,
+        r.assetPlate ?? "",
+        r.groupName ?? "",
+      ];
+      for (const c of COLS) {
+        const cell = r.metrics[c.key];
+        cells.push(cell.value);
+        cells.push(cell.deltaPct === null ? null : cell.deltaPct * 100);
+      }
+      return cells;
+    });
+
+    // Footer total flota
+    const footCells: (string | number | null)[] = ["Total flota", "", ""];
+    for (const c of COLS) {
+      const t = data.totals[c.key];
+      footCells.push(t.value);
+      footCells.push(t.deltaPct === null ? null : t.deltaPct * 100);
+    }
+    rows.push(footCells);
+
+    await exportReportesXlsx({
+      subject: `Reporte multi-métrica · ${data.granularity} · ${data.anchorIso}`,
+      sheetName: `multimetrica_${data.granularity}_${data.anchorIso}`,
+      columns,
+      rows,
+    });
+  }
+
   const printPeriod = granularityToPeriod(data.granularity);
 
   return (
@@ -140,7 +184,11 @@ export function MultiMetricView({ data }: Props) {
           onChangeAnchor={(d) => nav({ d })}
         />
         <div className={styles.toolbarSpacer} />
-        <ExportMenu onExportCsv={exportCsv} printPeriod={printPeriod} />
+        <ExportMenu
+          onExportCsv={exportCsv}
+          onExportXlsx={exportXlsx}
+          printPeriod={printPeriod}
+        />
       </div>
 
       {/* Filtros */}
