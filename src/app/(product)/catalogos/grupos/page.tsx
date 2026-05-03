@@ -22,7 +22,7 @@ import styles from "./page.module.css";
 //    · Bulk reassign vehicles between groups
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface PageProps {
   searchParams: Promise<{ q?: string }>;

@@ -11,18 +11,14 @@ import {
 } from "@/lib/url-asset-events";
 import { EVENT_TYPE_LABEL, SEVERITY_LABEL } from "@/lib/format";
 import type { EventType, Severity } from "@/types/domain";
+import { FilterFieldGroup, SelectField } from "./ui";
 import styles from "./EventFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  EventFilterBar · Sub-lote 3.2
-//  ─────────────────────────────────────────────────────────────
-//  Filters for the Eventos tab in Libro B.
+//  EventFilterBar · L3-style-2 · Alt 2
 //
-//  - Tipo de evento: 10 EventType values
-//  - Severidad:      4 Severity values
-//  - Clear all link when any filter is active
-//
-//  Uses the event* prefix in URL (handled by buildAssetEventsHref).
+//   TIPO         SEVERIDAD
+//   [...]        [...]
 // ═══════════════════════════════════════════════════════════════
 
 interface EventFilterBarProps {
@@ -31,7 +27,6 @@ interface EventFilterBarProps {
 }
 
 const EVENT_TYPE_OPTIONS: EventType[] = [
-  // Conducción
   "HARSH_BRAKING",
   "HARSH_ACCELERATION",
   "HARSH_CORNERING",
@@ -39,7 +34,6 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
   "IDLING",
   "IGNITION_ON",
   "IGNITION_OFF",
-  // Seguridad
   "PANIC_BUTTON",
   "UNAUTHORIZED_USE",
   "DOOR_OPEN",
@@ -50,7 +44,6 @@ const EVENT_TYPE_OPTIONS: EventType[] = [
   "POWER_DISCONNECT",
   "JAMMING_DETECTED",
   "SABOTAGE",
-  // Transversales
   "GEOFENCE_ENTRY",
   "GEOFENCE_EXIT",
 ];
@@ -62,74 +55,52 @@ export function EventFilterBar({ assetId, current }: EventFilterBarProps) {
   const [, startTransition] = useTransition();
 
   function nav(override: Partial<AssetEventsParams>) {
-    const href = buildAssetEventsHref(assetId, current, override);
-    startTransition(() => router.push(href));
+    startTransition(() =>
+      router.push(buildAssetEventsHref(assetId, current, override)),
+    );
   }
 
   return (
     <div className={styles.bar}>
-      <Select
-        label="Tipo"
-        value={current.eventType}
-        options={EVENT_TYPE_OPTIONS.map((t) => ({
-          value: t,
-          label: EVENT_TYPE_LABEL[t],
-        }))}
-        onChange={(v) => nav({ eventType: v as EventType | null })}
-      />
+      <FilterFieldGroup label="Tipo">
+        <SelectField
+          label="Tipo"
+          value={current.eventType}
+          options={EVENT_TYPE_OPTIONS.map((t) => ({
+            value: t,
+            label: EVENT_TYPE_LABEL[t] ?? t,
+          }))}
+          onChange={(v) => nav({ eventType: v as EventType | null })}
+          variant="bare"
+        />
+      </FilterFieldGroup>
 
-      <Select
-        label="Severidad"
-        value={current.eventSeverity}
-        options={SEVERITY_OPTIONS.map((s) => ({
-          value: s,
-          label: SEVERITY_LABEL[s],
-        }))}
-        onChange={(v) => nav({ eventSeverity: v as Severity | null })}
-      />
+      <FilterFieldGroup label="Severidad">
+        <SelectField
+          label="Severidad"
+          value={current.eventSeverity}
+          options={SEVERITY_OPTIONS.map((s) => ({
+            value: s,
+            label: SEVERITY_LABEL[s] ?? s,
+          }))}
+          onChange={(v) => nav({ eventSeverity: v as Severity | null })}
+          variant="bare"
+        />
+      </FilterFieldGroup>
 
       {hasActiveAssetEventsFilters(current) && (
         <Link
-          href={`/catalogos/vehiculos/${assetId}?tab=eventos`}
+          href={buildAssetEventsHref(assetId, current, {
+            eventType: null,
+            eventSeverity: null,
+          })}
           className={styles.clearAll}
           scroll={false}
         >
           <X size={11} />
-          Limpiar filtros
+          Limpiar
         </Link>
       )}
     </div>
-  );
-}
-
-interface SelectProps {
-  label: string;
-  value: string | null;
-  options: { value: string; label: string }[];
-  onChange: (value: string | null) => void;
-}
-
-function Select({ label, value, options, onChange }: SelectProps) {
-  const isActive = value !== null;
-  return (
-    <label
-      className={`${styles.select} ${isActive ? styles.selectActive : ""}`}
-    >
-      <span className={styles.selectLabel}>{label}</span>
-      <select
-        value={value ?? ""}
-        onChange={(e) =>
-          onChange(e.target.value === "" ? null : e.target.value)
-        }
-        className={styles.selectNative}
-      >
-        <option value="">Todos</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

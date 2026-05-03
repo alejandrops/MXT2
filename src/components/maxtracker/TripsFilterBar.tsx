@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Calendar,
   ChevronDown,
   Truck,
   Users,
@@ -9,22 +8,29 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { AssetForFilter } from "@/lib/queries/historicos";
 import type { GroupForFilter } from "@/lib/queries/groups";
 import type { DriverForFilter } from "@/lib/queries/persons";
 import { buildTripsHref, type TripsParams } from "@/lib/url-trips";
+import { TimeRangePicker } from "./time";
+import { FilterFieldGroup } from "./ui/FilterFieldGroup";
 import styles from "./TripsFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  TripsFilterBar · range + multi-select filters
+//  TripsFilterBar · L3-style · range + multi-select con FilterFieldGroup
 //  ─────────────────────────────────────────────────────────────
-//  Drives URL state. Three multi-select pickers:
-//    · Vehículos    (one or more assets · empty = all)
-//    · Grupos       (one or more groups · empty = all)
-//    · Conductores  (one or more drivers · empty = all)
+//  Layout enterprise · zonas con label uppercase chiquito arriba
+//  para coherencia visual con HistoricosFilterBar y otros futuros.
 //
-//  Plus the date range and quick presets.
+//   PERÍODO          VEHÍCULOS     GRUPOS    CONDUCTORES
+//   [📅 ... ›]       [..]          [..]      [..]
+//
+//  Filters:
+//    · time range   (TimeRangePicker · rango libre + presets)
+//    · vehículos    (one or more assets · empty = all)
+//    · grupos       (one or more groups · empty = all)
+//    · conductores  (one or more drivers · empty = all)
 // ═══════════════════════════════════════════════════════════════
 
 interface TripsFilterBarProps {
@@ -41,32 +47,19 @@ export function TripsFilterBar({
   drivers,
 }: TripsFilterBarProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
-  function applyDate(field: "fromDate" | "toDate", value: string) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
-    router.push(buildTripsHref(current, { [field]: value }));
+  // PERF-1 · todos los router.push() pasan por nav() que los
+  // envuelve en startTransition · evita bloquear la UI durante la
+  // navegación al cambiar filtros.
+  function nav(href: string) {
+    startTransition(() => router.push(href));
   }
 
-  function applyPreset(preset: "yesterday" | "7d" | "30d") {
-    const today = new Date("2026-04-26T12:00:00.000Z");
-    let from: Date, to: Date;
-    if (preset === "yesterday") {
-      from = new Date(today.getTime() - 1 * 86400000);
-      to = from;
-    } else if (preset === "7d") {
-      from = new Date(today.getTime() - 6 * 86400000);
-      to = today;
-    } else {
-      from = new Date(today.getTime() - 29 * 86400000);
-      to = today;
-    }
-    router.push(
-      buildTripsHref(current, {
-        fromDate: ymd(from),
-        toDate: ymd(to),
-      }),
-    );
-  }
+  // L3 · "today" hardcoded a la fecha del demo seed para que los
+  // presets relativos ("Ayer", "7 días") matcheen con la data
+  // disponible. En producción se quita el override y usa Date.now().
+  const today = useMemo(() => new Date("2026-04-26T12:00:00.000Z"), []);
 
   const hasActive =
     current.assetIds.length > 0 ||
@@ -75,98 +68,74 @@ export function TripsFilterBar({
 
   return (
     <div className={styles.bar}>
-      <div className={styles.dateBlock}>
-        <Calendar size={13} className={styles.dateIcon} />
-        <input
-          type="date"
-          className={styles.dateInput}
-          value={current.fromDate}
-          max={current.toDate}
-          onChange={(e) => applyDate("fromDate", e.target.value)}
+      <FilterFieldGroup label="Período">
+        <TimeRangePicker
+          value={{ from: current.fromDate, to: current.toDate }}
+          onChange={(next) =>
+            nav(
+              buildTripsHref(current, {
+                fromDate: next.from,
+                toDate: next.to,
+              }),
+            )
+          }
+          presets={["yesterday", "7d", "30d"]}
+          today={today}
         />
-        <span className={styles.dateSep}>→</span>
-        <input
-          type="date"
-          className={styles.dateInput}
-          value={current.toDate}
-          min={current.fromDate}
-          onChange={(e) => applyDate("toDate", e.target.value)}
+      </FilterFieldGroup>
+
+      <FilterFieldGroup label="Vehículos">
+        <MultiSelectPicker
+          label="Vehículos"
+          icon={<Truck size={12} />}
+          emptyLabel="Toda la flota"
+          options={assets.map((a) => ({
+            id: a.id,
+            label: a.name,
+            sublabel: a.plate ?? undefined,
+          }))}
+          selectedIds={current.assetIds}
+          onChange={(ids) =>
+            nav(buildTripsHref(current, { assetIds: ids }))
+          }
         />
-      </div>
+      </FilterFieldGroup>
 
-      <div className={styles.presets}>
-        <button
-          type="button"
-          className={styles.preset}
-          onClick={() => applyPreset("yesterday")}
-        >
-          Ayer
-        </button>
-        <button
-          type="button"
-          className={styles.preset}
-          onClick={() => applyPreset("7d")}
-        >
-          7 días
-        </button>
-        <button
-          type="button"
-          className={styles.preset}
-          onClick={() => applyPreset("30d")}
-        >
-          30 días
-        </button>
-      </div>
+      <FilterFieldGroup label="Grupos">
+        <MultiSelectPicker
+          label="Grupos"
+          icon={<Users size={12} />}
+          emptyLabel="Todos los grupos"
+          options={groups.map((g) => ({ id: g.id, label: g.name }))}
+          selectedIds={current.groupIds}
+          onChange={(ids) =>
+            nav(buildTripsHref(current, { groupIds: ids }))
+          }
+        />
+      </FilterFieldGroup>
 
-      <div className={styles.spacer} />
-
-      {/* ── Multi-select pickers ────────────────────────────── */}
-      <MultiSelectPicker
-        label="Vehículos"
-        icon={<Truck size={12} />}
-        emptyLabel="Toda la flota"
-        options={assets.map((a) => ({
-          id: a.id,
-          label: a.name,
-          sublabel: a.plate ?? undefined,
-        }))}
-        selectedIds={current.assetIds}
-        onChange={(ids) =>
-          router.push(buildTripsHref(current, { assetIds: ids }))
-        }
-      />
-
-      <MultiSelectPicker
-        label="Grupos"
-        icon={<Users size={12} />}
-        emptyLabel="Todos los grupos"
-        options={groups.map((g) => ({ id: g.id, label: g.name }))}
-        selectedIds={current.groupIds}
-        onChange={(ids) =>
-          router.push(buildTripsHref(current, { groupIds: ids }))
-        }
-      />
-
-      <MultiSelectPicker
-        label="Conductores"
-        icon={<UserCircle size={12} />}
-        emptyLabel="Todos"
-        options={drivers.map((d) => ({
-          id: d.id,
-          label: `${d.firstName} ${d.lastName}`,
-        }))}
-        selectedIds={current.personIds}
-        onChange={(ids) =>
-          router.push(buildTripsHref(current, { personIds: ids }))
-        }
-      />
+      <FilterFieldGroup label="Conductores">
+        <MultiSelectPicker
+          label="Conductores"
+          icon={<UserCircle size={12} />}
+          emptyLabel="Todos"
+          options={drivers.map((d) => ({
+            id: d.id,
+            label: `${d.firstName} ${d.lastName}`,
+          }))}
+          selectedIds={current.personIds}
+          onChange={(ids) =>
+            nav(buildTripsHref(current, { personIds: ids }))
+          }
+        />
+      </FilterFieldGroup>
 
       {hasActive && (
         <button
           type="button"
           className={styles.clearAll}
           onClick={() =>
-            router.push(
+            nav(
               buildTripsHref(current, {
                 assetIds: [],
                 groupIds: [],
@@ -334,11 +303,4 @@ function MultiSelectPicker({
       )}
     </div>
   );
-}
-
-function ymd(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const da = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${da}`;
 }

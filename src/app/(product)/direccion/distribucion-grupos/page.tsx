@@ -17,7 +17,7 @@ import { DistribucionGruposClient } from "./DistribucionGruposClient";
 //  alta varianza intragrupal · perfil ejecutivo · no operativo.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_G: AnalysisGranularity[] = [
   "day-hours",

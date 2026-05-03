@@ -17,7 +17,7 @@ import { CorrelacionesClient } from "./CorrelacionesClient";
 //  Vista analítica · perfil ejecutivo / consultoría.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_G: AnalysisGranularity[] = [
   "day-hours",

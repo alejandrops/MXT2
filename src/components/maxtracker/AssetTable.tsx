@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { SortHeader } from "./SortHeader";
 import { StatusPill } from "./StatusPill";
+import { EmptyState } from "./ui/EmptyState";
+import { ClearFiltersButton } from "./ui/ClearFiltersButton";
 import { AssetActionsKebab } from "@/app/(product)/catalogos/vehiculos/AssetActionsKebab";
 import type { AssetsSearchParams } from "@/lib/url";
 import type { AssetListRow } from "@/types/domain";
@@ -43,6 +45,9 @@ interface AssetTableProps {
    *  que no los pasan explícitamente */
   canEditAsset?: boolean;
   canDeleteAsset?: boolean;
+  /** L8 · URL base para "Limpiar filtros" en empty state.
+   *  Si se omite, no se muestra el botón. */
+  clearFiltersHref?: string;
 }
 
 export function AssetTable({
@@ -52,12 +57,19 @@ export function AssetTable({
   bulkSelection,
   canEditAsset = true,
   canDeleteAsset = true,
+  clearFiltersHref,
 }: AssetTableProps) {
   if (rows.length === 0) {
     return (
-      <div className={styles.empty}>
-        No hay assets que cumplan los filtros aplicados.
-      </div>
+      <EmptyState
+        title="No hay vehículos para los filtros aplicados"
+        hint="Probá quitar algún filtro o ampliar la búsqueda."
+        action={
+          clearFiltersHref ? (
+            <ClearFiltersButton href={clearFiltersHref} />
+          ) : undefined
+        }
+      />
     );
   }
 

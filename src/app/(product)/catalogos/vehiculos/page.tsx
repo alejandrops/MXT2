@@ -44,7 +44,7 @@ import styles from "./page.module.css";
 //    · Pagination footer
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -117,7 +117,11 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
       />
 
       {/* ── Table + pagination ─────────────────────────────── */}
-      <AssetTable rows={listResult.rows} current={params} />
+      <AssetTable
+        rows={listResult.rows}
+        current={params}
+        clearFiltersHref="/catalogos/vehiculos"
+      />
 
       <Pagination
         total={listResult.total}

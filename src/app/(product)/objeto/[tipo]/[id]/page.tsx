@@ -34,7 +34,7 @@ import { SecurityBookTab } from "./modules/SecurityBookTab";
 //    AssetDriverDay · day, distanceKm, activeMin, tripCount
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_TYPES: ObjectType[] = ["vehiculo", "conductor", "grupo"];
 const VALID_MODULES: ModuleKey[] = [

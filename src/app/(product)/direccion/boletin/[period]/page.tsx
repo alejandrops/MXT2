@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { TELEMETRY_EVENT_TYPES } from "@/lib/format";
+import { getSession } from "@/lib/session";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { BoletinHeader } from "@/components/maxtracker/boletin/BoletinHeader";
 import { BlockA_ResumenEjecutivo } from "@/components/maxtracker/boletin/BlockA_ResumenEjecutivo";
 import { BlockB_SaludOperativa } from "@/components/maxtracker/boletin/BlockB_SaludOperativa";
@@ -34,7 +36,7 @@ import styles from "./BoletinPage.module.css";
 //  ej · /direccion/boletin/2026-03
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 interface PageProps {
   params: Promise<{ period: string }>;
@@ -62,6 +64,10 @@ export default async function BoletinPage({ params }: PageProps) {
   // L1 · defensa anti-pantalla-blanca (B8)
   // Si loadBoletinData tira (data ausente, query timeout, etc.),
   // mostramos un mensaje en lugar de pantalla en blanco.
+  // L2B-3 · scope multi-tenant resuelto antes de la query.
+  const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "direccion", null);
+
   let data: BoletinData;
   try {
     data = await loadBoletinData({
@@ -69,6 +75,7 @@ export default async function BoletinPage({ params }: PageProps) {
       monthEnd: nextMonthStartUtc,
       prevStart: prevMonthStartUtc,
       prevEnd: prevMonthEndUtc,
+      accountId: scopedAccountId,
     });
   } catch (err) {
     console.error("[BoletinPage] loadBoletinData failed:", err);
@@ -258,8 +265,19 @@ async function loadBoletinData(args: {
   monthEnd: Date;
   prevStart: Date;
   prevEnd: Date;
+  /** L2B-3 · scope multi-tenant. accountId=null → cross-tenant (SA/MA) */
+  accountId: string | null;
 }): Promise<BoletinData> {
-  
+  // ─── Helpers de scope · L2B-3 ──────────────────────────────
+  // Construyen los WHEREs según el modelo de cada entidad:
+  //  · Asset, Person, Group, Alarm, AssetDriverDay tienen accountId directo
+  //  · Event NO tiene accountId · se filtra vía relación asset.accountId
+  const scopeAccount = args.accountId
+    ? { accountId: args.accountId }
+    : {};
+  const scopeEventViaAsset = args.accountId
+    ? { asset: { accountId: args.accountId } }
+    : {};
 
   const [
     currDays,
@@ -279,7 +297,10 @@ async function loadBoletinData(args: {
     eventsByTypeRaw,
   ] = await Promise.all([
     db.assetDriverDay.findMany({
-      where: { day: { gte: args.monthStart, lt: args.monthEnd } },
+      where: {
+        ...scopeAccount,
+        day: { gte: args.monthStart, lt: args.monthEnd },
+      },
       select: {
         day: true,
         assetId: true,
@@ -302,7 +323,10 @@ async function loadBoletinData(args: {
       },
     }),
     db.assetDriverDay.findMany({
-      where: { day: { gte: args.prevStart, lt: args.prevEnd } },
+      where: {
+        ...scopeAccount,
+        day: { gte: args.prevStart, lt: args.prevEnd },
+      },
       select: {
         distanceKm: true,
         activeMin: true,
@@ -311,29 +335,38 @@ async function loadBoletinData(args: {
     }),
     db.event.count({
       where: {
+        ...scopeEventViaAsset,
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
         type: { notIn: TELEMETRY_EVENT_TYPES },
       },
     }),
     db.event.count({
       where: {
+        ...scopeEventViaAsset,
         occurredAt: { gte: args.prevStart, lt: args.prevEnd },
         type: { notIn: TELEMETRY_EVENT_TYPES },
       },
     }),
     db.alarm.count({
-      where: { triggeredAt: { gte: args.monthStart, lt: args.monthEnd } },
+      where: {
+        ...scopeAccount,
+        triggeredAt: { gte: args.monthStart, lt: args.monthEnd },
+      },
     }),
     db.alarm.count({
-      where: { triggeredAt: { gte: args.prevStart, lt: args.prevEnd } },
+      where: {
+        ...scopeAccount,
+        triggeredAt: { gte: args.prevStart, lt: args.prevEnd },
+      },
     }),
-    db.asset.count(),
-    db.person.count(),
-    db.group.count(),
+    db.asset.count({ where: scopeAccount }),
+    db.person.count({ where: scopeAccount }),
+    db.group.count({ where: scopeAccount }),
     // Eventos agregados por asset · para Bloques C y D
     db.event.groupBy({
       by: ["assetId"],
       where: {
+        ...scopeEventViaAsset,
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
         type: { notIn: TELEMETRY_EVENT_TYPES },
       },
@@ -343,6 +376,7 @@ async function loadBoletinData(args: {
     db.event.groupBy({
       by: ["personId"],
       where: {
+        ...scopeEventViaAsset,
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
         type: { notIn: TELEMETRY_EVENT_TYPES },
         personId: { not: null },
@@ -351,6 +385,7 @@ async function loadBoletinData(args: {
     }),
     // Personas con safetyScore para drivers ranking
     db.person.findMany({
+      where: scopeAccount,
       select: {
         id: true,
         firstName: true,
@@ -360,7 +395,10 @@ async function loadBoletinData(args: {
     }),
     // Alarmas del período · detalle para Bloque F
     db.alarm.findMany({
-      where: { triggeredAt: { gte: args.monthStart, lt: args.monthEnd } },
+      where: {
+        ...scopeAccount,
+        triggeredAt: { gte: args.monthStart, lt: args.monthEnd },
+      },
       select: {
         id: true,
         assetId: true,
@@ -377,6 +415,7 @@ async function loadBoletinData(args: {
     // Alarmas activas (OPEN) al cierre del período · "abiertas pendientes"
     db.alarm.count({
       where: {
+        ...scopeAccount,
         status: "OPEN",
         triggeredAt: { lt: args.monthEnd },
       },
@@ -385,6 +424,7 @@ async function loadBoletinData(args: {
     db.event.groupBy({
       by: ["type"],
       where: {
+        ...scopeEventViaAsset,
         occurredAt: { gte: args.monthStart, lt: args.monthEnd },
         type: { notIn: TELEMETRY_EVENT_TYPES },
       },

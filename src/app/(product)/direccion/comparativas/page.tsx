@@ -17,7 +17,7 @@ import { ComparativasClient } from "./ComparativasClient";
 //  detectar quiénes mejoraron o empeoraron significativamente.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_G: AnalysisGranularity[] = [
   "day-hours",

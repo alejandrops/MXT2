@@ -38,6 +38,24 @@ export function LoginForm({ initialError, redirectTo }: LoginFormProps) {
     });
 
     if (authError) {
+      // L6 · trackear fallo · sin enviar el email (PII)
+      // El SDK fue inicializado en el layout pero acá no estamos en
+      // /(product) o /admin · cargamos la función dinámicamente y
+      // si no está enabled, es no-op. La key de PostHog igual está
+      // disponible en build time (NEXT_PUBLIC_*).
+      const reason = authError.message.toLowerCase().includes("invalid")
+        ? "invalid_credentials"
+        : authError.message.toLowerCase().includes("email not confirmed")
+          ? "email_not_confirmed"
+          : "other";
+      try {
+        const { initPostHog, track } = await import("@/lib/analytics/posthog");
+        initPostHog({ authMode: "supabase" });
+        track("user_login", { success: false, reason });
+      } catch {
+        // SDK falló al cargar · login error igual debe mostrarse
+      }
+
       // Mensajes amigables
       if (authError.message.toLowerCase().includes("invalid")) {
         setError("Email o contraseña incorrectos.");
@@ -48,6 +66,15 @@ export function LoginForm({ initialError, redirectTo }: LoginFormProps) {
       }
       setLoading(false);
       return;
+    }
+
+    // L6 · trackear success · el identify se hace en el layout post-redirect
+    try {
+      const { initPostHog, track } = await import("@/lib/analytics/posthog");
+      initPostHog({ authMode: "supabase" });
+      track("user_login", { success: true });
+    } catch {
+      // SDK falló al cargar · login success igual debe seguir
     }
 
     // Refresh para que el Server Component re-renderice con sesión

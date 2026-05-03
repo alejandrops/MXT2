@@ -1,30 +1,35 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
 import {
   buildHistoricosHref,
   type HistoricosParams,
 } from "@/lib/url-historicos";
 import { AssetCombobox, type AssetOption } from "./AssetCombobox";
+import { DayWithTimePicker, toIsoDateLocal } from "./time";
+import { FilterFieldGroup } from "./ui/FilterFieldGroup";
 import styles from "./HistoricosFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  HistoricosFilterBar
+//  HistoricosFilterBar · L3-style · Alt 2 (zonas con labels)
 //  ─────────────────────────────────────────────────────────────
-//  Filters:
-//    · asset      (combobox · name/plate/make/model)
-//    · date       (native <input type="date">)
-//    · from / to  (HH:MM time range · F2)
+//  Layout enterprise-style con 2 zonas claras:
 //
-//  Time-range semantics:
-//    · Both empty → full day
-//    · Both set & from < to → clip applied
-//    · "X" button (visible cuando hay rango activo) limpia ambos
-//    · Cambiar la fecha NO resetea automáticamente from/to · si
-//      no aplican al nuevo día se recalculan a full-day (la
-//      query siempre intersecta con el día efectivo)
+//   VEHÍCULO              PERÍODO
+//   [Asset combo · X]     [‹ 30/04/2026 ›] [Hoy] [Ayer] [⏰ Todo el día ▾]
+//
+//  El asset combobox sigue siendo independiente · el bloque de
+//  tiempo (DayWithTimePicker) es ahora inline, sin border externo.
+//
+//  Mapping URL ↔ slider:
+//    · current.date     ↔ value.day        (default: hoy local AR)
+//    · current.fromTime ↔ value.fromTime   (default: "00:00")
+//    · current.toTime   ↔ value.toTime     (default: "24:00")
+//
+//  Convención URL · "rango activo" requiere ambos fromTime y toTime.
+//  Cuando el usuario marca "Todo el día" (fromTime=00:00 + toTime=24:00),
+//  guardamos null+null en URL para que la URL quede limpia.
 // ═══════════════════════════════════════════════════════════════
 
 interface HistoricosFilterBarProps {
@@ -44,110 +49,41 @@ export function HistoricosFilterBar({
     startTransition(() => router.push(href));
   }
 
-  // Compute the effective time range that's currently rendered.
-  // We treat both unset OR invalid as "no range".
-  const hasRange = !!(current.fromTime && current.toTime);
+  // L3.C · "today" hardcoded a la fecha del demo seed para que los
+  // atajos "Hoy" y "Ayer" matcheen con la data disponible.
+  const today = useMemo(() => new Date("2026-04-26T12:00:00.000Z"), []);
+  const todayIso = useMemo(() => toIsoDateLocal(today, -3), [today]);
 
-  // Local handlers · we hold uncommitted edits in URL state via a
-  // small intermediate. To keep this simple we commit on change
-  // (the user types and it nav's) · same pattern as date input.
-  function setFrom(value: string) {
-    const next = value === "" ? null : value;
-    // If the user clears `from`, clear both (range needs both).
-    if (next === null) {
-      nav({ fromTime: null, toTime: null });
-      return;
-    }
-    // If `to` exists but is now <= `from`, clear `to` so the URL
-    // state stays valid (parseHistoricosParams would discard it
-    // anyway, but this avoids a flash of "invalid range" UI).
-    const to = current.toTime;
-    if (to && next >= to) {
-      nav({ fromTime: next, toTime: null });
-    } else {
-      nav({ fromTime: next });
-    }
-  }
-  function setTo(value: string) {
-    const next = value === "" ? null : value;
-    if (next === null) {
-      nav({ fromTime: null, toTime: null });
-      return;
-    }
-    const from = current.fromTime;
-    if (from && next <= from) {
-      // User picked a "to" earlier than "from" · ignore (the
-      // parser will reject it anyway, but fail fast in the UI)
-      return;
-    }
-    nav({ toTime: next });
+  const day = current.date ?? todayIso;
+  const fromTime = current.fromTime ?? "00:00";
+  const toTime = current.toTime ?? "24:00";
+
+  function handleChange(next: { day: string; fromTime: string; toTime: string }) {
+    const isAllDay = next.fromTime === "00:00" && next.toTime === "24:00";
+    nav({
+      date: next.day,
+      fromTime: isAllDay ? null : next.fromTime,
+      toTime: isAllDay ? null : next.toTime,
+    });
   }
 
   return (
     <div className={styles.bar}>
-      {/* ── Asset combobox ───────────────────────────────────── */}
-      <AssetCombobox
-        options={assets}
-        selectedId={current.assetId}
-        onChange={(id) => nav({ assetId: id })}
-      />
-
-      {/* ── Date picker ──────────────────────────────────────── */}
-      <label
-        className={`${styles.select} ${
-          current.date ? styles.selectActive : ""
-        }`}
-      >
-        <span className={styles.selectLabel}>Fecha</span>
-        <input
-          type="date"
-          value={current.date ?? ""}
-          onChange={(e) =>
-            nav({ date: e.target.value === "" ? null : e.target.value })
-          }
-          className={styles.dateInput}
+      <FilterFieldGroup label="Vehículo">
+        <AssetCombobox
+          options={assets}
+          selectedId={current.assetId}
+          onChange={(id) => nav({ assetId: id })}
         />
-      </label>
+      </FilterFieldGroup>
 
-      {/* ── Time range · from / to (F2) ─────────────────────── */}
-      <label
-        className={`${styles.select} ${hasRange ? styles.selectActive : ""}`}
-      >
-        <span className={styles.selectLabel}>Desde</span>
-        <input
-          type="time"
-          lang="es-AR"
-          value={current.fromTime ?? ""}
-          onChange={(e) => setFrom(e.target.value)}
-          className={styles.timeInput}
+      <FilterFieldGroup label="Período">
+        <DayWithTimePicker
+          value={{ day, fromTime, toTime }}
+          onChange={handleChange}
+          today={today}
         />
-      </label>
-
-      <label
-        className={`${styles.select} ${hasRange ? styles.selectActive : ""}`}
-      >
-        <span className={styles.selectLabel}>Hasta</span>
-        <input
-          type="time"
-          lang="es-AR"
-          value={current.toTime ?? ""}
-          onChange={(e) => setTo(e.target.value)}
-          className={styles.timeInput}
-        />
-      </label>
-
-      {hasRange && (
-        <button
-          type="button"
-          className={styles.clearBtn}
-          onClick={() => nav({ fromTime: null, toTime: null })}
-          title="Quitar rango horario · ver día completo"
-        >
-          <X size={13} />
-          <span>Día completo</span>
-        </button>
-      )}
+      </FilterFieldGroup>
     </div>
   );
 }
-

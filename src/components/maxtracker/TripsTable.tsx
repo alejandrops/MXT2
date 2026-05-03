@@ -15,6 +15,8 @@ import {
   type SortKey,
   type TripsParams,
 } from "@/lib/url-trips";
+import { EmptyState } from "./ui/EmptyState";
+import { ClearFiltersButton } from "./ui/ClearFiltersButton";
 import styles from "./TripsTable.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -47,6 +49,8 @@ interface TripsTableProps {
     current: TripsParams,
     override: Partial<TripsParams>,
   ) => string;
+  /** L8 · URL base sin filtros · si se pasa, EmptyState muestra "Limpiar filtros" */
+  clearFiltersHref?: string;
 }
 
 interface SortableColumn {
@@ -76,6 +80,7 @@ export function TripsTable({
   onHoverTrip,
   sortParams,
   buildSortHref = buildTripsHref,
+  clearFiltersHref,
 }: TripsTableProps) {
   const router = useRouter();
 
@@ -121,12 +126,15 @@ export function TripsTable({
 
   if (trips.length === 0) {
     return (
-      <div className={styles.empty}>
-        <p>No hay viajes en el rango seleccionado.</p>
-        <p className={styles.emptyHint}>
-          Probá ampliar el rango de fechas o quitar los filtros.
-        </p>
-      </div>
+      <EmptyState
+        title="No hay viajes para los filtros aplicados"
+        hint="Probá ampliar el rango de fechas o quitar los filtros."
+        action={
+          clearFiltersHref ? (
+            <ClearFiltersButton href={clearFiltersHref} />
+          ) : undefined
+        }
+      />
     );
   }
 

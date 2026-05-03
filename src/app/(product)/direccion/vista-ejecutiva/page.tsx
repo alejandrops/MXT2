@@ -23,7 +23,7 @@ import { VistaEjecutivaClient } from "./VistaEjecutivaClient";
 //  completa cross-account.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

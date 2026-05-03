@@ -44,7 +44,7 @@ import styles from "./page.module.css";
 //  funcionando como atajo a tabla.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_G: AnalysisGranularity[] = [
   "day-hours",

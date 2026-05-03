@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
+import { BackButton } from "./BackButton";
 import styles from "./PageHeader.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -97,10 +96,13 @@ function ObjectHeader({
   return (
     <header className={styles.object}>
       {backLabel && backHref && (
-        <Link href={backHref} className={styles.back}>
-          <ChevronLeft size={13} />
-          {backLabel}
-        </Link>
+        // L4 · BackButton dinámico · navega al lugar de origen real
+        // (último entry del stack en sessionStorage). Si el stack
+        // está vacío, cae a backHref (comportamiento previo).
+        <BackButton
+          fallbackUrl={backHref}
+          defaultLabel={backLabel}
+        />
       )}
       <div className={styles.row}>
         <div className={styles.left}>

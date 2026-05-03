@@ -8,7 +8,7 @@ import { getSession } from "@/lib/session";
 import { ScorecardClient } from "./ScorecardClient";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const VALID_G: AnalysisGranularity[] = [
   "day-hours",

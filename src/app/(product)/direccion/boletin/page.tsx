@@ -19,7 +19,7 @@ import { redirect } from "next/navigation";
 //  "último período cerrado".
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 function getLastClosedPeriod(): string {
   const now = new Date();

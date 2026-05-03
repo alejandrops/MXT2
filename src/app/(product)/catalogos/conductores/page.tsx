@@ -29,7 +29,7 @@ import styles from "./page.module.css";
 //    · Pagination
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

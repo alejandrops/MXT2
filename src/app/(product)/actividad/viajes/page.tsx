@@ -33,7 +33,7 @@ import styles from "./page.module.css";
 //  (mismas métricas agregadas que antes · totales del período).
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const DEFAULT_CAP = 20;
 

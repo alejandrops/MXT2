@@ -12,7 +12,7 @@ import { redirect } from "next/navigation";
 //  grupo o granularidad, se mantiene en el redirect.
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

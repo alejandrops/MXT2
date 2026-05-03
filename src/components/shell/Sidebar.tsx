@@ -58,7 +58,13 @@ import styles from "./Sidebar.module.css";
 interface PageDef {
   label: string;
   href: string | null;
-  badge?: number;
+  /**
+   * Badge numérico estático O sentinel para resolución dinámica.
+   * - `number`: se muestra tal cual (legacy fixtures de demo).
+   * - `"openAlarms"`: se reemplaza por la cuenta real de alarmas
+   *   abiertas pasada como prop al Sidebar (server-resolved).
+   */
+  badge?: number | "openAlarms";
 }
 
 interface ModuleDef {
@@ -93,7 +99,8 @@ const MODULES: ModuleDef[] = [
     pathPrefix: "/actividad",
     enabled: true,
     pages: [
-      { label: "Reportes", href: "/actividad/reportes" },
+      { label: "Evolución", href: "/actividad/evolucion" },
+      { label: "Resumen", href: "/actividad/resumen" },
       { label: "Scorecard", href: "/actividad/scorecard" },
       { label: "Viajes", href: "/actividad/viajes" },
     ],
@@ -106,7 +113,7 @@ const MODULES: ModuleDef[] = [
     enabled: true,
     pages: [
       { label: "Dashboard", href: "/seguridad/dashboard" },
-      { label: "Alarmas", href: "/seguridad/alarmas", badge: 7 },
+      { label: "Alarmas", href: "/seguridad/alarmas", badge: "openAlarms" },
       // Cross-module shortcut to the same screen as Seguimiento>Historial
       { label: "Seguimiento", href: "/seguimiento/historial" },
       { label: "Reporte", href: null }, // not built yet
@@ -190,7 +197,19 @@ const MODULES: ModuleDef[] = [
 //  Component
 // ═══════════════════════════════════════════════════════════════
 
-export function Sidebar() {
+interface SidebarProps {
+  /**
+   * Cuenta server-resolved de alarmas abiertas con domain SEGURIDAD,
+   * scoped al accountId del user (CA/OP) o cross-tenant (SA/MA).
+   * Se resuelve en el layout y se inyecta en el badge del nav-item
+   * "Alarmas". Si es undefined, no se muestra badge.
+   *
+   * L2B-4 · reemplaza el `badge: 7` hardcoded del demo.
+   */
+  openAlarmsCount?: number;
+}
+
+export function Sidebar({ openAlarmsCount }: SidebarProps = {}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -267,6 +286,7 @@ export function Sidebar() {
             collapsed={collapsed}
             currentPath={pathname}
             onToggle={() => handleToggle(mod.key)}
+            openAlarmsCount={openAlarmsCount}
           />
         ))}
       </nav>
@@ -301,6 +321,8 @@ interface ModuleAccordionProps {
   collapsed: boolean;
   currentPath: string;
   onToggle: () => void;
+  /** L2B-4 · prop drilling de la cuenta server-resolved · pasa al PageLink */
+  openAlarmsCount?: number;
 }
 
 function ModuleAccordion({
@@ -310,6 +332,7 @@ function ModuleAccordion({
   collapsed,
   currentPath,
   onToggle,
+  openAlarmsCount,
 }: ModuleAccordionProps) {
   const sectionClass = `${styles.section} ${
     isExpanded ? styles.sectionOpen : ""
@@ -325,6 +348,7 @@ function ModuleAccordion({
         onClick={onToggle}
         disabled={!mod.enabled}
         aria-expanded={isExpanded}
+        title={!mod.enabled ? "Próximamente" : undefined}
       >
         <span className={styles.sectionIcon}>{mod.icon}</span>
         {!collapsed && (
@@ -345,6 +369,7 @@ function ModuleAccordion({
                 key={p.label}
                 page={p}
                 isActive={currentPath.startsWith(p.href)}
+                openAlarmsCount={openAlarmsCount}
               />
             ) : (
               <PageDisabled key={p.label} page={p} />
@@ -356,15 +381,33 @@ function ModuleAccordion({
   );
 }
 
-function PageLink({ page, isActive }: { page: PageDef; isActive: boolean }) {
+function PageLink({
+  page,
+  isActive,
+  openAlarmsCount,
+}: {
+  page: PageDef;
+  isActive: boolean;
+  openAlarmsCount?: number;
+}) {
+  // L2B-4 · resolver sentinel "openAlarms" al valor real desde props.
+  // Si la prop no se inyectó (call-site sin server-resolved count),
+  // no renderizamos badge en lugar de mostrar un valor inventado.
+  let resolvedBadge: number | undefined;
+  if (typeof page.badge === "number") {
+    resolvedBadge = page.badge;
+  } else if (page.badge === "openAlarms") {
+    resolvedBadge = openAlarmsCount;
+  }
+
   return (
     <Link
       href={page.href!}
       className={`${styles.page} ${isActive ? styles.pageActive : ""}`}
     >
       <span className={styles.pageLabel}>{page.label}</span>
-      {page.badge !== undefined && (
-        <span className={styles.badge}>{page.badge}</span>
+      {resolvedBadge !== undefined && resolvedBadge > 0 && (
+        <span className={styles.badge}>{resolvedBadge}</span>
       )}
     </Link>
   );

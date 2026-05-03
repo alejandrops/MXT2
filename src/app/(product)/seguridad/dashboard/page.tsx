@@ -35,7 +35,7 @@ import styles from "./page.module.css";
 //  (KpiDailySnapshot, see audit gap G-04).
 // ═══════════════════════════════════════════════════════════════
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function SeguridadDashboardPage() {
   // L2B-2 · resolver scope multi-tenant para todas las queries

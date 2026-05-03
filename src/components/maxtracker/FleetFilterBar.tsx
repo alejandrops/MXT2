@@ -3,21 +3,16 @@
 import { ChevronDown, Truck, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FleetAssetLive } from "@/lib/queries/tracking";
+import { FilterFieldGroup } from "./ui";
 import styles from "./FleetFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  FleetFilterBar · narrow which vehicles render on the map
+//  FleetFilterBar · L3-style-2 · narrow which vehicles render
 //  ─────────────────────────────────────────────────────────────
-//  Drives FleetTrackingClient's `visibleAssets`. Two pickers:
+//  Drives FleetTrackingClient's `visibleAssets`. Layout:
 //
-//    · Grupos     · 1+ groups · empty = all groups
-//    · Vehículos  · 1+ assets · empty = all assets
-//
-//  Both apply with AND semantics: assets must be in (selected
-//  groups OR no group filter) AND in (selected assets OR no
-//  asset filter).
-//
-//  The component is purely controlled · parent owns state.
+//   GRUPOS              VEHÍCULOS         [Mostrando X de Y] [Limpiar]
+//   [...]               [...]
 // ═══════════════════════════════════════════════════════════════
 
 interface FleetFilterBarProps {
@@ -84,29 +79,33 @@ export function FleetFilterBar({
 
   return (
     <div className={styles.bar}>
-      <span className={styles.summary}>
-        Mostrando <strong>{visibleCount}</strong> de {assets.length}
-      </span>
+      <FilterFieldGroup label="Grupos">
+        <MultiPicker
+          label="Grupos"
+          icon={<Users size={12} />}
+          emptyLabel="Todos"
+          options={groups}
+          selectedIds={selectedGroupIds}
+          onChange={onChangeGroups}
+        />
+      </FilterFieldGroup>
+
+      <FilterFieldGroup label="Vehículos">
+        <MultiPicker
+          label="Vehículos"
+          icon={<Truck size={12} />}
+          emptyLabel="Todos"
+          options={assetOptions}
+          selectedIds={selectedAssetIds}
+          onChange={onChangeAssets}
+        />
+      </FilterFieldGroup>
 
       <div className={styles.spacer} />
 
-      <MultiPicker
-        label="Grupos"
-        icon={<Users size={12} />}
-        emptyLabel="Todos"
-        options={groups}
-        selectedIds={selectedGroupIds}
-        onChange={onChangeGroups}
-      />
-
-      <MultiPicker
-        label="Vehículos"
-        icon={<Truck size={12} />}
-        emptyLabel="Todos"
-        options={assetOptions}
-        selectedIds={selectedAssetIds}
-        onChange={onChangeAssets}
-      />
+      <span className={styles.summary}>
+        Mostrando <strong>{visibleCount}</strong> de {assets.length}
+      </span>
 
       {hasActive && (
         <button

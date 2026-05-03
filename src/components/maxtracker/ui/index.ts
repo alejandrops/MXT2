@@ -1,24 +1,30 @@
 // ═══════════════════════════════════════════════════════════════
-//  Maxtracker UI · componentes compartidos · barrel export
+//  src/components/maxtracker/ui/ · barrel exports
+//  ─────────────────────────────────────────────────────────────
+//  Componentes UI reusables. Mezcla de:
+//   · Componentes legacy (BackButton, KpiCard, PageHeader, etc.)
+//   · Filter UI primitivas L3-style + L3-style-2
+//     (FilterFieldGroup, SelectField, SearchField)
 // ═══════════════════════════════════════════════════════════════
 
-export { KpiCard } from "./KpiCard";
-export type { KpiSize } from "./KpiCard";
-
-export { PageHeader } from "./PageHeader";
-export type { ObjectStatus } from "./PageHeader";
-
-export { DataTable } from "./DataTable";
-export type { ColumnDef } from "./DataTable";
-
-export { RankingList } from "./RankingList";
-export type { RankingItem } from "./RankingList";
-
+// ── Legacy ────────────────────────────────────────────────────
+export { BackButton } from "./BackButton";
+export { ClearFiltersButton } from "./ClearFiltersButton";
+export { DataTable, type ColumnDef } from "./DataTable";
 export { EmptyState } from "./EmptyState";
-export { LoadingState } from "./LoadingState";
 export { ErrorState } from "./ErrorState";
-
+export {
+  ExportMenu,
+  granularityToPeriod,
+  type PrintPeriodKey,
+} from "./ExportMenu";
 export { GlobalFilterBar } from "./GlobalFilterBar";
+export { KpiCard, type KpiSize } from "./KpiCard";
+export { LoadingState } from "./LoadingState";
+export { PageHeader, type ObjectStatus } from "./PageHeader";
+export { RankingList, type RankingItem } from "./RankingList";
 
-export { ExportMenu, granularityToPeriod } from "./ExportMenu";
-export type { PrintPeriodKey } from "./ExportMenu";
+// ── Filter UI primitives · L3-style + L3-style-2 ─────────────
+export { FilterFieldGroup } from "./FilterFieldGroup";
+export { SelectField } from "./SelectField";
+export { SearchField } from "./SearchField";

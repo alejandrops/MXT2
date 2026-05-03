@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, ChevronRight, Search } from "lucide-react";
 import type { FleetAssetLive } from "@/lib/queries/tracking";
+import { EmptyState } from "../ui/EmptyState";
 import styles from "./AeropuertoView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -126,9 +127,11 @@ export function AeropuertoView({ assets }: Props) {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className={styles.empty}>
-            Sin vehículos para los filtros activos.
-          </div>
+          <EmptyState
+            title="Sin vehículos para los filtros activos"
+            hint="Probá quitar restricciones para ver toda la flota."
+            size="compact"
+          />
         )}
       </div>
     </div>

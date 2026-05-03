@@ -4,7 +4,11 @@ import { Topbar } from "@/components/shell/Topbar";
 import { GlobalFilterBar } from "@/components/maxtracker/ui";
 import { CommandPalette } from "@/components/maxtracker/cmdk/CommandPalette";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import { NavTracker } from "@/components/analytics/NavTracker";
 import { getSession } from "@/lib/session";
+import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getFleetOpenAlarmsCount } from "@/lib/queries/fleet-metrics";
 
 // ═══════════════════════════════════════════════════════════════
 //  Product shell · light sidebar + topbar with avatar menu
@@ -18,6 +22,15 @@ import { getSession } from "@/lib/session";
 //  S2 · Carga session en el server, la pasa al Topbar para que
 //  muestre el user real y permita logout. ThemeProvider sincroniza
 //  preferencia user con el DOM (data-theme="dark|light").
+//
+//  L2B-4 · Resuelve openAlarmsCount server-side y lo inyecta al
+//  Sidebar. Reemplaza el `badge: 7` hardcoded del demo · ahora el
+//  número refleja la realidad de la DB y el scope multi-tenant
+//  del user. Scope "seguridad" porque es el módulo dueño del nav-item.
+//
+//  L6 · PostHogProvider monta el SDK y emite identify + pageviews.
+//  En modo demo o sin NEXT_PUBLIC_POSTHOG_KEY, queda en no-op.
+//  PII (email/nombres) NUNCA se envía · solo IDs.
 // ═══════════════════════════════════════════════════════════════
 
 export default async function ProductLayout({
@@ -26,12 +39,29 @@ export default async function ProductLayout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
+  const scopedAccountId = resolveAccountScope(session, "seguridad", null);
+  const openAlarmsCount = await getFleetOpenAlarmsCount(
+    { accountId: scopedAccountId },
+    { domain: "SEGURIDAD" },
+  );
 
   return (
     <div className="app-root">
       <ThemeProvider pref={session.user.theme as "LIGHT" | "DARK" | "AUTO"} />
+      <PostHogProvider
+        authMode={session.authMode}
+        user={{
+          userId: session.user.id,
+          accountId: session.user.accountId,
+          profileLabel: session.profile.nameLabel,
+          accountTier: session.account?.tier ?? null,
+        }}
+      />
+      <Suspense fallback={null}>
+        <NavTracker />
+      </Suspense>
       <div className="app-body">
-        <Sidebar />
+        <Sidebar openAlarmsCount={openAlarmsCount} />
         <div className="app-main">
           <Topbar
             user={{
