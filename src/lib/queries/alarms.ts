@@ -42,6 +42,34 @@ export async function getAlarmsByAsset(
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  By person (S3-L1 · Libro del conductor · vista Resumen)
+// ═══════════════════════════════════════════════════════════════
+
+export async function getAlarmsByPerson(
+  personId: string,
+  options: {
+    limit?: number;
+    status?: AlarmStatus;
+    domain?: AlarmDomain;
+  } = {},
+): Promise<AlarmWithRefs[]> {
+  const { limit = 50, status, domain } = options;
+  return db.alarm.findMany({
+    where: {
+      personId,
+      ...(status && { status }),
+      ...(domain && { domain }),
+    },
+    orderBy: { triggeredAt: "desc" },
+    take: limit,
+    include: {
+      asset: { select: { id: true, name: true, plate: true } },
+      person: { select: { id: true, firstName: true, lastName: true } },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  Status counts (used by Dashboard D + Alarmas inbox KPI strip)
 //
 //  Defaults to SEGURIDAD domain since the Seguridad module is the

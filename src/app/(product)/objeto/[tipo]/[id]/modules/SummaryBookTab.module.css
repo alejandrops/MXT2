@@ -411,3 +411,201 @@
 .empty p strong {
   color: var(--tx);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   S3-L1 · Resumen del conductor · estilos adicionales
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Hero · score destacado a la derecha */
+
+.heroScore {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.heroScoreNum {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.heroScoreUnit {
+  font-size: 13px;
+  color: var(--t3);
+}
+
+/* Footnote bajo KPIs · contexto adicional */
+
+.kpiFootnote {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--brd);
+}
+
+/* Chevron en las cards lineables */
+
+.chevron {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+/* Lista de vehículos manejados */
+
+.assetList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assetItem {
+  margin: 0;
+}
+
+.assetLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  color: var(--tx);
+  background: var(--sf);
+  transition: border-color 0.1s, background 0.1s;
+}
+.assetLink:hover {
+  border-color: var(--brd2);
+  background: var(--bg);
+}
+
+.assetMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.assetName {
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetPlate {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  letter-spacing: 0.4px;
+}
+
+.assetMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.assetKm {
+  font-family: var(--m);
+  font-size: 12.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.assetTrips {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+
+/* Alarma · agregar asset al medio */
+
+.alarmAsset {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  margin-left: auto;
+  margin-right: 8px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ranking en flota · número grande + contexto */
+
+.rankBox {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 6px 4px;
+}
+
+.rankPosition {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  min-width: 78px;
+}
+
+.rankNum {
+  font-family: var(--m);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--tx);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankTotal {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-top: 3px;
+}
+
+.rankInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rankLabel {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--tx);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.rankSub {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t3);
+}

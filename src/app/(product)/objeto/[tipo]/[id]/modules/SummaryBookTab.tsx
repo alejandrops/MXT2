@@ -1,10 +1,14 @@
 // @ts-nocheck · pre-existing patterns (Prisma types stale)
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { AlertTriangle, ChevronRight, MapPin } from "lucide-react";
+import { AlertTriangle, ChevronRight, MapPin, IdCard } from "lucide-react";
 import { getAssetLiveStatus } from "@/lib/queries/asset-live-status";
-import { getAlarmsByAsset } from "@/lib/queries/alarms";
+import { getAlarmsByAsset, getAlarmsByPerson } from "@/lib/queries/alarms";
 import { getAssetDriverList } from "@/lib/queries/asset-drivers";
+import { getDriverProfile } from "@/lib/queries/driver-profile";
+import { getPersonAssets } from "@/lib/queries/person-assets";
+import { getDriverPeers } from "@/lib/queries/driver-peers";
+import { getDriverMonthSummary } from "@/lib/queries/driver-month-summary";
 import {
   getDeviceCapabilities,
   resolveCanSnapshot,
@@ -12,18 +16,13 @@ import {
 import styles from "./SummaryBookTab.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  SummaryBookTab · S1-L6 vista-ejecutiva-vehiculo
+//  SummaryBookTab · S1-L6 + S3-L1
 //  ─────────────────────────────────────────────────────────────
-//  Vista ejecutiva del vehículo · "el ahora" cross-módulo.
-//  Solo aplica al vehículo · primera tab del Libro (default).
+//  Vista ejecutiva 360° del objeto del Libro.
 //
-//  Estructura:
-//    1. Hero state · estado en lenguaje natural
-//    2. Conductor actual · si está asignado
-//    3. CAN destacado · 4 mini-KPIs si tiene CAN
-//    4. KPIs del mes · km, viajes, eventos, idle
-//    5. Alarmas activas · top 3 con drill-down
-//    6. Atajos · links a las otras tabs
+//  · vehiculo (S1-L6) · "el ahora" del vehículo cross-módulo
+//  · conductor (S3-L1) · "el ahora" del conductor cross-módulo
+//  · grupo · pendiente (S3-L2)
 //
 //  Filosofía:
 //    · Resume todo el cubo en una sola pantalla
@@ -37,14 +36,20 @@ interface Props {
 }
 
 export async function SummaryBookTab({ type, id }: Props) {
-  if (type !== "vehiculo") {
-    return (
-      <div className={styles.empty}>
-        <p>El Resumen por ahora solo aplica a vehículos.</p>
-      </div>
-    );
-  }
+  if (type === "vehiculo") return <VehicleSummary id={id} />;
+  if (type === "conductor") return <DriverSummary id={id} />;
+  return (
+    <div className={styles.empty}>
+      <p>El Resumen del grupo está en construcción.</p>
+    </div>
+  );
+}
 
+// ═══════════════════════════════════════════════════════════════
+//  Vehículo (S1-L6 · existente)
+// ═══════════════════════════════════════════════════════════════
+
+async function VehicleSummary({ id }: { id: string }) {
   const [liveStatus, openAlarms, monthSummary, drivers] = await Promise.all([
     getAssetLiveStatus(id),
     getAlarmsByAsset(id, { status: "OPEN", limit: 3 }),
@@ -284,6 +289,284 @@ export async function SummaryBookTab({ type, id }: Props) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  Conductor (S3-L1 · vista 360°)
+// ═══════════════════════════════════════════════════════════════
+
+async function DriverSummary({ id }: { id: string }) {
+  // 30 días para el período del 360
+  const now = new Date();
+  const fromDate = isoYmd(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+  const toDate = isoYmd(now);
+
+  const [profile, monthSummary, openAlarms, history, peers] =
+    await Promise.all([
+      getDriverProfile(id),
+      getDriverMonthSummary(id),
+      getAlarmsByPerson(id, { status: "OPEN", limit: 3 }),
+      getPersonAssets(id).catch(() => []),
+      getDriverPeers(id, fromDate, toDate),
+    ]);
+
+  if (!profile) {
+    return (
+      <div className={styles.empty}>
+        <p>Conductor no encontrado.</p>
+      </div>
+    );
+  }
+
+  // Vehículo actual del conductor (currentDriver=true en algún Asset)
+  // y top vehículos manejados (por km en el período)
+  const currentVehicle = history.find((h) => h.isCurrent) ?? null;
+  const topVehicles = [...history]
+    .sort((a, b) => b.totalKm - a.totalKm)
+    .slice(0, 3);
+
+  // Posición en flota · safetyScore percentile + ranking en eventos/100km
+  const myPeer = peers?.peers.find((p) => p.id === id) ?? null;
+  let scoreRanking: { rank: number; total: number } | null = null;
+  if (peers && myPeer) {
+    const sorted = [...peers.peers].sort(
+      (a, b) => b.safetyScore - a.safetyScore,
+    );
+    const rank = sorted.findIndex((p) => p.id === id) + 1;
+    scoreRanking = { rank, total: peers.peers.length };
+  }
+
+  return (
+    <div className={styles.body}>
+      {/* ── Hero · estado licencia + score ─────────────────── */}
+      <DriverHero profile={profile} />
+
+      {/* ── Grid principal · 2 columnas ────────────────────── */}
+      <div className={styles.grid}>
+        {/* ── Columna izquierda · Vehículo actual + top ──── */}
+        <div className={styles.col}>
+          {/* Vehículo actual */}
+          <Section
+            title="Vehículo actual"
+            hrefDeep={
+              currentVehicle
+                ? `/objeto/vehiculo/${currentVehicle.assetId}`
+                : undefined
+            }
+            hint={
+              currentVehicle
+                ? "Asignado actualmente"
+                : "Sin asignación activa"
+            }
+          >
+            {currentVehicle ? (
+              <Link
+                href={`/objeto/vehiculo/${currentVehicle.assetId}`}
+                className={styles.driverCard}
+              >
+                <div className={styles.driverInfo}>
+                  <span className={styles.driverName}>
+                    {currentVehicle.assetName}
+                  </span>
+                  <span className={styles.driverMeta}>
+                    {currentVehicle.assetPlate ?? "—"} ·{" "}
+                    {currentVehicle.totalDays} días ·{" "}
+                    {currentVehicle.totalTrips} viajes ·{" "}
+                    {currentVehicle.totalKm.toLocaleString("es-AR")} km
+                  </span>
+                </div>
+                <ChevronRight size={16} className={styles.chevron} />
+              </Link>
+            ) : (
+              <div className={styles.empty}>
+                <p>Este conductor no tiene un vehículo asignado.</p>
+              </div>
+            )}
+          </Section>
+
+          {/* Vehículos manejados · top 3 */}
+          {topVehicles.length > 0 && (
+            <Section
+              title="Vehículos manejados"
+              hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+              hint={`Top ${topVehicles.length} por km en últimos 30 días`}
+            >
+              <ul className={styles.assetList}>
+                {topVehicles.map((v) => (
+                  <li key={v.assetId} className={styles.assetItem}>
+                    <Link
+                      href={`/objeto/vehiculo/${v.assetId}`}
+                      className={styles.assetLink}
+                    >
+                      <div className={styles.assetMain}>
+                        <span className={styles.assetName}>{v.assetName}</span>
+                        <span className={styles.assetPlate}>
+                          {v.assetPlate ?? "—"}
+                        </span>
+                      </div>
+                      <div className={styles.assetMeta}>
+                        <span className={styles.assetKm}>
+                          {v.totalKm.toLocaleString("es-AR")} km
+                        </span>
+                        <span className={styles.assetTrips}>
+                          {v.totalTrips} viajes
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+        </div>
+
+        {/* ── Columna derecha · KPIs + alarmas + ranking ──── */}
+        <div className={styles.col}>
+          {/* KPIs del mes */}
+          <Section
+            title="Últimos 30 días"
+            hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+            hint="Datos agregados"
+          >
+            <div className={styles.kpiQuad}>
+              <MiniKpi
+                label="Distancia"
+                value={monthSummary.distanceKm.toLocaleString("es-AR")}
+                unit="km"
+              />
+              <MiniKpi
+                label="Viajes"
+                value={monthSummary.tripCount}
+              />
+              <MiniKpi
+                label="Tiempo activo"
+                value={formatHours(monthSummary.activeMin)}
+              />
+              <MiniKpi
+                label="Eventos"
+                value={monthSummary.eventCount}
+                accent={monthSummary.eventCount > 20 ? "warn" : undefined}
+              />
+            </div>
+            <div className={styles.kpiFootnote}>
+              {monthSummary.activeDays} días activos ·{" "}
+              {monthSummary.uniqueAssetsCount}{" "}
+              {monthSummary.uniqueAssetsCount === 1
+                ? "vehículo"
+                : "vehículos"}{" "}
+              distintos
+            </div>
+          </Section>
+
+          {/* Alarmas activas · personId (las del conductor) */}
+          <Section
+            title="Alarmas asociadas"
+            hrefDeep={`/objeto/conductor/${id}?m=seguridad`}
+            hint={
+              openAlarms.length === 0
+                ? "Sin alarmas"
+                : `${openAlarms.length} ${openAlarms.length === 1 ? "alarma" : "alarmas"}`
+            }
+          >
+            {openAlarms.length === 0 ? (
+              <div className={styles.allClear}>
+                ✓ Sin alarmas activas asociadas
+              </div>
+            ) : (
+              <ul className={styles.alarmList}>
+                {openAlarms.map((a) => (
+                  <li key={a.id} className={styles.alarmItem}>
+                    <span
+                      className={`${styles.severityDot} ${styles[`sev_${a.severity}`]}`}
+                      aria-hidden
+                    />
+                    <span className={styles.alarmType}>
+                      {humanizeAlarmType(a.type)}
+                    </span>
+                    <span className={styles.alarmAsset}>
+                      {a.asset?.name ?? "—"}
+                    </span>
+                    <span className={styles.alarmTime}>
+                      {formatRelative(a.triggeredAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+
+          {/* Ranking en flota */}
+          {scoreRanking && (
+            <Section
+              title="Posición en la flota"
+              hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+              hint={`Comparado con ${scoreRanking.total - 1} pares`}
+            >
+              <div className={styles.rankBox}>
+                <div className={styles.rankPosition}>
+                  <span className={styles.rankNum}>{scoreRanking.rank}</span>
+                  <span className={styles.rankTotal}>
+                    de {scoreRanking.total}
+                  </span>
+                </div>
+                <div className={styles.rankInfo}>
+                  <div className={styles.rankLabel}>
+                    Por safety score · {profile.scoreContext}
+                  </div>
+                  <div className={styles.rankSub}>
+                    {profile.safetyScore} pts · {profile.scorePercentile}{" "}
+                    percentil
+                  </div>
+                </div>
+              </div>
+            </Section>
+          )}
+        </div>
+      </div>
+
+      {/* ── Atajos a otras tabs ────────────────────────────── */}
+      <Section title="Explorar" hint="Profundizar en otra dimensión">
+        <div className={styles.shortcutGrid}>
+          <Link
+            href={`/objeto/conductor/${id}?m=actividad`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Actividad</span>
+            <span className={styles.shortcutHint}>Período, viajes, KPIs</span>
+          </Link>
+          <Link
+            href={`/objeto/conductor/${id}?m=seguridad`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Seguridad</span>
+            <span className={styles.shortcutHint}>Alarmas asociadas</span>
+          </Link>
+          <Link
+            href={`/objeto/conductor/${id}?m=conduccion`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Conducción</span>
+            <span className={styles.shortcutHint}>Scoring y eventos</span>
+          </Link>
+          <Link
+            href={`/objeto/conductor/${id}?m=documentacion`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Documentación</span>
+            <span className={styles.shortcutHint}>Licencia y vencimientos</span>
+          </Link>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Helper · YYYY-MM-DD UTC
+// ═══════════════════════════════════════════════════════════════
+
+function isoYmd(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 // ─── Sub-componentes ─────────────────────────────────────────
 
 function HeroState({
@@ -339,6 +622,70 @@ function HeroState({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── DriverHero · S3-L1 · estado del conductor ────────────────
+
+function DriverHero({
+  profile,
+}: {
+  profile: import("@/lib/queries/driver-profile").DriverProfileData;
+}) {
+  // Color del hero según situación
+  let stateClass = styles.heroNeutral;
+  let stateLabel: string;
+  if (profile.licenseExpired) {
+    stateLabel = "Licencia vencida · acción urgente";
+    stateClass = styles.heroWarn;
+  } else if (profile.licenseExpiringSoon) {
+    stateLabel = "Licencia próxima a vencer";
+    stateClass = styles.heroIdle;
+  } else if (profile.safetyScore < 60) {
+    stateLabel = "Score bajo · revisar capacitación";
+    stateClass = styles.heroIdle;
+  } else if (profile.safetyScore >= 85) {
+    stateLabel = "Buen desempeño";
+    stateClass = styles.heroActive;
+  } else {
+    stateLabel = "Desempeño normal";
+    stateClass = styles.heroNeutral;
+  }
+
+  const subtitleParts: string[] = [];
+  if (profile.document) subtitleParts.push(`DNI ${profile.document}`);
+  if (profile.licenseExpiresAt) {
+    const lic = new Date(profile.licenseExpiresAt);
+    subtitleParts.push(
+      `Licencia ${
+        profile.licenseExpired ? "vencida" : "vence"
+      } ${lic.toLocaleDateString("es-AR")}`,
+    );
+  }
+  if (profile.drivenAssetCount > 0) {
+    subtitleParts.push(
+      `${profile.drivenAssetCount} ${
+        profile.drivenAssetCount === 1
+          ? "vehículo asignado"
+          : "vehículos asignados"
+      }`,
+    );
+  }
+
+  return (
+    <div className={`${styles.hero} ${stateClass}`}>
+      <div className={styles.heroLeft}>
+        <h2 className={styles.heroTitle}>{stateLabel}</h2>
+        <p className={styles.heroSubtitle}>
+          <IdCard size={11} className={styles.heroIcon} />
+          {subtitleParts.length > 0 ? subtitleParts.join(" · ") : "Sin datos"}
+        </p>
+      </div>
+      <div className={styles.heroScore}>
+        <span className={styles.heroScoreNum}>{profile.safetyScore}</span>
+        <span className={styles.heroScoreUnit}>/100</span>
+      </div>
     </div>
   );
 }

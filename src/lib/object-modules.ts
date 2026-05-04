@@ -85,6 +85,7 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
     "sostenibilidad",
   ],
   conductor: [
+    "resumen",
     "actividad",
     "seguridad",
     "conduccion",
