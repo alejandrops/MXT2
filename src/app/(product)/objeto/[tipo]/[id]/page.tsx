@@ -21,6 +21,7 @@ import { ActivityBookTab } from "./modules/ActivityBookTab";
 import { SecurityBookTab } from "./modules/SecurityBookTab";
 import { TelemetryBookTab } from "./modules/TelemetryBookTab";
 import { DriversBookTab } from "./modules/DriversBookTab";
+import { SummaryBookTab } from "./modules/SummaryBookTab";
 
 // ═══════════════════════════════════════════════════════════════
 //  /objeto/[tipo]/[id]
@@ -40,6 +41,7 @@ export const revalidate = 60;
 
 const VALID_TYPES: ObjectType[] = ["vehiculo", "conductor", "grupo"];
 const VALID_MODULES: ModuleKey[] = [
+  "resumen",
   "telemetria",
   "conductores",
   "actividad",
@@ -162,6 +164,9 @@ export default async function ObjectBookPage({
       isAnchorToday={isAnchorToday}
       headerSlot={headerSlot}
     >
+      {activeModule === "resumen" && (
+        <SummaryBookTab type={type} id={id} />
+      )}
       {activeModule === "telemetria" && (
         <TelemetryBookTab type={type} id={id} />
       )}

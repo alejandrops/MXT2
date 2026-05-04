@@ -1,15 +1,21 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L5-libro-conductores · apply.sh
-#  Sprint 1 · Lote 5 · Tab Conductores en el Libro del vehículo
+#  Maxtracker · S1-L6-vista-ejecutiva-vehiculo · apply.sh
+#  Sprint 1 · Lote 6 · Vista ejecutiva del vehículo
 #
 #  Cambios:
-#    · Matriz · agregada tab "Conductores" para vehículo (intrínseca)
-#    · DriversBookTab wraps el AssetDriversPanel existente:
-#      - Tabla de conductores que pasaron por el vehículo
-#      - Heatmap semanal por conductor × 53 semanas
-#      - Métricas: días, viajes, km, tiempo activo, safety score
-#    · Solo 4 archivos · aprovecha componente reusable preexistente
+#    · Tab "Resumen" NUEVA · primera tab del Libro del vehículo
+#      (default cuando entrás sin elegir m=)
+#    · Vista cross-módulo del "ahora" del vehículo:
+#      - Hero state · estado en lenguaje natural + alarmas badge
+#      - Telemetría destacada · 4 KPIs CAN (RPM, fuel, temp, eco)
+#      - Conductor actual · card con scoring y métricas
+#      - KPIs últimos 30 días · km, viajes, tiempo activo, eventos
+#      - Alarmas activas · top 3 con severidad
+#      - Atajos · links a las otras 5 tabs principales
+#    · Cada sección tiene "Ver más →" que profundiza en su tab
+#    · Color solo en anomalías (Tufte)
+#    · Matriz · resumen agregado como ModuleKey (vehiculo-only)
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -27,7 +33,7 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L5-libro-conductores · tab Conductores"
+echo "  S1-L6-vista-ejecutiva-vehiculo · tab Resumen"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
@@ -55,8 +61,8 @@ apply_file() {
 
 apply_file "src/lib/object-modules.ts"
 apply_file "src/app/(product)/objeto/[tipo]/[id]/page.tsx"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/DriversBookTab.tsx"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/DriversBookTab.module.css"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.tsx"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.module.css"
 
 echo ""
 echo "═══════════════════════════════════════════════════"

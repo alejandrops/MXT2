@@ -6,12 +6,13 @@
 //
 //  El cubo del MSD: Object × Time × Module
 //
-//  Matriz validada (S1-L4 + L5):
+//  Matriz validada (S1-L4 + L5 + L6):
 //
 //    | Tab              | vehículo | conductor | grupo |
 //    |------------------|----------|-----------|-------|
-//    | Telemetría 🆕    |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
-//    | Conductores 🆕   |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Resumen 🆕       |    ✓     |     ✗     |   ✗   | (intrínseca · vista ejecutiva del ahora)
+//    | Telemetría       |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Conductores      |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
 //    | Actividad        |    ✓     |     ✓     |   ✓   |
 //    | Seguridad        |    ✓     |     ✓     |   ✓   |
 //    | Conducción       |    ✓     |     ✓     |   ✓   |
@@ -21,16 +22,19 @@
 //    | Documentación    |    ✓     |     ✓     |   ✗   |
 //    | Sostenibilidad   |    ✓     |     ✗     |   ✓   |
 //
-//  Nota arquitectónica · "telemetria" y "conductores" son tabs
-//  intrínsecas del vehículo (no son módulos del cubo · no aparecen
-//  en sidebar). Viven acá como ModuleKey por simplicidad · si crece
-//  el modelo de tabs del Libro, valdría refactor a "BookTabKey" con
-//  dos sources (module / intrinsic).
+//  Resumen es la default cuando se entra a un vehículo · es la
+//  vista ejecutiva cross-módulo del "ahora". Las otras tabs
+//  profundizan en una dimensión específica.
+//
+//  Nota arquitectónica · "resumen", "telemetria" y "conductores"
+//  son tabs intrínsecas del vehículo (no son módulos del cubo · no
+//  aparecen en sidebar). Viven acá como ModuleKey por simplicidad.
 // ═══════════════════════════════════════════════════════════════
 
 export type ObjectType = "vehiculo" | "conductor" | "grupo";
 
 export type ModuleKey =
+  | "resumen"
   | "telemetria"
   | "conductores"
   | "actividad"
@@ -51,6 +55,7 @@ export interface ModuleDef {
 // Tabs efectivamente construidas en el sistema. Mantener sincronizado
 // con el sidebar y los SwitchCases del page.tsx del Libro.
 const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
+  resumen: true, // S1-L6 · habilitada · vista ejecutiva del vehículo
   telemetria: true, // S1-L4 · habilitada · tab nueva con datos CAN
   conductores: true, // S1-L5 · habilitada · historial de quién manejó
   actividad: true,
@@ -67,6 +72,7 @@ const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
 // El orden define cómo se renderizan las tabs del Libro.
 const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
   vehiculo: [
+    "resumen",
     "telemetria",
     "conductores",
     "actividad",
@@ -96,6 +102,7 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
 };
 
 const MODULE_LABELS: Record<ModuleKey, string> = {
+  resumen: "Resumen",
   telemetria: "Telemetría",
   conductores: "Conductores",
   actividad: "Actividad",
