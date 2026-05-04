@@ -1,25 +1,22 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L3-mock-can · apply.sh
-#  Sprint 1 · Lote 3 · Datos demo CAN bus simulando FMC003
+#  Maxtracker · S1-L4-libros-vehiculo · apply.sh
+#  Sprint 1 · Lote 4 · Expansión del Libro del vehículo
 #
 #  Cambios:
-#    · Nuevo módulo src/lib/mock-can/ con generador determinístico
-#    · FleetAssetLive extendido con canData (CanSnapshot | null)
-#      y deviceModel (FMC003 / FMC130 / FMB920 / Legacy)
-#    · 80% de la flota tiene CAN bus · 20% son equipos legacy
-#      o FMB920 (solo GPS) · asignación determinística por assetId
-#    · AssetDetailPanel muestra secciones reales:
-#      Entradas (puerta, cinturón, freno mano, PTO)
-#      Telemetría CAN (RPM, temp motor, presión aceite)
-#      Combustible (nivel, consumo, eficiencia)
-#      Distancia y uso (odómetro real, horas motor, idle, eco-score)
-#      Diagnóstico (DTC codes cuando hay)
-#      Footer · modelo del dispositivo
-#    · Vehículos sin CAN muestran placeholder explicativo
+#    · Matriz de aplicabilidad módulo×tipo actualizada (validada con PO)
+#    · Conducción habilitada como módulo (Scorecard activo desde L2)
+#    · Tab "Telemetría" NUEVA · solo aplica al vehículo
+#      - Aprovecha el mock CAN del L3 · ahora visible en el Libro
+#      - KPIs en vivo · RPM, temp, presión aceite, eco-score
+#      - Combustible (nivel, consumo, eficiencia)
+#      - Distancia y uso (odómetro real, horas motor, idle, PTO)
+#      - Estados del vehículo (puerta, cinturón, freno mano)
+#      - DTC codes activos cuando los hay
+#      - Vehículos sin CAN (FMB920/Legacy) muestran explicación
 #
-#  Status: MOCK virtual · NO PERSISTIDO · solo en memoria.
-#  Reemplazo por schema real (Prisma) llega en Sprint 2.
+#  Status: snapshot del momento. Curvas históricas vendrán cuando
+#  el schema persista CAN data (Sprint 2).
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -39,7 +36,7 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L3-mock-can · datos demo CAN bus FMC003"
+echo "  S1-L4-libros-vehiculo · tab Telemetría + matriz"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
@@ -70,13 +67,10 @@ apply_file() {
   fi
 }
 
-apply_file "src/lib/mock-can/types.ts"
-apply_file "src/lib/mock-can/generate.ts"
-apply_file "src/lib/mock-can/index.ts"
-apply_file "src/lib/queries/tracking.ts"
-apply_file "src/app/(product)/seguimiento/mapa/FleetTrackingClient.tsx"
-apply_file "src/components/maxtracker/AssetDetailPanel.tsx"
-apply_file "src/components/maxtracker/AssetDetailPanel.module.css"
+apply_file "src/lib/object-modules.ts"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/page.tsx"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/TelemetryBookTab.tsx"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/TelemetryBookTab.module.css"
 
 echo ""
 echo "═══════════════════════════════════════════════════"

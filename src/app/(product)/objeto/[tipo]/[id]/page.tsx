@@ -19,6 +19,7 @@ import { GroupProfile } from "@/components/maxtracker/objeto/GroupProfile";
 import type { ObjectStatus } from "@/components/maxtracker/ui";
 import { ActivityBookTab } from "./modules/ActivityBookTab";
 import { SecurityBookTab } from "./modules/SecurityBookTab";
+import { TelemetryBookTab } from "./modules/TelemetryBookTab";
 
 // ═══════════════════════════════════════════════════════════════
 //  /objeto/[tipo]/[id]
@@ -38,6 +39,7 @@ export const revalidate = 60;
 
 const VALID_TYPES: ObjectType[] = ["vehiculo", "conductor", "grupo"];
 const VALID_MODULES: ModuleKey[] = [
+  "telemetria",
   "actividad",
   "seguridad",
   "conduccion",
@@ -158,6 +160,9 @@ export default async function ObjectBookPage({
       isAnchorToday={isAnchorToday}
       headerSlot={headerSlot}
     >
+      {activeModule === "telemetria" && (
+        <TelemetryBookTab type={type} id={id} />
+      )}
       {activeModule === "actividad" && (
         <ActivityBookTab
           type={type}

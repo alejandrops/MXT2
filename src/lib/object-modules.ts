@@ -5,18 +5,32 @@
 //  y qué módulos están construidos en el sistema.
 //
 //  El cubo del MSD: Object × Time × Module
-//    · vehículo · aplica Actividad/Seguridad/Conducción/
-//                Mantenimiento/Combustible
-//    · conductor · aplica Actividad/Seguridad/Conducción
-//    · grupo     · aplica todos los módulos (agregado)
 //
-//  En MVP solo Actividad y Seguridad están construidos.
-//  El resto se renderizan deshabilitados con label "Próximamente".
+//  Matriz validada (S1-L4 libros-vehiculo):
+//
+//    | Módulo           | vehículo | conductor | grupo |
+//    |------------------|----------|-----------|-------|
+//    | Telemetría 🆕    |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Actividad        |    ✓     |     ✓     |   ✓   |
+//    | Seguridad        |    ✓     |     ✓     |   ✓   |
+//    | Conducción       |    ✓     |     ✓     |   ✓   |
+//    | Mantenimiento    |    ✓     |     ✗     |   ✓   |
+//    | Combustible      |    ✓     |     ✗     |   ✓   |
+//    | Logística        |    ✓     |     ✗     |   ✓   |
+//    | Documentación    |    ✓     |     ✓     |   ✗   |
+//    | Sostenibilidad   |    ✓     |     ✗     |   ✓   |
+//
+//  Nota arquitectónica · "telemetria" es una tab intrínseca del
+//  vehículo (no es módulo del cubo · no aparece en sidebar). Vive
+//  acá como ModuleKey por simplicidad · si crece el modelo de
+//  tabs del Libro, valdría refactor a "BookTabKey" con dos sources
+//  (module / intrinsic).
 // ═══════════════════════════════════════════════════════════════
 
 export type ObjectType = "vehiculo" | "conductor" | "grupo";
 
 export type ModuleKey =
+  | "telemetria"
   | "actividad"
   | "seguridad"
   | "conduccion"
@@ -32,13 +46,13 @@ export interface ModuleDef {
   enabled: boolean;
 }
 
-// Módulos efectivamente construidos en el sistema (sincronizado
-// con el sidebar del producto · cuando habilites un módulo nuevo
-// aquí también, los Libros lo ven automáticamente).
+// Tabs efectivamente construidas en el sistema. Mantener sincronizado
+// con el sidebar y los SwitchCases del page.tsx del Libro.
 const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
+  telemetria: true, // S1-L4 · habilitada · tab nueva con datos CAN
   actividad: true,
   seguridad: true,
-  conduccion: false,
+  conduccion: true, // S1-L2 · habilitada · scorecard activo, resto Sprint 4
   mantenimiento: false,
   combustible: false,
   logistica: false,
@@ -46,27 +60,39 @@ const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
   sostenibilidad: false,
 };
 
-// Qué módulos aplican a cada tipo de objeto (semántica del MSD).
+// Qué módulos aplican a cada tipo de objeto · matriz validada.
+// El orden define cómo se renderizan las tabs del Libro.
 const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
   vehiculo: [
+    "telemetria",
     "actividad",
     "seguridad",
     "conduccion",
     "mantenimiento",
     "combustible",
+    "logistica",
+    "documentacion",
+    "sostenibilidad",
   ],
-  conductor: ["actividad", "seguridad", "conduccion"],
+  conductor: [
+    "actividad",
+    "seguridad",
+    "conduccion",
+    "documentacion",
+  ],
   grupo: [
     "actividad",
     "seguridad",
     "conduccion",
     "mantenimiento",
     "combustible",
+    "logistica",
     "sostenibilidad",
   ],
 };
 
 const MODULE_LABELS: Record<ModuleKey, string> = {
+  telemetria: "Telemetría",
   actividad: "Actividad",
   seguridad: "Seguridad",
   conduccion: "Conducción",
