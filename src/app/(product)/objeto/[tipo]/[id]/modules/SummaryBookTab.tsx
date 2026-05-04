@@ -6,8 +6,8 @@ import { getAssetLiveStatus } from "@/lib/queries/asset-live-status";
 import { getAlarmsByAsset } from "@/lib/queries/alarms";
 import { getAssetDriverList } from "@/lib/queries/asset-drivers";
 import {
-  generateCanSnapshot,
   getDeviceCapabilities,
+  resolveCanSnapshot,
 } from "@/lib/mock-can";
 import styles from "./SummaryBookTab.module.css";
 
@@ -60,11 +60,19 @@ export async function SummaryBookTab({ type, id }: Props) {
     );
   }
 
-  // CAN snapshot · usa lastPosition si existe
+  // CAN snapshot · prefer persisted (S2-L3), fallback al mock
   const speedKmh = liveStatus.lastPosition?.speedKmh ?? 0;
   const ignition = liveStatus.lastPosition?.ignition ?? false;
   const caps = getDeviceCapabilities(id);
-  const can = generateCanSnapshot(id, speedKmh, ignition, Date.now());
+  const can = resolveCanSnapshot(
+    liveStatus.lastPosition?.canData ?? null,
+    {
+      assetId: id,
+      speedKmh,
+      ignition,
+      wallClockMs: Date.now(),
+    },
+  );
 
   // Conductor actual · primero de la lista (most recent + isCurrent)
   const currentDriver = drivers.find((d) => d.isCurrent) ?? drivers[0] ?? null;

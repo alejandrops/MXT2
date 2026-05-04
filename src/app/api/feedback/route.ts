@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { sendEmail } from "@/lib/email/send";
+import { buildFeedbackNotificationEmail } from "@/lib/email/templates/feedback-notification";
 
 // ═══════════════════════════════════════════════════════════════
 //  POST /api/feedback · S1-L8 feedback-widget
@@ -111,16 +113,26 @@ export async function POST(request: Request) {
       select: { id: true, createdAt: true },
     });
 
-    // TODO Sprint 2 · disparar mail aviso al owner
-    // Cuando integremos Resend/SES/SendGrid:
-    //   await sendOwnerNotification({
-    //     feedbackId: feedback.id,
-    //     userId: session.user.id,
-    //     userEmail: session.user.email,
-    //     category,
-    //     message,
-    //     pageUrl,
-    //   });
+    // ── 4. S2-L2 · Mail aviso al PO (best-effort) ─────────
+    // Fire-and-forget · no bloqueamos la respuesta del user esperando
+    // que Resend conteste. Si falla, queda log pero el feedback ya
+    // está persistido en DB · no se pierde.
+    void notifyFeedbackByEmail({
+      feedbackId: feedback.id,
+      category,
+      message,
+      pageUrl,
+      userAgent,
+      viewport,
+      user: {
+        email: session.user.email,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+        profileLabel: session.profile.nameLabel,
+      },
+      createdAt: feedback.createdAt,
+      origin: getOrigin(request),
+    });
 
     console.log(
       `[feedback] new feedback id=${feedback.id} category=${category} userId=${session.user.id} url=${pageUrl}`,
@@ -138,4 +150,76 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  S2-L2 · helpers de notificación
+// ═══════════════════════════════════════════════════════════════
+
+interface NotifyArgs {
+  feedbackId: string;
+  category: "BUG" | "FEATURE" | "OTHER";
+  message: string;
+  pageUrl: string;
+  userAgent: string;
+  viewport: string | null;
+  user: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileLabel: string;
+  };
+  createdAt: Date;
+  origin: string;
+}
+
+/**
+ * Manda el mail de aviso al PO. Best-effort · no tira nunca, log
+ * si algo va mal. El feedback ya está persistido cuando esto se
+ * llama, así que un mail perdido no es pérdida total.
+ */
+async function notifyFeedbackByEmail(args: NotifyArgs): Promise<void> {
+  const to = process.env.FEEDBACK_NOTIFY_TO;
+  if (!to) {
+    console.log("[feedback-mail] skipped · FEEDBACK_NOTIFY_TO not set");
+    return;
+  }
+
+  const productUrl = `${args.origin}${args.pageUrl}`;
+
+  const { subject, html, text } = buildFeedbackNotificationEmail({
+    feedbackId: args.feedbackId,
+    category: args.category,
+    message: args.message,
+    pageUrl: args.pageUrl,
+    userAgent: args.userAgent,
+    viewport: args.viewport,
+    user: args.user,
+    productUrl,
+    createdAt: args.createdAt,
+  });
+
+  const result = await sendEmail({
+    to,
+    subject,
+    html,
+    text,
+    replyTo: args.user.email,
+  });
+
+  if (result.ok) {
+    console.log(
+      `[feedback-mail] sent · feedbackId=${args.feedbackId} resendId=${result.id}`,
+    );
+  } else {
+    console.warn(
+      `[feedback-mail] failed · feedbackId=${args.feedbackId} reason=${result.reason}`,
+    );
+  }
+}
+
+/** Devuelve "https://host" del request actual · útil para CTAs en el mail */
+function getOrigin(request: Request): string {
+  const url = new URL(request.url);
+  return `${url.protocol}//${url.host}`;
 }

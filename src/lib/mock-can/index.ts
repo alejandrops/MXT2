@@ -3,4 +3,5 @@
 // ═══════════════════════════════════════════════════════════════
 
 export { generateCanSnapshot, getDeviceCapabilities } from "./generate";
+export { resolveCanSnapshot } from "./resolve";
 export type { CanSnapshot, DeviceCapabilities } from "./types";

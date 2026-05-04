@@ -46,6 +46,10 @@ export interface AssetLiveStatusData {
     speedKmh: number;
     heading: number | null;
     ignition: boolean;
+    /** S2-L3 · datos CAN del último ping · null si no hay CAN bus o
+     *  el dispositivo no los reporta · UI usa resolveCanSnapshot para
+     *  caer al mock cuando este es null. */
+    canData: unknown | null;
   } | null;
 
   // Estado de comunicación · derivado
@@ -88,6 +92,7 @@ export async function getAssetLiveStatus(
             speedKmh: true,
             heading: true,
             ignition: true,
+            canData: true,
           },
         },
         devices: {
@@ -138,6 +143,7 @@ export async function getAssetLiveStatus(
           speedKmh: asset.livePosition.speedKmh,
           heading: asset.livePosition.heading,
           ignition: asset.livePosition.ignition,
+          canData: asset.livePosition.canData ?? null,
         }
       : null,
     commState,

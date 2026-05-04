@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import {
-  generateCanSnapshot,
   getDeviceCapabilities,
+  resolveCanSnapshot,
 } from "@/lib/mock-can";
 import type { CanSnapshot } from "@/lib/mock-can";
 import styles from "./TelemetryBookTab.module.css";
@@ -82,7 +82,14 @@ export async function TelemetryBookTab({ type, id }: Props) {
   const wallClock = Date.now();
 
   const caps = getDeviceCapabilities(id);
-  const can = generateCanSnapshot(id, speedKmh, ignition, wallClock);
+  // S2-L3 · prefer persisted canData (cuando Flespi lo popule),
+  // fallback al mock determinístico para demos pre-ingestor real.
+  const can = resolveCanSnapshot(lastPos?.canData ?? null, {
+    assetId: id,
+    speedKmh,
+    ignition,
+    wallClockMs: wallClock,
+  });
 
   // Si no tiene CAN · mostrar estado del equipo y explicación
   if (!can) {

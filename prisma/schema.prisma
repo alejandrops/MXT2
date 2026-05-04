@@ -418,6 +418,10 @@ model LivePosition {
   ignition   Boolean
   updatedAt  DateTime @default(now())
 
+  /// S2-L3 · canData del último ping · espejo del Position más
+  /// reciente para evitar JOIN al consultar el "ahora" del vehículo.
+  canData    Json?
+
   @@index([recordedAt])
   @@index([speedKmh])
 }
@@ -574,6 +578,13 @@ model Position {
   speedKmh   Float
   heading    Int?
   ignition   Boolean  @default(true)
+
+  /// S2-L3 · Datos del bus CAN del momento del ping · null si el
+  /// dispositivo no reporta CAN (FMB920/Legacy) o si todavía no
+  /// llegó el primer parser de Flespi. Shape definido en
+  /// src/lib/mock-can/types.ts (interface CanSnapshot) · cuando
+  /// llegue el ingestor real, este campo se persiste igual.
+  canData    Json?
 
   @@index([assetId, recordedAt])
   @@unique([assetId, recordedAt])
