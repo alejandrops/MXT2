@@ -6,6 +6,12 @@
   background: var(--bg);
   border: 1px solid var(--brd);
   border-radius: var(--r-sm);
+  /* L5.A fix · evitar que el wrap quede colapsado en columnas
+     cuando el filter bar es flex con wrap. Se necesita ancho
+     mínimo para que dayRow + timeRow no se rompan en columnas. */
+  min-width: 480px;
+  flex: 1 1 auto;
+  box-sizing: border-box;
 }
 
 .wrap[aria-disabled="true"] {

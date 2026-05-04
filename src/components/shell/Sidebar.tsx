@@ -301,10 +301,13 @@ export function Sidebar({ openAlarmsCount }: SidebarProps = {}) {
           {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           {!collapsed && <span>Colapsar</span>}
         </button>
-        <button className={styles.configBtn} disabled>
+        <Link
+          href="/configuracion"
+          className={`${styles.configBtn} ${pathname.startsWith("/configuracion") ? styles.configBtnActive : ""}`}
+        >
           <Settings size={15} />
           {!collapsed && <span>Configuración</span>}
-        </button>
+        </Link>
       </div>
     </aside>
   );

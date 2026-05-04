@@ -80,6 +80,13 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
   return (
     <>
       <PageHeader variant="module" title="Historial" />
+      {/* Invisible · setea/lee localStorage del último asset */}
+      <HistoricosLastSeenSync
+        urlHadAssetId={params.assetId !== null}
+        currentAssetId={effectiveAssetId}
+        currentDate={effectiveDate}
+        availableAssetIds={assets.map((a) => a.id)}
+      />
       <div className={`${styles.page} appPageFull`}>
         <HistoricosFilterBar
           current={{
@@ -89,16 +96,6 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
             toTime: params.toTime,
           }}
           assets={assets}
-        />
-
-        {/* Client-side: if URL had no assetId but localStorage has
-            a last-seen asset, redirect there. Otherwise · just save
-            the current selection for next time. */}
-        <HistoricosLastSeenSync
-          urlHadAssetId={params.assetId !== null}
-          currentAssetId={effectiveAssetId}
-          currentDate={effectiveDate}
-          availableAssetIds={assets.map((a) => a.id)}
         />
 
         {!effectiveAssetId ? (

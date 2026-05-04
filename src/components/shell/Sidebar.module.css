@@ -355,6 +355,13 @@
   font-size: 13px;
   color: var(--t3);
   cursor: pointer;
+  text-decoration: none;
+}
+
+.configBtnActive {
+  color: var(--tx);
+  background: var(--bg);
+}
   background: transparent;
   border: none;
   text-decoration: none;
