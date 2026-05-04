@@ -1,0 +1,41 @@
+/* ═══════════════════════════════════════════════════════════════
+   PositionInGroupSection.module.css · S1-L4b
+   ───────────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heading {
+  font-family: var(--f);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t2);
+  margin: 0;
+}
+
+.subtitle strong {
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

@@ -6,9 +6,11 @@ import { KpiCard, EmptyState } from "@/components/maxtracker/ui";
 import type { AnalysisGranularity } from "@/lib/queries";
 import type { ObjectType } from "@/lib/object-modules";
 import { getAssetDayMapInRange } from "@/lib/queries/asset-day-map-in-range";
+import { getGroupPeers } from "@/lib/queries/group-peers";
 import { DayRouteCard } from "@/components/maxtracker/objeto/DayRouteCard";
 import { DrivenAssetsSection } from "@/components/maxtracker/objeto/DrivenAssetsSection";
 import { GroupCompositionSection } from "@/components/maxtracker/objeto/GroupCompositionSection";
+import { PositionInGroupSection } from "@/components/maxtracker/objeto/PositionInGroupSection";
 import styles from "./ActivityBookTab.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -42,15 +44,19 @@ export async function ActivityBookTab({
     anchorIso,
   );
 
-  const [data, dataPrev, peerStats, ownGroupId, dayMap] = await Promise.all([
-    loadActivityData(type, id, fromDate, toDate),
-    loadActivityData(type, id, fromPrevDate, toPrevDate),
-    loadPeerStats(type, id, fromDate, toDate),
-    loadOwnGroupId(type, id),
-    type === "vehiculo"
-      ? getAssetDayMapInRange(id, granularity, anchorIso)
-      : Promise.resolve(null),
-  ]);
+  const [data, dataPrev, peerStats, ownGroupId, dayMap, groupPeers] =
+    await Promise.all([
+      loadActivityData(type, id, fromDate, toDate),
+      loadActivityData(type, id, fromPrevDate, toPrevDate),
+      loadPeerStats(type, id, fromDate, toDate),
+      loadOwnGroupId(type, id),
+      type === "vehiculo"
+        ? getAssetDayMapInRange(id, granularity, anchorIso)
+        : Promise.resolve(null),
+      type === "vehiculo"
+        ? getGroupPeers(id, fromDate, toDate)
+        : Promise.resolve(null),
+    ]);
 
   if (!data) {
     return (
@@ -181,6 +187,15 @@ export async function ActivityBookTab({
             groupName={groupPeer?.groupName ?? null}
             groupCount={groupPeer?.count ?? null}
           />
+        </section>
+      )}
+
+      {/* ── 3.5 · Posición en el grupo (S1-L4b) ────────────── */}
+      {/* Scatter contextual del vehículo vs sus pares del grupo.
+          Solo se muestra para vehículo en grupo con ≥ 2 peers. */}
+      {type === "vehiculo" && groupPeers && (
+        <section className={styles.section}>
+          <PositionInGroupSection data={groupPeers} />
         </section>
       )}
 

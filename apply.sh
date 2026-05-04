@@ -1,22 +1,18 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L4-libros-vehiculo · apply.sh
-#  Sprint 1 · Lote 4 · Expansión del Libro del vehículo
+#  Maxtracker · S1-L4b-posicion-en-grupo · apply.sh
+#  Sprint 1 · Lote 4b · Scatter contextual del Libro
 #
 #  Cambios:
-#    · Matriz de aplicabilidad módulo×tipo actualizada (validada con PO)
-#    · Conducción habilitada como módulo (Scorecard activo desde L2)
-#    · Tab "Telemetría" NUEVA · solo aplica al vehículo
-#      - Aprovecha el mock CAN del L3 · ahora visible en el Libro
-#      - KPIs en vivo · RPM, temp, presión aceite, eco-score
-#      - Combustible (nivel, consumo, eficiencia)
-#      - Distancia y uso (odómetro real, horas motor, idle, PTO)
-#      - Estados del vehículo (puerta, cinturón, freno mano)
-#      - DTC codes activos cuando los hay
-#      - Vehículos sin CAN (FMB920/Legacy) muestran explicación
-#
-#  Status: snapshot del momento. Curvas históricas vendrán cuando
-#  el schema persista CAN data (Sprint 2).
+#    · Nueva query getGroupPeers · vehículos del mismo grupo con
+#      métricas comparables del período (km, eventos, safety score)
+#    · Nuevo componente PositionInGroupScatter (client) · scatter
+#      con Recharts · resalta el activo, peers en gris atenuado
+#    · Nueva sección PositionInGroupSection · 2 scatters lado a lado:
+#        - Distancia × Safety score
+#        - Distancia × Eventos cada 100km
+#    · Integrada en ActivityBookTab del vehículo · solo aparece si
+#      el vehículo está en grupo con ≥ 2 peers
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -36,7 +32,7 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L4-libros-vehiculo · tab Telemetría + matriz"
+echo "  S1-L4b-posicion-en-grupo · scatter contextual"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
@@ -67,10 +63,12 @@ apply_file() {
   fi
 }
 
-apply_file "src/lib/object-modules.ts"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/page.tsx"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/TelemetryBookTab.tsx"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/TelemetryBookTab.module.css"
+apply_file "src/lib/queries/group-peers.ts"
+apply_file "src/components/maxtracker/objeto/PositionInGroupScatter.tsx"
+apply_file "src/components/maxtracker/objeto/PositionInGroupScatter.module.css"
+apply_file "src/components/maxtracker/objeto/PositionInGroupSection.tsx"
+apply_file "src/components/maxtracker/objeto/PositionInGroupSection.module.css"
+apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/ActivityBookTab.tsx"
 
 echo ""
 echo "═══════════════════════════════════════════════════"

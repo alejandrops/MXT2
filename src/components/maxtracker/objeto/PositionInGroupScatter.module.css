@@ -1,0 +1,140 @@
+/* ═══════════════════════════════════════════════════════════════
+   PositionInGroupScatter.module.css · S1-L4b
+   ───────────────────────────────────────────────────────────── */
+
+.wrap {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 320px;
+  min-width: 280px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--t2);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  margin: 0;
+}
+
+.chart {
+  width: 100%;
+}
+
+/* ── Legend ────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t2);
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dotActive {
+  background: #2563EB;
+  border: 2px solid #1D4ED8;
+}
+
+.dotPeer {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+/* ── Tooltip ────────────────────────────────────────────── */
+
+.tooltip {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-width: 180px;
+}
+
+.ttHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.ttName {
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.ttPlate {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--t3);
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+}
+
+.ttRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--f);
+  font-size: 11px;
+}
+
+.ttLabel {
+  color: var(--t3);
+}
+
+.ttValue {
+  color: var(--tx);
+  font-family: var(--m);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.ttUnit {
+  color: var(--t3);
+  font-weight: 400;
+}
