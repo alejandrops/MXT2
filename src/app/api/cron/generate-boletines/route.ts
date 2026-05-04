@@ -5,9 +5,13 @@ import {
   currentPeriodAR,
   upsertBoletinSnapshot,
 } from "@/lib/boletin/snapshot";
+import {
+  loadBoletinData,
+  periodToDateRange,
+} from "@/lib/queries/boletin-data";
 
 // ═══════════════════════════════════════════════════════════════
-//  /api/cron/generate-boletines · S1-L7 cron-scaffold
+//  /api/cron/generate-boletines · S1-L7 + S2-L1
 //  ─────────────────────────────────────────────────────────────
 //  Endpoint invocado por Vercel Cron diariamente a las 06:00 UTC
 //  (= 03:00 AR) · regenera el snapshot del MES EN CURSO para
@@ -18,15 +22,13 @@ import {
 //    · El secret debe estar configurado como env var en Vercel:
 //      Settings → Environment Variables → CRON_SECRET
 //
-//  Estado del lote (S1-L7 scaffold):
-//    · Infraestructura completa · auth, lista de accounts, persist
-//    · Generación REAL del payload · placeholder por ahora
-//      (refactor de loadBoletinData del page.tsx llega en Sprint 2)
+//  S2-L1 · ahora genera payloads REALES llamando a loadBoletinData.
+//  El page del boletín verifica el shape (isValidBoletinPayload) y
+//  cuando pasa el check, sirve el snapshot directo (instantáneo).
 //
-//  Sprint 2 TODO:
-//    · Mover loadBoletinData a src/lib/queries/boletin-data.ts
-//    · Reemplazar buildPlaceholderPayload por la lógica real
-//    · Agregar regeneración de mes anterior el día 1
+//  Manual run:
+//    curl -H "Authorization: Bearer $CRON_SECRET" \
+//      "https://mxt-2.vercel.app/api/cron/generate-boletines"
 // ═══════════════════════════════════════════════════════════════
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,13 @@ export async function GET(request: Request) {
 
   const startedAt = Date.now();
   const period = currentPeriodAR();
+  const range = periodToDateRange(period);
+  if (!range) {
+    return NextResponse.json(
+      { error: `Invalid period: ${period}` },
+      { status: 500 },
+    );
+  }
 
   try {
     // ── 2. Listar accounts activos ───────────────────────
@@ -62,16 +71,21 @@ export async function GET(request: Request) {
       accountId: string;
       accountName: string;
       ok: boolean;
+      durationMs?: number;
       error?: string;
     }> = [];
 
-    // ── 3. Para cada account, generar y persistir snapshot ──
+    // ── 3. Por cada account · generar payload real y persistir ──
+    // Procesamos secuencialmente para no saturar Postgres con
+    // queries paralelas (loadBoletinData hace ~15 queries internas).
     for (const account of accounts) {
+      const accStarted = Date.now();
       try {
-        // PLACEHOLDER · payload mínimo por ahora
-        // En Sprint 2, reemplazar por loadBoletinData refactorizado
-        const payload = await buildPlaceholderPayload({
-          period,
+        const payload = await loadBoletinData({
+          monthStart: range.monthStart,
+          monthEnd: range.monthEnd,
+          prevStart: range.prevStart,
+          prevEnd: range.prevEnd,
           accountId: account.id,
         });
 
@@ -86,23 +100,25 @@ export async function GET(request: Request) {
           accountId: account.id,
           accountName: account.name,
           ok: true,
+          durationMs: Date.now() - accStarted,
         });
       } catch (err) {
         results.push({
           accountId: account.id,
           accountName: account.name,
           ok: false,
+          durationMs: Date.now() - accStarted,
           error: err instanceof Error ? err.message : String(err),
         });
       }
     }
 
-    const durationMs = Date.now() - startedAt;
+    const totalDurationMs = Date.now() - startedAt;
     const ok = results.filter((r) => r.ok).length;
     const failed = results.filter((r) => !r.ok).length;
 
     console.log(
-      `[cron/generate-boletines] period=${period} accounts=${accounts.length} ok=${ok} failed=${failed} duration=${durationMs}ms`,
+      `[cron/generate-boletines] period=${period} accounts=${accounts.length} ok=${ok} failed=${failed} durationMs=${totalDurationMs}`,
     );
 
     return NextResponse.json({
@@ -110,7 +126,7 @@ export async function GET(request: Request) {
       accounts: accounts.length,
       ok,
       failed,
-      durationMs,
+      totalDurationMs,
       results,
     });
   } catch (err) {
@@ -123,28 +139,4 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PLACEHOLDER · sustituir en Sprint 2 por payload real del boletín
-// ═══════════════════════════════════════════════════════════════
-
-async function buildPlaceholderPayload(args: {
-  period: string;
-  accountId: string;
-}): Promise<{
-  period: string;
-  accountId: string;
-  status: "placeholder";
-  generatedAt: string;
-  notes: string;
-}> {
-  return {
-    period: args.period,
-    accountId: args.accountId,
-    status: "placeholder",
-    generatedAt: new Date().toISOString(),
-    notes:
-      "S1-L7 scaffold · payload completo en Sprint 2 cuando refactor de loadBoletinData",
-  };
 }

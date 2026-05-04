@@ -1,10 +1,13 @@
 // @ts-nocheck · pre-existing TS errors (Prisma types stale) · L5.A apply
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
-import { TELEMETRY_EVENT_TYPES } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getBoletinSnapshot } from "@/lib/boletin/snapshot";
+import {
+  loadBoletinData,
+  periodToDateRange,
+  type BoletinData,
+} from "@/lib/queries/boletin-data";
 import { BoletinHeader } from "@/components/maxtracker/boletin/BoletinHeader";
 import { BlockA_ResumenEjecutivo } from "@/components/maxtracker/boletin/BlockA_ResumenEjecutivo";
 import { BlockB_SaludOperativa } from "@/components/maxtracker/boletin/BlockB_SaludOperativa";
@@ -29,22 +32,29 @@ import styles from "./BoletinPage.module.css";
 //    D · Top y bottom · vehículos
 //    E · Top y bottom · conductores
 //    F · Seguridad · alarmas
-//    G · Conducción · eventos
-//    H · Anomalías estadísticas
-//    I · Sostenibilidad (placeholder por ahora)
-//    J · Highlights y observaciones · texto editorial generado
+//    G · Conducción · scoring y eventos por tipo
 //
-//  URL formato · /direccion/boletin/YYYY-MM
-//  ej · /direccion/boletin/2026-03
+//  S2-L1 · refactor · `loadBoletinData` movido a
+//  src/lib/queries/boletin-data.ts para que el cron pueda usarlo.
+//  Los tipos se re-exportan desde acá para no romper imports
+//  existentes en los componentes BlockX_*.
 // ═══════════════════════════════════════════════════════════════
 
+// ─── Re-export tipos · compatibilidad con imports preexistentes ─
+export type {
+  BoletinData,
+  GroupRow,
+  VehicleRow,
+  DriverRow,
+} from "@/lib/queries/boletin-data";
+
 export const revalidate = 3600;
+
+const PERIOD_RX = /^(\d{4})-(0[1-9]|1[0-2])$/;
 
 interface PageProps {
   params: Promise<{ period: string }>;
 }
-
-const PERIOD_RX = /^(\d{4})-(0[1-9]|1[0-2])$/;
 
 export default async function BoletinPage({ params }: PageProps) {
   const { period } = await params;
@@ -54,14 +64,8 @@ export default async function BoletinPage({ params }: PageProps) {
   const year = Number(match[1]);
   const month = Number(match[2]);
 
-  // Rango del mes · AR-local · el día 1 a las 00:00 AR es el
-  // mismo instante UTC que día 1 a las 03:00 UTC.
-  const monthStartUtc = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0));
-  const nextMonthStartUtc = new Date(Date.UTC(year, month, 1, 3, 0, 0));
-
-  // Período anterior para deltas
-  const prevMonthStartUtc = new Date(Date.UTC(year, month - 2, 1, 3, 0, 0));
-  const prevMonthEndUtc = monthStartUtc;
+  const range = periodToDateRange(period);
+  if (!range) notFound();
 
   // L1 · defensa anti-pantalla-blanca (B8)
   // Si loadBoletinData tira (data ausente, query timeout, etc.),
@@ -70,13 +74,10 @@ export default async function BoletinPage({ params }: PageProps) {
   const session = await getSession();
   const scopedAccountId = resolveAccountScope(session, "direccion", null);
 
-  // S1-L7 cron-scaffold · check snapshot first, fallback on-demand
+  // S1-L7 cron-scaffold + S2-L1 · check snapshot first, fallback on-demand
   // El cron diario (Vercel) regenera snapshots del mes en curso.
-  // Si existe un snapshot con shape válido, lo usamos · ahorra cómputo
-  // pesado. Si no, fallback a loadBoletinData on-demand (estado actual).
-  // En Sprint 1 los snapshots son placeholder · siempre cae al fallback.
-  // En Sprint 2 cuando refactor de loadBoletinData, los snapshots traerán
-  // payload real y este check empieza a tener efecto.
+  // Si existe un snapshot con shape válido (no placeholder), lo usamos
+  // · ahorra cómputo pesado.
   let data: BoletinData | null = null;
   const snapshot = await getBoletinSnapshot(period, scopedAccountId);
   if (snapshot && isValidBoletinPayload(snapshot.payload)) {
@@ -86,10 +87,10 @@ export default async function BoletinPage({ params }: PageProps) {
   if (!data) {
     try {
       data = await loadBoletinData({
-        monthStart: monthStartUtc,
-        monthEnd: nextMonthStartUtc,
-        prevStart: prevMonthStartUtc,
-        prevEnd: prevMonthEndUtc,
+        monthStart: range.monthStart,
+        monthEnd: range.monthEnd,
+        prevStart: range.prevStart,
+        prevEnd: range.prevEnd,
         accountId: scopedAccountId,
       });
     } catch (err) {
@@ -227,556 +228,6 @@ export default async function BoletinPage({ params }: PageProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Loader compartido por todos los bloques
-// ═══════════════════════════════════════════════════════════════
-
-export interface BoletinData {
-  // Período actual
-  current: {
-    distanceKm: number;
-    activeMin: number;
-    tripCount: number;
-    eventCount: number;
-    alarmCount: number;
-    activeAssetCount: number;
-    activeDriverCount: number;
-  };
-  // Período anterior · para deltas
-  previous: {
-    distanceKm: number;
-    activeMin: number;
-    tripCount: number;
-    eventCount: number;
-    alarmCount: number;
-  };
-  // Total flota
-  fleet: {
-    totalAssets: number;
-    totalDrivers: number;
-    totalGroups: number;
-  };
-  // Días con actividad por día calendario · para distribución temporal
-  daily: { day: string; distanceKm: number }[];
-  // Performance por grupo · usado por Bloque C
-  groups: GroupRow[];
-  // Vehículos con eventos · usado por Bloque D
-  vehicles: VehicleRow[];
-  // Conductores con score · usado por Bloque E
-  drivers: DriverRow[];
-  // Alarmas detalladas · usado por Bloque F
-  alarms: {
-    /** Total del período (mismo dato que current.alarmCount, replicado para conveniencia) */
-    total: number;
-    /** Activas al cierre (status OPEN al momento del render) */
-    activeAtClose: number;
-    /** MTTR · tiempo medio de cierre en minutos · solo CLOSED */
-    mttrMin: number;
-    /** Severity máxima del período · null si no hay alarmas */
-    maxSeverity: string | null;
-    /** Breakdown por severity · 4 buckets */
-    bySeverity: { severity: string; count: number }[];
-    /** Breakdown por domain · 2 buckets · CONDUCCION/SEGURIDAD */
-    byDomain: { domain: string; count: number }[];
-    /** Top 5 vehículos con más alarmas · ranking simple */
-    topVehicles: { assetId: string; assetName: string; plate: string | null; count: number }[];
-  };
-  // Eventos por tipo · usado por Bloque G
-  eventsByType: { type: string; count: number }[];
-}
-
-export interface GroupRow {
-  groupId: string;
-  groupName: string;
-  assetCount: number;
-  distanceKm: number;
-  activeMin: number;
-  tripCount: number;
-  eventCount: number;
-  /** Eventos por cada 100 km · proxy de calidad (menos = mejor) */
-  eventsPer100km: number;
-}
-
-export interface VehicleRow {
-  assetId: string;
-  assetName: string;
-  plate: string | null;
-  groupName: string | null;
-  distanceKm: number;
-  /** Minutos activos · necesario para BlockH (anomalías estadísticas) */
-  activeMin: number;
-  /** Cantidad de viajes en el período · necesario para BlockH y BlockJ */
-  tripCount: number;
-  eventCount: number;
-  /** Eventos por cada 100 km · ranking se hace por esto */
-  eventsPer100km: number;
-}
-
-export interface DriverRow {
-  personId: string;
-  fullName: string;
-  /** Score 0-100 · más alto = mejor · viene de Person.safetyScore */
-  safetyScore: number;
-  distanceKm: number;
-  tripCount: number;
-  eventCount: number;
-}
-
-async function loadBoletinData(args: {
-  monthStart: Date;
-  monthEnd: Date;
-  prevStart: Date;
-  prevEnd: Date;
-  /** L2B-3 · scope multi-tenant. accountId=null → cross-tenant (SA/MA) */
-  accountId: string | null;
-}): Promise<BoletinData> {
-  // ─── Helpers de scope · L2B-3 ──────────────────────────────
-  // Construyen los WHEREs según el modelo de cada entidad:
-  //  · Asset, Person, Group, Alarm, AssetDriverDay tienen accountId directo
-  //  · Event NO tiene accountId · se filtra vía relación asset.accountId
-  const scopeAccount = args.accountId
-    ? { accountId: args.accountId }
-    : {};
-  const scopeEventViaAsset = args.accountId
-    ? { asset: { accountId: args.accountId } }
-    : {};
-
-  const [
-    currDays,
-    prevDays,
-    currEventCount,
-    prevEventCount,
-    currAlarmCount,
-    prevAlarmCount,
-    totalAssets,
-    totalDrivers,
-    totalGroups,
-    eventsByAsset,
-    eventsByPerson,
-    persons,
-    alarmsForPeriod,
-    activeAlarmsAtClose,
-    eventsByTypeRaw,
-  ] = await Promise.all([
-    db.assetDriverDay.findMany({
-      where: {
-        ...scopeAccount,
-        day: { gte: args.monthStart, lt: args.monthEnd },
-      },
-      select: {
-        day: true,
-        assetId: true,
-        personId: true,
-        distanceKm: true,
-        activeMin: true,
-        tripCount: true,
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            plate: true,
-            groupId: true,
-            group: { select: { id: true, name: true } },
-          },
-        },
-        person: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-      },
-    }),
-    db.assetDriverDay.findMany({
-      where: {
-        ...scopeAccount,
-        day: { gte: args.prevStart, lt: args.prevEnd },
-      },
-      select: {
-        distanceKm: true,
-        activeMin: true,
-        tripCount: true,
-      },
-    }),
-    db.event.count({
-      where: {
-        ...scopeEventViaAsset,
-        occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_EVENT_TYPES },
-      },
-    }),
-    db.event.count({
-      where: {
-        ...scopeEventViaAsset,
-        occurredAt: { gte: args.prevStart, lt: args.prevEnd },
-        type: { notIn: TELEMETRY_EVENT_TYPES },
-      },
-    }),
-    db.alarm.count({
-      where: {
-        ...scopeAccount,
-        triggeredAt: { gte: args.monthStart, lt: args.monthEnd },
-      },
-    }),
-    db.alarm.count({
-      where: {
-        ...scopeAccount,
-        triggeredAt: { gte: args.prevStart, lt: args.prevEnd },
-      },
-    }),
-    db.asset.count({ where: scopeAccount }),
-    db.person.count({ where: scopeAccount }),
-    db.group.count({ where: scopeAccount }),
-    // Eventos agregados por asset · para Bloques C y D
-    db.event.groupBy({
-      by: ["assetId"],
-      where: {
-        ...scopeEventViaAsset,
-        occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_EVENT_TYPES },
-      },
-      _count: { _all: true },
-    }),
-    // Eventos agregados por persona · para Bloque E
-    db.event.groupBy({
-      by: ["personId"],
-      where: {
-        ...scopeEventViaAsset,
-        occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_EVENT_TYPES },
-        personId: { not: null },
-      },
-      _count: { _all: true },
-    }),
-    // Personas con safetyScore para drivers ranking
-    db.person.findMany({
-      where: scopeAccount,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        safetyScore: true,
-      },
-    }),
-    // Alarmas del período · detalle para Bloque F
-    db.alarm.findMany({
-      where: {
-        ...scopeAccount,
-        triggeredAt: { gte: args.monthStart, lt: args.monthEnd },
-      },
-      select: {
-        id: true,
-        assetId: true,
-        domain: true,
-        severity: true,
-        status: true,
-        triggeredAt: true,
-        closedAt: true,
-        asset: {
-          select: { id: true, name: true, plate: true },
-        },
-      },
-    }),
-    // Alarmas activas (OPEN) al cierre del período · "abiertas pendientes"
-    db.alarm.count({
-      where: {
-        ...scopeAccount,
-        status: "OPEN",
-        triggeredAt: { lt: args.monthEnd },
-      },
-    }),
-    // Eventos por tipo · top tipos del período · para Bloque G
-    db.event.groupBy({
-      by: ["type"],
-      where: {
-        ...scopeEventViaAsset,
-        occurredAt: { gte: args.monthStart, lt: args.monthEnd },
-        type: { notIn: TELEMETRY_EVENT_TYPES },
-      },
-      _count: { _all: true },
-    }),
-  ]);
-
-  // Activos del período
-  const activeAssetIds = new Set(currDays.map((d) => d.assetId));
-  const activeDriverIds = new Set(currDays.map((d) => d.personId));
-
-  // Distribución diaria
-  const dailyMap = new Map<string, number>();
-  for (const d of currDays) {
-    const key = isoDate(d.day);
-    dailyMap.set(key, (dailyMap.get(key) ?? 0) + (d.distanceKm ?? 0));
-  }
-  const daily = Array.from(dailyMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, distanceKm]) => ({ day, distanceKm }));
-
-  // Eventos por assetId · para joinear con vehículos/grupos
-  // El groupBy() pidió `_count: { _all: true }` · _count._all viene garantizado.
-  // Cast porque Prisma 6 tipa _count como union "true | { _all?: number }".
-  const eventsByAssetMap = new Map<string, number>();
-  for (const e of eventsByAsset as { assetId: string; _count: { _all: number } }[]) {
-    eventsByAssetMap.set(e.assetId, e._count._all);
-  }
-  const eventsByPersonMap = new Map<string, number>();
-  for (const e of eventsByPerson as { personId: string | null; _count: { _all: number } }[]) {
-    if (e.personId) eventsByPersonMap.set(e.personId, e._count._all);
-  }
-
-  // ── Vehículos · agrupar currDays por assetId ────────────────
-  const assetMap = new Map<
-    string,
-    {
-      assetId: string;
-      assetName: string;
-      plate: string | null;
-      groupId: string | null;
-      groupName: string | null;
-      distanceKm: number;
-      activeMin: number;
-      tripCount: number;
-    }
-  >();
-
-  for (const d of currDays) {
-    const cur = assetMap.get(d.assetId) ?? {
-      assetId: d.assetId,
-      assetName: d.asset?.name ?? d.assetId,
-      plate: d.asset?.plate ?? null,
-      groupId: d.asset?.groupId ?? null,
-      groupName: d.asset?.group?.name ?? null,
-      distanceKm: 0,
-      activeMin: 0,
-      tripCount: 0,
-    };
-    cur.distanceKm += d.distanceKm ?? 0;
-    cur.activeMin += d.activeMin ?? 0;
-    cur.tripCount += d.tripCount ?? 0;
-    assetMap.set(d.assetId, cur);
-  }
-
-  const vehicles: VehicleRow[] = Array.from(assetMap.values()).map((a) => {
-    const eventCount = eventsByAssetMap.get(a.assetId) ?? 0;
-    const eventsPer100km =
-      a.distanceKm > 0 ? (eventCount / a.distanceKm) * 100 : 0;
-    return {
-      assetId: a.assetId,
-      assetName: a.assetName,
-      plate: a.plate,
-      groupName: a.groupName,
-      distanceKm: a.distanceKm,
-      activeMin: a.activeMin,
-      tripCount: a.tripCount,
-      eventCount,
-      eventsPer100km,
-    };
-  });
-
-  // ── Grupos · agrupar vehículos por groupId ──────────────────
-  const groupMap = new Map<
-    string,
-    {
-      groupId: string;
-      groupName: string;
-      assetIds: Set<string>;
-      distanceKm: number;
-      activeMin: number;
-      tripCount: number;
-      eventCount: number;
-    }
-  >();
-
-  for (const a of assetMap.values()) {
-    if (!a.groupId || !a.groupName) continue;
-    const cur = groupMap.get(a.groupId) ?? {
-      groupId: a.groupId,
-      groupName: a.groupName,
-      assetIds: new Set<string>(),
-      distanceKm: 0,
-      activeMin: 0,
-      tripCount: 0,
-      eventCount: 0,
-    };
-    cur.assetIds.add(a.assetId);
-    cur.distanceKm += a.distanceKm;
-    cur.activeMin += a.activeMin;
-    cur.tripCount += a.tripCount;
-    cur.eventCount += eventsByAssetMap.get(a.assetId) ?? 0;
-    groupMap.set(a.groupId, cur);
-  }
-
-  const groups: GroupRow[] = Array.from(groupMap.values())
-    .map((g) => ({
-      groupId: g.groupId,
-      groupName: g.groupName,
-      assetCount: g.assetIds.size,
-      distanceKm: g.distanceKm,
-      activeMin: g.activeMin,
-      tripCount: g.tripCount,
-      eventCount: g.eventCount,
-      eventsPer100km:
-        g.distanceKm > 0 ? (g.eventCount / g.distanceKm) * 100 : 0,
-    }))
-    .sort((a, b) => b.distanceKm - a.distanceKm);
-
-  // ── Conductores · juntar safetyScore con datos del período ──
-  const driverMap = new Map<
-    string,
-    {
-      personId: string;
-      fullName: string;
-      distanceKm: number;
-      tripCount: number;
-    }
-  >();
-
-  for (const d of currDays) {
-    const cur = driverMap.get(d.personId) ?? {
-      personId: d.personId,
-      fullName: d.person
-        ? `${d.person.firstName} ${d.person.lastName}`.trim()
-        : d.personId,
-      distanceKm: 0,
-      tripCount: 0,
-    };
-    cur.distanceKm += d.distanceKm ?? 0;
-    cur.tripCount += d.tripCount ?? 0;
-    driverMap.set(d.personId, cur);
-  }
-
-  const personScoreMap = new Map<string, number>();
-  for (const p of persons) {
-    personScoreMap.set(p.id, p.safetyScore ?? 75);
-  }
-
-  const drivers: DriverRow[] = Array.from(driverMap.values()).map((d) => ({
-    personId: d.personId,
-    fullName: d.fullName,
-    safetyScore: personScoreMap.get(d.personId) ?? 75,
-    distanceKm: d.distanceKm,
-    tripCount: d.tripCount,
-    eventCount: eventsByPersonMap.get(d.personId) ?? 0,
-  }));
-
-  // ── Alarmas · agregaciones para Bloque F ────────────────────
-  const sevOrder = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 } as const;
-  let maxSev: keyof typeof sevOrder | null = null;
-  for (const a of alarmsForPeriod) {
-    const s = (a.severity as keyof typeof sevOrder) ?? "LOW";
-    if (maxSev === null || sevOrder[s] > sevOrder[maxSev]) maxSev = s;
-  }
-
-  // MTTR · solo CLOSED con closedAt
-  const mttrSamples: number[] = [];
-  for (const a of alarmsForPeriod) {
-    if (a.status === "CLOSED" && a.closedAt) {
-      mttrSamples.push((a.closedAt.getTime() - a.triggeredAt.getTime()) / 60000);
-    }
-  }
-  const mttrMin =
-    mttrSamples.length > 0
-      ? mttrSamples.reduce((s, x) => s + x, 0) / mttrSamples.length
-      : 0;
-
-  // Breakdown por severity · 4 buckets fijos en orden
-  const sevCount: Record<string, number> = {
-    CRITICAL: 0,
-    HIGH: 0,
-    MEDIUM: 0,
-    LOW: 0,
-  };
-  for (const a of alarmsForPeriod) {
-    if (a.severity in sevCount) {
-      sevCount[a.severity] = (sevCount[a.severity] ?? 0) + 1;
-    }
-  }
-  const bySeverity = Object.entries(sevCount).map(([severity, count]) => ({
-    severity,
-    count,
-  }));
-
-  // Breakdown por domain · 2 buckets · CONDUCCION/SEGURIDAD
-  const domCount: Record<string, number> = {
-    CONDUCCION: 0,
-    SEGURIDAD: 0,
-  };
-  for (const a of alarmsForPeriod) {
-    if (a.domain in domCount) {
-      domCount[a.domain] = (domCount[a.domain] ?? 0) + 1;
-    }
-  }
-  const byDomain = Object.entries(domCount).map(([domain, count]) => ({
-    domain,
-    count,
-  }));
-
-  // Top 5 vehículos con más alarmas
-  const alarmsByAssetMap = new Map<
-    string,
-    { assetId: string; assetName: string; plate: string | null; count: number }
-  >();
-  for (const a of alarmsForPeriod) {
-    if (!a.asset) continue;
-    const cur = alarmsByAssetMap.get(a.assetId) ?? {
-      assetId: a.assetId,
-      assetName: a.asset.name,
-      plate: a.asset.plate,
-      count: 0,
-    };
-    cur.count++;
-    alarmsByAssetMap.set(a.assetId, cur);
-  }
-  const topAlarmVehicles = Array.from(alarmsByAssetMap.values())
-    .sort((x, y) => y.count - x.count)
-    .slice(0, 5);
-
-  // ── Eventos por tipo · top tipos para Bloque G ──────────────
-  // groupBy con _count: { _all: true } · cast porque Prisma 6 tipa _count
-  // como union (idem patrones arriba).
-  const eventsByType = (eventsByTypeRaw as { type: string; _count: { _all: number } }[])
-    .map((e) => ({ type: e.type, count: e._count._all }))
-    .sort((x, y) => y.count - x.count);
-
-  return {
-    current: {
-      distanceKm: currDays.reduce((s, x) => s + (x.distanceKm ?? 0), 0),
-      activeMin: currDays.reduce((s, x) => s + (x.activeMin ?? 0), 0),
-      tripCount: currDays.reduce((s, x) => s + (x.tripCount ?? 0), 0),
-      eventCount: currEventCount,
-      alarmCount: currAlarmCount,
-      activeAssetCount: activeAssetIds.size,
-      activeDriverCount: activeDriverIds.size,
-    },
-    previous: {
-      distanceKm: prevDays.reduce((s, x) => s + (x.distanceKm ?? 0), 0),
-      activeMin: prevDays.reduce((s, x) => s + (x.activeMin ?? 0), 0),
-      tripCount: prevDays.reduce((s, x) => s + (x.tripCount ?? 0), 0),
-      eventCount: prevEventCount,
-      alarmCount: prevAlarmCount,
-    },
-    fleet: {
-      totalAssets,
-      totalDrivers,
-      totalGroups,
-    },
-    daily,
-    groups,
-    vehicles,
-    drivers,
-    alarms: {
-      total: alarmsForPeriod.length,
-      activeAtClose: activeAlarmsAtClose,
-      mttrMin,
-      maxSeverity: maxSev,
-      bySeverity,
-      byDomain,
-      topVehicles: topAlarmVehicles,
-    },
-    eventsByType,
-  };
-}
-
-function isoDate(d: Date): string {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
 //  Placeholder para bloques no implementados
 // ═══════════════════════════════════════════════════════════════
 
@@ -807,8 +258,8 @@ function BlockPlaceholder({
 //  BoletinData. Los snapshots placeholder generados en Sprint 1
 //  retornan false y caen al fallback de loadBoletinData.
 //
-//  Cuando Sprint 2 implemente la generación real, los snapshots
-//  empezarán a pasar este check y el page los usará automáticamente.
+//  S2-L1 · ahora que el cron genera payloads reales, este check
+//  empieza a pasar y los snapshots se sirven instantáneo.
 // ═══════════════════════════════════════════════════════════════
 
 function isValidBoletinPayload(payload: unknown): payload is BoletinData {
@@ -816,10 +267,6 @@ function isValidBoletinPayload(payload: unknown): payload is BoletinData {
   const p = payload as Record<string, unknown>;
   // Discriminator · placeholders del scaffold tienen status="placeholder"
   if (p.status === "placeholder") return false;
-  // Shape mínimo · si tiene safetyKpis es muy probable que sea BoletinData
-  return (
-    "safetyKpis" in p ||
-    "fleetTotals" in p ||
-    "monthRange" in p
-  );
+  // Shape mínimo · si tiene 'current' y 'fleet' es muy probable que sea BoletinData
+  return "current" in p && "fleet" in p && "groups" in p;
 }

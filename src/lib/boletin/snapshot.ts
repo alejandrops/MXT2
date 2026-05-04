@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 
 // ═══════════════════════════════════════════════════════════════
-//  src/lib/boletin/snapshot.ts · S1-L7 cron-scaffold
+//  src/lib/boletin/snapshot.ts · S1-L7 + S2-L1.1 hotfix
 //  ─────────────────────────────────────────────────────────────
 //  Helpers para leer y escribir BoletinSnapshot · la cache que
 //  guarda los payloads pre-computados del boletín mensual.
@@ -14,6 +14,14 @@ import { db } from "@/lib/db";
 //
 //  Convención del period:
 //    "YYYY-MM"  · ej. "2026-04" para Abril 2026
+//
+//  ⚠ S2-L1.1 hotfix:
+//  Prisma `findUnique` con compound keys NO acepta `null`. Como
+//  `accountId` puede ser null (caso SA/MA cross-tenant), usamos
+//  `findFirst` en read y pattern manual en write. El @@unique del
+//  schema sigue siendo válido para writes con accountId no-null;
+//  para null hay un caveat de Postgres (NULL != NULL en unique
+//  constraints) que el upsert manual maneja chequeando primero.
 // ═══════════════════════════════════════════════════════════════
 
 const PERIOD_RX = /^(\d{4})-(0[1-9]|1[0-2])$/;
@@ -57,6 +65,9 @@ export function previousPeriodAR(): string {
  *
  * accountId === null significa "snapshot cross-tenant" (SA/MA preview).
  * Para clientes regulares, accountId es el id de su cuenta.
+ *
+ * Usa findFirst (en vez de findUnique) porque Prisma no acepta null
+ * en compound keys.
  */
 export async function getBoletinSnapshot(
   period: string,
@@ -67,13 +78,8 @@ export async function getBoletinSnapshot(
   source: string;
 } | null> {
   if (!isValidPeriod(period)) return null;
-  const row = await db.boletinSnapshot.findUnique({
-    where: {
-      period_accountId: {
-        period,
-        accountId: accountId as any, // Prisma compound key con null
-      },
-    },
+  const row = await db.boletinSnapshot.findFirst({
+    where: { period, accountId },
     select: {
       payload: true,
       generatedAt: true,
@@ -87,6 +93,11 @@ export async function getBoletinSnapshot(
 
 /**
  * Inserta o actualiza un snapshot · upsert por (period, accountId).
+ *
+ * Implementación manual con findFirst + update/create porque Prisma
+ * `upsert` con compound key tampoco acepta null. Para accounts
+ * regulares (accountId no-null), funciona idénticamente al upsert
+ * estándar · misma garantía de unicidad.
  */
 export async function upsertBoletinSnapshot(args: {
   period: string;
@@ -99,29 +110,36 @@ export async function upsertBoletinSnapshot(args: {
   }
   const source = args.source ?? "cron";
 
-  await db.boletinSnapshot.upsert({
-    where: {
-      period_accountId: {
-        period: args.period,
-        accountId: args.accountId as any,
-      },
-    },
-    create: {
-      period: args.period,
-      accountId: args.accountId,
-      payload: args.payload as any,
-      source,
-    },
-    update: {
-      payload: args.payload as any,
-      source,
-      generatedAt: new Date(),
-    },
+  // Buscar existing primero · evita el problema del null en compound key
+  const existing = await db.boletinSnapshot.findFirst({
+    where: { period: args.period, accountId: args.accountId },
+    select: { id: true },
   });
+
+  if (existing) {
+    await db.boletinSnapshot.update({
+      where: { id: existing.id },
+      data: {
+        payload: args.payload as any,
+        source,
+        generatedAt: new Date(),
+      },
+    });
+  } else {
+    await db.boletinSnapshot.create({
+      data: {
+        period: args.period,
+        accountId: args.accountId,
+        payload: args.payload as any,
+        source,
+      },
+    });
+  }
 }
 
 /**
  * Borra el snapshot · útil si el PO quiere forzar regeneración.
+ * deleteMany maneja accountId null sin problemas.
  */
 export async function deleteBoletinSnapshot(
   period: string,
@@ -130,7 +148,7 @@ export async function deleteBoletinSnapshot(
   await db.boletinSnapshot.deleteMany({
     where: {
       period,
-      accountId: accountId as any,
+      accountId,
     },
   });
 }
