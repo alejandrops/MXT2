@@ -116,3 +116,27 @@
 .primaryAction:hover {
   background: #1f2a3a;
 }
+
+/* ── S1-L3 mock-can · device model footer ────────────────── */
+
+.deviceFooter {
+  margin: 8px 12px 0;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-align: center;
+}
+
+.deviceModel {
+  color: var(--t1);
+  font-weight: 500;
+}
+
+.deviceCap {
+  color: var(--t3);
+  font-style: italic;
+}

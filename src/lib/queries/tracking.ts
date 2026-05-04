@@ -81,6 +81,24 @@ export interface FleetAssetLive {
     document: string | null;
     safetyScore: number;
   } | null;
+
+  // ── S1-L3 mock-can · Telemática extendida CAN bus ─────────
+  // Solo presente si el dispositivo del vehículo soporta CAN
+  // (Teltonika FMC003/FMC130). Los assets con dispositivos legacy
+  // o solo-GPS (FMB920) tienen estos campos en `null`/`undefined`.
+  // Asignación determinística por assetId.
+  /** Modelo del dispositivo telemático · informativo · siempre presente */
+  deviceModel?: "FMC003" | "FMB920" | "FMC130" | "Legacy";
+  /**
+   * Snapshot de datos CAN del momento. null si el dispositivo no
+   * tiene acceso al bus CAN. Cuando exista, contiene RPM, temp,
+   * combustible, odómetro real, eventos de vehículo, DTC codes,
+   * eco-score · todo validado por la ECU.
+   *
+   * Status: MOCK virtual hasta Sprint 2 (schema real).
+   * Ver src/lib/mock-can/ para shape y generación.
+   */
+  canData?: import("@/lib/mock-can").CanSnapshot | null;
 }
 
 export interface FleetGroup {

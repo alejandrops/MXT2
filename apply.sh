@@ -1,49 +1,50 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L2-ia-reorg · apply.sh
-#  Sprint 1 · Lote 2 · Reorganización de IA
+#  Maxtracker · S1-L3-mock-can · apply.sh
+#  Sprint 1 · Lote 3 · Datos demo CAN bus simulando FMC003
 #
 #  Cambios:
-#    · Mover Scorecard de Actividad a Conducción
-#    · Renombrar "Distribución por grupo" a "Comparativa entre objetos"
-#    · Eliminar Vista Ejecutiva (queda redirect a /dashboard)
-#    · Crear nueva pantalla /dashboard (scaffold)
-#    · Sacar Torre de control del sidebar (URL queda accesible)
-#    · Brand block del sidebar apunta a /dashboard
-#    · Topbar agrega icono Home → /dashboard
-#    · Habilitar módulo Conducción con Scorecard como única página
-#    · Actualizar entries del CMDK
+#    · Nuevo módulo src/lib/mock-can/ con generador determinístico
+#    · FleetAssetLive extendido con canData (CanSnapshot | null)
+#      y deviceModel (FMC003 / FMC130 / FMB920 / Legacy)
+#    · 80% de la flota tiene CAN bus · 20% son equipos legacy
+#      o FMB920 (solo GPS) · asignación determinística por assetId
+#    · AssetDetailPanel muestra secciones reales:
+#      Entradas (puerta, cinturón, freno mano, PTO)
+#      Telemetría CAN (RPM, temp motor, presión aceite)
+#      Combustible (nivel, consumo, eficiencia)
+#      Distancia y uso (odómetro real, horas motor, idle, eco-score)
+#      Diagnóstico (DTC codes cuando hay)
+#      Footer · modelo del dispositivo
+#    · Vehículos sin CAN muestran placeholder explicativo
 #
-#  Idempotente · usa cmp -s antes de cp · seguro de re-ejecutar.
-#  Soporta creates, updates y deletes.
+#  Status: MOCK virtual · NO PERSISTIDO · solo en memoria.
+#  Reemplazo por schema real (Prisma) llega en Sprint 2.
+#
+#  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
 
 set -e
 
 PAYLOAD="_payload"
-DELETE_LIST="$PAYLOAD/_delete.txt"
 
 if [ ! -d "$PAYLOAD" ]; then
   echo "❌ ERROR · no encuentro carpeta $PAYLOAD"
-  echo "   Asegurate de haber hecho 'unzip -o S1-L2-ia-reorg.zip -d maxtracker-functional'"
-  echo "   y de estar parado en el root del repo (donde está package.json)"
   exit 1
 fi
 
 if [ ! -f "package.json" ]; then
-  echo "❌ ERROR · no estoy en el root del repo (no veo package.json)"
+  echo "❌ ERROR · no estoy en el root del repo"
   exit 1
 fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L2-ia-reorg · aplicando reorganización de IA"
+echo "  S1-L3-mock-can · datos demo CAN bus FMC003"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
 COUNT_UPD=0
 COUNT_SAME=0
-COUNT_DEL=0
-COUNT_DEL_SKIP=0
 
 apply_file() {
   local rel="$1"
@@ -69,65 +70,23 @@ apply_file() {
   fi
 }
 
-apply_delete() {
-  local rel="$1"
-  if [ -f "$rel" ]; then
-    rm "$rel"
-    echo "  - $rel  (eliminado)"
-    COUNT_DEL=$((COUNT_DEL + 1))
-  else
-    COUNT_DEL_SKIP=$((COUNT_DEL_SKIP + 1))
-  fi
-}
-
-# ── Apply files (creates + updates) ─────────────────────────
-echo ""
-echo "→ Procesando archivos a crear/actualizar..."
-
-# Encuentra todos los archivos en _payload excepto _delete.txt
-# y los aplica en su ruta relativa
-find "$PAYLOAD" -type f ! -name "_delete.txt" | while read src; do
-  rel="${src#$PAYLOAD/}"
-  echo "$rel"
-done | while read rel; do
-  apply_file "$rel"
-done
-
-# Recalcular contadores · subshell del while pierde los counters.
-# Reproducimos la cuenta acá para reportar bien.
-COUNT_FILES_TOTAL=$(find "$PAYLOAD" -type f ! -name "_delete.txt" | wc -l)
-
-# ── Apply deletes ────────────────────────────────────────────
-echo ""
-echo "→ Procesando archivos a eliminar..."
-
-if [ -f "$DELETE_LIST" ]; then
-  while IFS= read -r line || [ -n "$line" ]; do
-    # Skip empty lines and comments
-    [ -z "$line" ] && continue
-    [[ "$line" =~ ^# ]] && continue
-    apply_delete "$line"
-  done < "$DELETE_LIST"
-fi
-
-# Cleanup · si después de borrar quedaron carpetas vacías, las dejamos
-# (Next.js no se queja, y son seguras). El zip las recreará vacías
-# en el próximo apply (porque las rutas de redirect viven ahí).
+apply_file "src/lib/mock-can/types.ts"
+apply_file "src/lib/mock-can/generate.ts"
+apply_file "src/lib/mock-can/index.ts"
+apply_file "src/lib/queries/tracking.ts"
+apply_file "src/app/(product)/seguimiento/mapa/FleetTrackingClient.tsx"
+apply_file "src/components/maxtracker/AssetDetailPanel.tsx"
+apply_file "src/components/maxtracker/AssetDetailPanel.module.css"
 
 echo ""
 echo "═══════════════════════════════════════════════════"
 echo "  Resumen"
 echo "═══════════════════════════════════════════════════"
-echo "  Archivos en payload:    $COUNT_FILES_TOTAL"
-echo "  Eliminaciones aplicadas: $COUNT_DEL"
-if [ "$COUNT_DEL_SKIP" -gt 0 ]; then
-  echo "  Eliminaciones ya hechas: $COUNT_DEL_SKIP"
-fi
-echo ""
-echo "  (corré 'git status' para ver el detalle exacto de cambios)"
+echo "  Nuevos:        $COUNT_NEW"
+echo "  Actualizados:  $COUNT_UPD"
+echo "  Sin cambios:   $COUNT_SAME"
 echo ""
 
-# Cleanup payload
 rm -rf "$PAYLOAD"
 
 echo "✅ Lote aplicado"

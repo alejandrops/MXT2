@@ -9,6 +9,10 @@ import {
   type FleetGroup,
   type ReplayAsset,
 } from "@/lib/queries/tracking";
+import {
+  generateCanSnapshot,
+  getDeviceCapabilities,
+} from "@/lib/mock-can";
 import { FleetSidebar } from "@/components/maxtracker/FleetSidebar";
 import { FleetFilterBar } from "@/components/maxtracker/FleetFilterBar";
 import { AssetDetailPanel } from "@/components/maxtracker/AssetDetailPanel";
@@ -533,6 +537,9 @@ function deriveLiveFromReplay(
   wallClockMs: number,
 ): FleetAssetLive {
   if (a.points.length === 0) {
+    // S1-L3 mock-can · device caps siempre asignados · canData null
+    // porque sin actividad reciente la ECU no reporta.
+    const caps = getDeviceCapabilities(a.id);
     return {
       id: a.id,
       name: a.name,
@@ -554,6 +561,8 @@ function deriveLiveFromReplay(
       hasOpenAlarm: a.hasOpenAlarm,
       openAlarmCount: a.openAlarmCount,
       driver: a.driver,
+      deviceModel: caps.deviceModel,
+      canData: null,
     };
   }
 
@@ -586,6 +595,10 @@ function deriveLiveFromReplay(
   const ignition = pa.ignition;
   const motorState = classifyMotor(speedKmh, ignition);
 
+  // S1-L3 mock-can · inyectar telemática CAN si el dispositivo lo soporta
+  const caps = getDeviceCapabilities(a.id);
+  const canData = generateCanSnapshot(a.id, speedKmh, ignition, wallClockMs);
+
   return {
     id: a.id,
     name: a.name,
@@ -607,6 +620,8 @@ function deriveLiveFromReplay(
     hasOpenAlarm: a.hasOpenAlarm,
     openAlarmCount: a.openAlarmCount,
     driver: a.driver,
+    deviceModel: caps.deviceModel,
+    canData,
   };
 }
 
@@ -619,6 +634,15 @@ function finalize(
   const replayMs = wallClockMs + a.offsetMs;
   const samplePoint = point.recordedAt.getTime();
   const msSinceSample = Math.max(0, replayMs - samplePoint);
+  // S1-L3 mock-can · CAN snapshot también cuando está STOPPED/OFF
+  // (motor apagado · valores con ignition=false · RPM=0, etc)
+  const caps = getDeviceCapabilities(a.id);
+  const canData = generateCanSnapshot(
+    a.id,
+    0,
+    forceMotor === "STOPPED",
+    wallClockMs,
+  );
   return {
     id: a.id,
     name: a.name,
@@ -640,5 +664,7 @@ function finalize(
     hasOpenAlarm: a.hasOpenAlarm,
     openAlarmCount: a.openAlarmCount,
     driver: a.driver,
+    deviceModel: caps.deviceModel,
+    canData,
   };
 }
