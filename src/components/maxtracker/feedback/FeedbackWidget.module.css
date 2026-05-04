@@ -1,0 +1,328 @@
+/* ═══════════════════════════════════════════════════════════════
+   FeedbackWidget.module.css · S1-L8
+   ───────────────────────────────────────────────────────────── */
+
+/* ── FAB (Floating Action Button) ───────────────────────── */
+
+.fab {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px 9px 11px;
+  background: var(--dark);
+  color: #fff;
+  border: 1px solid var(--dark);
+  border-radius: 22px;
+  font-family: var(--m);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24);
+}
+.fab:active {
+  transform: translateY(0);
+}
+
+.fabLabel {
+  font-family: var(--f);
+  font-weight: 500;
+}
+
+/* ── Backdrop · click fuera cierra ──────────────────────── */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.18);
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Panel · modal lateral ──────────────────────────────── */
+
+.panel {
+  position: fixed;
+  bottom: 64px;
+  right: 16px;
+  z-index: 999;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 96px);
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.18s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Head ───────────────────────────────────────────────── */
+
+.head {
+  padding: 14px 16px 8px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t3);
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+/* ── Body ───────────────────────────────────────────────── */
+
+.body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldLabel {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--t3);
+}
+
+/* ── Category buttons ───────────────────────────────────── */
+
+.categoryRow {
+  display: flex;
+  gap: 6px;
+}
+
+.categoryBtn {
+  flex: 1;
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+.categoryBtn:hover:not(:disabled) {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+.categoryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.categoryActive {
+  background: var(--blu);
+  border-color: var(--blu);
+  color: #fff;
+}
+.categoryActive:hover {
+  border-color: var(--blu);
+  color: #fff;
+}
+
+.categoryHint {
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--t3);
+  font-style: italic;
+}
+
+/* ── Textarea ───────────────────────────────────────────── */
+
+.textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.4;
+}
+.textarea:focus {
+  outline: none;
+  border-color: var(--blu);
+}
+.textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.charCount {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Error box ──────────────────────────────────────────── */
+
+.errorBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: var(--red-bg);
+  border: 1px solid var(--red-b);
+  color: var(--red-t);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 11.5px;
+}
+
+/* ── Context hint ───────────────────────────────────────── */
+
+.contextHint {
+  font-family: var(--f);
+  font-size: 10.5px;
+  color: var(--t3);
+  margin: 0;
+  line-height: 1.4;
+  padding: 6px 8px;
+  background: var(--bg);
+  border-radius: var(--r-sm);
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--brd);
+  background: var(--bg);
+}
+
+.cancelBtn {
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+}
+.cancelBtn:hover:not(:disabled) {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+.cancelBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.submitBtn {
+  padding: 7px 16px;
+  background: var(--dark);
+  border: 1px solid var(--dark);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.submitBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.submitBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Success state ──────────────────────────────────────── */
+
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.successIcon {
+  color: #15803D;
+  background: #DCFCE7;
+  border-radius: 50%;
+  padding: 8px;
+  width: 44px;
+  height: 44px;
+}
+
+.successTitle {
+  font-family: var(--f);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+}
+
+.successMsg {
+  font-family: var(--f);
+  font-size: 12.5px;
+  color: var(--t2);
+  margin: 0;
+  max-width: 240px;
+  line-height: 1.4;
+}

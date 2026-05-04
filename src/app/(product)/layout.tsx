@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 import { GlobalFilterBar } from "@/components/maxtracker/ui";
 import { CommandPalette } from "@/components/maxtracker/cmdk/CommandPalette";
+import { FeedbackWidget } from "@/components/maxtracker/feedback/FeedbackWidget";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { NavTracker } from "@/components/analytics/NavTracker";
@@ -83,6 +84,7 @@ export default async function ProductLayout({
         </div>
       </div>
       <CommandPalette />
+      <FeedbackWidget />
     </div>
   );
 }

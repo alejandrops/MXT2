@@ -755,6 +755,9 @@ model User {
   notifyBoletinClosed  Boolean  @default(true)
   notifyCriticalEvent  Boolean  @default(true)
 
+  // ─── S1-L8 · feedback widget · relación inversa ───────────
+  feedbacks            Feedback[]
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   lastLoginAt     DateTime?
@@ -830,4 +833,57 @@ model BoletinSnapshot {
 
   @@unique([period, accountId])
   @@index([generatedAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Feedback · S1-L8 feedback-widget
+//  ─────────────────────────────────────────────────────────────
+//  Captura feedback de testers y usuarios beta · widget flotante
+//  global en /(product)/* envía POSTs a /api/feedback.
+//
+//  Status workflow:
+//    NEW (default) → REVIEWED (admin lo leyó) → CLOSED (resuelto)
+//
+//  PII: el message es texto libre del user · puede contener
+//  cualquier cosa. NO se exporta a analytics · solo a admin DB.
+// ═══════════════════════════════════════════════════════════════
+model Feedback {
+  id          String           @id @default(cuid())
+  /// Account del user · null si user anónimo (no debería pasar en prod)
+  accountId   String?
+  /// User que envió · null en demo mode sin auth
+  userId      String?
+  user        User?            @relation(fields: [userId], references: [id])
+  /// Categoría del feedback
+  category    FeedbackCategory @default(OTHER)
+  /// Mensaje del user · texto libre
+  message     String
+  /// URL donde estaba el user · ej. "/objeto/vehiculo/abc123?m=resumen"
+  pageUrl     String
+  /// User agent del browser · ayuda a identificar bugs cross-browser
+  userAgent   String
+  /// "1920x1080" · útil para bugs de layout
+  viewport    String?
+  /// Estado de gestión · cambiable por admin
+  status      FeedbackStatus   @default(NEW)
+  createdAt   DateTime         @default(now())
+  /// Cuándo el admin marcó como revisado · null si NEW
+  reviewedAt  DateTime?
+  /// Notas internas del admin · no visibles para el user
+  adminNotes  String?
+
+  @@index([status, createdAt])
+  @@index([accountId, createdAt])
+}
+
+enum FeedbackCategory {
+  BUG
+  FEATURE
+  OTHER
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  CLOSED
 }
