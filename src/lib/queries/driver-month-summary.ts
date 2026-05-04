@@ -1,5 +1,6 @@
 // @ts-nocheck · pre-existing patterns (Prisma types stale)
 import { db } from "@/lib/db";
+import { DRIVING_BEHAVIOR_EVENT_TYPES } from "@/lib/event-types";
 
 // ═══════════════════════════════════════════════════════════════
 //  getDriverMonthSummary · S3-L1
@@ -9,14 +10,6 @@ import { db } from "@/lib/db";
 //
 //  Usado por SummaryBookTab cuando type === "conductor".
 // ═══════════════════════════════════════════════════════════════
-
-const DRIVING_BEHAVIOR_EVENTS = [
-  "HARSH_ACCELERATION",
-  "HARSH_BRAKING",
-  "HARSH_CORNERING",
-  "SPEEDING",
-  "IDLING",
-] as const;
 
 export interface DriverMonthSummary {
   distanceKm: number;
@@ -50,7 +43,7 @@ export async function getDriverMonthSummary(
       where: {
         personId,
         occurredAt: { gte: fromDt },
-        type: { in: DRIVING_BEHAVIOR_EVENTS as any },
+        type: { in: DRIVING_BEHAVIOR_EVENT_TYPES as any },
       },
     }),
   ]);

@@ -92,6 +92,7 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
     "documentacion",
   ],
   grupo: [
+    "resumen",
     "actividad",
     "seguridad",
     "conduccion",

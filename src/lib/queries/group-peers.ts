@@ -1,5 +1,6 @@
 // @ts-nocheck · pre-existing patterns (Prisma types stale)
 import { db } from "@/lib/db";
+import { DRIVING_BEHAVIOR_EVENT_TYPES } from "@/lib/event-types";
 
 // ═══════════════════════════════════════════════════════════════
 //  getGroupPeers · S1-L4b posición-en-grupo
@@ -38,14 +39,6 @@ export interface GroupPeersResult {
   activeId: string;
   peers: GroupPeer[];
 }
-
-const TELEMETRY_EVENT_TYPES = [
-  "HARSH_ACCELERATION",
-  "HARSH_BRAKING",
-  "HARSH_CORNERING",
-  "SPEEDING",
-  "IDLING",
-] as const;
 
 export async function getGroupPeers(
   assetId: string,
@@ -99,7 +92,7 @@ export async function getGroupPeers(
       where: {
         assetId: { in: groupAssetIds },
         occurredAt: { gte: fromDt, lt: toDt },
-        type: { in: TELEMETRY_EVENT_TYPES },
+        type: { in: DRIVING_BEHAVIOR_EVENT_TYPES },
       },
       select: { assetId: true },
     }),

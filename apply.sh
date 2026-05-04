@@ -1,37 +1,26 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S3-L1-resumen-conductor · apply.sh
-#  Sprint 3 · Lote 1 · Resumen ejecutivo del conductor (360°)
+#  S3-L5 · centro de notificaciones · Bell del Topbar funcional
 #
 #  Cambios:
-#    ~ src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.tsx
-#      DriverSummary completo (270 líneas funcionales) + DriverHero
-#      con safety score y estado de licencia
-#    ~ src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.module.css
-#      estilos de driverCard, assetList, scoreRanking
-#    + src/lib/queries/driver-profile.ts (97 líneas)
-#      getDriverProfile · datos completos del conductor
-#    + src/lib/queries/driver-month-summary.ts (75 líneas)
-#      getDriverMonthSummary · KPIs últimos 30 días
-#    + src/lib/queries/person-assets.ts (96 líneas)
-#      getPersonAssets · vehículos manejados con totales
-#    ~ src/lib/queries/alarms.ts
-#      agregada getAlarmsByPerson (filtro por personId)
-#    ~ src/lib/object-modules.ts
-#      "resumen" habilitada para conductor · default tab del Libro
+#    + src/lib/queries/user-notifications.ts
+#      getUserNotifications agrega: alarmas críticas + boletines
+#      cerrados (24h) + feedback respondido (semana)
+#    + src/app/api/notifications/route.ts · GET endpoint
+#    + src/components/shell/NotificationsBell.tsx · client component
+#      con dropdown · fetch lazy on open · auto-close on outside click + ESC
+#    + src/components/shell/NotificationsBell.module.css
+#    ~ src/components/shell/Topbar.tsx · reemplaza Bell decorativo
 #
-#  Resultado:
-#    /objeto/conductor/<id> abre directo en tab Resumen con:
-#      · Hero · estado licencia + safety score
-#      · Vehículo actual + top 3 manejados (col izq)
-#      · KPIs 30d + alarmas activas + ranking en flota (col der)
-#      · Atajos a Actividad / Seguridad / Conducción / Documentación
-#
-#  Notas:
-#    · GroupSummary sigue como placeholder (S3-L2 próximo)
-#    · Si el archivo SummaryBookTab.tsx ya existe en tu local con
-#      DriverSummary implementado, apply.sh detecta "sin cambios"
-#      y no hace nada (idempotente).
+#  Comportamiento:
+#    · Click en Bell → abre dropdown
+#    · Auto-fetch al abrir si no hay data cargada
+#    · Empty state · "Estás al día"
+#    · Items linkean a su página (alarma → vehículo, boletín → /direccion/
+#      boletin/<periodo>, feedback → /admin/feedback)
+#    · Footer link a /configuracion?seccion=notificaciones
+#    · Sin DB nueva · solo agrega lectura · próximas iteraciones
+#      podrían persistir read state
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -39,7 +28,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S3-L1-resumen-conductor · 360° del conductor ═══"
+echo "═══ S3-L5 · centro de notificaciones ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -52,13 +41,11 @@ apply_file() {
   else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; C_UPD=$((C_UPD+1)); fi
 }
 
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.tsx"
-apply_file "src/app/(product)/objeto/[tipo]/[id]/modules/SummaryBookTab.module.css"
-apply_file "src/lib/queries/driver-profile.ts"
-apply_file "src/lib/queries/driver-month-summary.ts"
-apply_file "src/lib/queries/person-assets.ts"
-apply_file "src/lib/queries/alarms.ts"
-apply_file "src/lib/object-modules.ts"
+apply_file "src/lib/queries/user-notifications.ts"
+apply_file "src/app/api/notifications/route.ts"
+apply_file "src/components/shell/NotificationsBell.tsx"
+apply_file "src/components/shell/NotificationsBell.module.css"
+apply_file "src/components/shell/Topbar.tsx"
 
 echo ""
 echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
@@ -70,8 +57,6 @@ echo ""
 echo "Próximo paso · reiniciar dev server:"
 echo "  rm -rf .next && npm run dev"
 echo ""
-echo "Validación · entrá a /objeto/conductor/<id>:"
-echo "  - Debería abrir directo en tab 'Resumen'"
-echo "  - DriverHero arriba con safety score + estado licencia"
-echo "  - Grid 2 col: vehículo actual / KPIs · alarmas · ranking"
-echo "  - Atajos abajo a Actividad / Seguridad / Conducción / Doc"
+echo "Validación · click en el Bell del Topbar (esquina superior derecha):"
+echo "  - Debería abrir dropdown con tu data real"
+echo "  - Si no hay nada · empty state 'Estás al día'"

@@ -9,11 +9,14 @@ import { getDriverProfile } from "@/lib/queries/driver-profile";
 import { getPersonAssets } from "@/lib/queries/person-assets";
 import { getDriverPeers } from "@/lib/queries/driver-peers";
 import { getDriverMonthSummary } from "@/lib/queries/driver-month-summary";
+import { getGroupMonthSummary } from "@/lib/queries/group-month-summary";
+import { getGroupSiblings } from "@/lib/queries/group-siblings";
 import {
   getDeviceCapabilities,
   resolveCanSnapshot,
 } from "@/lib/mock-can";
 import styles from "./SummaryBookTab.module.css";
+import { DRIVING_BEHAVIOR_EVENT_TYPES } from "@/lib/event-types";
 
 // ═══════════════════════════════════════════════════════════════
 //  SummaryBookTab · S1-L6 + S3-L1
@@ -38,11 +41,7 @@ interface Props {
 export async function SummaryBookTab({ type, id }: Props) {
   if (type === "vehiculo") return <VehicleSummary id={id} />;
   if (type === "conductor") return <DriverSummary id={id} />;
-  return (
-    <div className={styles.empty}>
-      <p>El Resumen del grupo está en construcción.</p>
-    </div>
-  );
+  return <GroupSummary id={id} />;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -568,6 +567,258 @@ function isoYmd(d: Date): string {
 }
 
 // ─── Sub-componentes ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  Grupo (S3-L2)
+// ═══════════════════════════════════════════════════════════════
+
+async function GroupSummary({ id }: { id: string }) {
+  const now = new Date();
+  const fromDate = isoYmd(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
+  const toDate = isoYmd(now);
+
+  const [summary, siblings] = await Promise.all([
+    getGroupMonthSummary(id),
+    getGroupSiblings(id, fromDate, toDate).catch(() => null),
+  ]);
+
+  if (!summary) {
+    return (
+      <div className={styles.empty}>
+        <p>Grupo no encontrado.</p>
+      </div>
+    );
+  }
+
+  // Posición en el ranking de grupos del account
+  let scoreRanking: { rank: number; total: number } | null = null;
+  if (siblings && siblings.peers.length > 1) {
+    const sorted = [...siblings.peers].sort(
+      (a, b) => b.safetyScore - a.safetyScore,
+    );
+    const rank = sorted.findIndex((p) => p.id === id) + 1;
+    scoreRanking = { rank, total: siblings.peers.length };
+  }
+
+  const kpis = summary.kpis;
+
+  return (
+    <div className={styles.body}>
+      {/* ── Hero · header del grupo · reutilizamos clases hero ── */}
+      <div className={styles.hero}>
+        <div className={styles.heroIcon}>
+          <MapPin size={26} />
+        </div>
+        <div>
+          <div className={styles.heroTitle}>{summary.group.name}</div>
+          <div className={styles.heroSubtitle}>
+            {summary.group.assetCount}{" "}
+            {summary.group.assetCount === 1 ? "vehículo" : "vehículos"} ·{" "}
+            {kpis.activeDrivers}{" "}
+            {kpis.activeDrivers === 1
+              ? "conductor activo"
+              : "conductores activos"}{" "}
+            · {summary.group.accountName}
+          </div>
+        </div>
+        {kpis.avgSafetyScore > 0 && (
+          <div className={styles.driverScore}>
+            <span className={styles.scoreNum}>{kpis.avgSafetyScore}</span>
+            <span className={styles.scoreUnit}>/100</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Grid principal · 2 columnas ─────────────────────── */}
+      <div className={styles.grid}>
+        {/* ── COLUMNA IZQUIERDA · top vehículos + top conductores ── */}
+        <div className={styles.col}>
+          <Section
+            title="Top vehículos"
+            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+            hint="Por km en últimos 30 días"
+          >
+            {summary.topVehicles.length === 0 ? (
+              <div className={styles.empty}>
+                <p>Sin actividad registrada en el período.</p>
+              </div>
+            ) : (
+              <ul className={styles.assetList}>
+                {summary.topVehicles.map((v) => (
+                  <li key={v.assetId} className={styles.assetItem}>
+                    <Link
+                      href={`/objeto/vehiculo/${v.assetId}`}
+                      className={styles.assetLink}
+                    >
+                      <div className={styles.assetMain}>
+                        <span className={styles.assetName}>{v.name}</span>
+                        <span className={styles.assetMeta}>
+                          {v.plate ?? "—"} · {v.tripCount} viajes ·{" "}
+                          {v.distanceKm.toLocaleString("es-AR")} km
+                        </span>
+                      </div>
+                      <ChevronRight size={16} className={styles.chevron} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+
+          <Section
+            title="Top conductores"
+            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+            hint="Por km manejados en últimos 30 días"
+          >
+            {summary.topDrivers.length === 0 ? (
+              <div className={styles.empty}>
+                <p>Sin conductores activos en el período.</p>
+              </div>
+            ) : (
+              <ul className={styles.assetList}>
+                {summary.topDrivers.map((d) => (
+                  <li key={d.personId} className={styles.assetItem}>
+                    <Link
+                      href={`/objeto/conductor/${d.personId}`}
+                      className={styles.assetLink}
+                    >
+                      <div className={styles.assetMain}>
+                        <span className={styles.assetName}>{d.name}</span>
+                        <span className={styles.assetMeta}>
+                          {d.tripCount} viajes ·{" "}
+                          {d.distanceKm.toLocaleString("es-AR")} km
+                        </span>
+                      </div>
+                      <ChevronRight size={16} className={styles.chevron} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </div>
+
+        {/* ── COLUMNA DERECHA · KPIs + alarmas + ranking ──── */}
+        <div className={styles.col}>
+          <Section
+            title="Últimos 30 días"
+            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+          >
+            <div className={styles.kpiQuad}>
+              <MiniKpi
+                label="Distancia"
+                value={kpis.distanceKm.toLocaleString("es-AR")}
+                unit="km"
+              />
+              <MiniKpi
+                label="Viajes"
+                value={kpis.tripCount.toLocaleString("es-AR")}
+              />
+              <MiniKpi
+                label="Score promedio"
+                value={kpis.avgSafetyScore || "—"}
+                unit="/100"
+              />
+              <MiniKpi
+                label="Eventos / 100km"
+                value={kpis.eventsPer100km.toFixed(2)}
+                accent={kpis.eventsPer100km > 2 ? "warn" : undefined}
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="Alarmas"
+            hrefDeep={`/objeto/grupo/${id}?m=seguridad`}
+            hint={
+              summary.alarmStats.criticalOpen > 0
+                ? "Hay alarmas críticas activas"
+                : undefined
+            }
+          >
+            <div className={styles.kpiQuad}>
+              <MiniKpi
+                label="Activas"
+                value={summary.alarmStats.openCount}
+                accent={summary.alarmStats.openCount > 0 ? "warn" : undefined}
+              />
+              <MiniKpi
+                label="Críticas"
+                value={summary.alarmStats.criticalOpen}
+                accent={
+                  summary.alarmStats.criticalOpen > 0 ? "critical" : undefined
+                }
+              />
+              <MiniKpi
+                label="Cerradas en 30d"
+                value={summary.alarmStats.closedInPeriod}
+              />
+            </div>
+          </Section>
+
+          {scoreRanking && (
+            <Section
+              title="Posición entre grupos"
+              hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+              hint={`Comparado con ${scoreRanking.total - 1} otros grupos del account`}
+            >
+              <div className={styles.rankBox}>
+                <div className={styles.rankPosition}>
+                  <span className={styles.rankNum}>{scoreRanking.rank}</span>
+                  <span className={styles.rankTotal}>
+                    de {scoreRanking.total}
+                  </span>
+                </div>
+                <div className={styles.rankInfo}>
+                  <div className={styles.rankLabel}>Por safety score</div>
+                  <div className={styles.rankSub}>
+                    {kpis.avgSafetyScore} pts promedio
+                  </div>
+                </div>
+              </div>
+            </Section>
+          )}
+        </div>
+      </div>
+
+      {/* ── Atajos a otras tabs ────────────────────────────── */}
+      <Section title="Profundizar">
+        <div className={styles.shortcutGrid}>
+          <Link
+            href={`/objeto/grupo/${id}?m=actividad`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Actividad</span>
+            <span className={styles.shortcutHint}>
+              Detalle por día y por vehículo
+            </span>
+          </Link>
+          <Link
+            href={`/objeto/grupo/${id}?m=seguridad`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Seguridad</span>
+            <span className={styles.shortcutHint}>Alarmas y eventos</span>
+          </Link>
+          <Link
+            href={`/objeto/grupo/${id}?m=conduccion`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Conducción</span>
+            <span className={styles.shortcutHint}>Scoring del grupo</span>
+          </Link>
+          <Link
+            href={`/objeto/grupo/${id}?m=mantenimiento`}
+            className={styles.shortcut}
+          >
+            <span className={styles.shortcutLabel}>Mantenimiento</span>
+            <span className={styles.shortcutHint}>Servicios pendientes</span>
+          </Link>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
 
 function HeroState({
   data,
@@ -749,14 +1000,6 @@ interface MonthSummary {
   eventCount: number;
 }
 
-const TELEMETRY_EVENT_TYPES = [
-  "HARSH_ACCELERATION",
-  "HARSH_BRAKING",
-  "HARSH_CORNERING",
-  "SPEEDING",
-  "IDLING",
-] as const;
-
 async function getAssetMonthSummary(assetId: string): Promise<MonthSummary> {
   const now = new Date();
   const fromDt = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -770,7 +1013,7 @@ async function getAssetMonthSummary(assetId: string): Promise<MonthSummary> {
       where: {
         assetId,
         occurredAt: { gte: fromDt },
-        type: { in: TELEMETRY_EVENT_TYPES },
+        type: { in: DRIVING_BEHAVIOR_EVENT_TYPES },
       },
     }),
   ]);

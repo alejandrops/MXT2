@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronRight, Home, Settings, Shield, User, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NotificationsBell } from "./NotificationsBell";
 import styles from "./Topbar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -153,10 +154,7 @@ export function Topbar({ user, isSuperAdmin }: Props) {
         <Home size={15} />
       </Link>
 
-      <button className={styles.iconBtn} aria-label="Notificaciones">
-        <Bell size={15} />
-        <span className={styles.dot} />
-      </button>
+      <NotificationsBell buttonClass={styles.iconBtn!} />
 
       <Link href="/configuracion" className={styles.iconBtn} aria-label="Configuración">
         <Settings size={15} />
