@@ -6,6 +6,7 @@ import {
   capturePageView,
   identify,
   initPostHog,
+  maybeStartSessionRecording,
 } from "@/lib/analytics/posthog";
 
 // ═══════════════════════════════════════════════════════════════
@@ -51,6 +52,13 @@ export function PostHogProvider({ authMode, user }: Props) {
       profileLabel: user.profileLabel,
       accountTier: user.accountTier,
     });
+    // S1-L9 · session replay opt-in
+    // Si NEXT_PUBLIC_ENABLE_SESSION_REPLAY === "1", activamos recording
+    // siempre que el user no lo haya pausado previamente. El banner
+    // SessionRecordingNotice avisa al user y le permite pausar.
+    if (process.env.NEXT_PUBLIC_ENABLE_SESSION_REPLAY === "1") {
+      maybeStartSessionRecording();
+    }
     // El effect depende de cambios de identidad · re-identify si el user
     // cambió (caso del switcher SA → user-suplantado).
   }, [

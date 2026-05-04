@@ -1,21 +1,22 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L8-feedback-widget · apply.sh
-#  Sprint 1 · Lote 8 · Widget de feedback de testers
+#  Maxtracker · S1-L9-posthog-events · apply.sh
+#  Sprint 1 · Lote 9 · Eventos custom + session replay opt-in
 #
 #  Cambios:
-#    · Schema · NUEVO modelo Feedback + 2 enums (Category, Status)
-#    · Migration SQL para Feedback (20260504194000)
-#    · User · relación inversa feedbacks
-#    · Endpoint POST /api/feedback · auth + valida + persiste
-#    · Widget UI flotante · botón bottom-right + modal con form
-#    · Categorías: Bug · Idea · Otro
-#    · Captura automática contexto: pageUrl, userAgent, viewport
-#    · Montado en layout · siempre visible para users autenticados
-#    · Cerrar con ESC · click backdrop · botón cancelar
-#    · Mail aviso al PO · TODO Sprint 2 (cuando integremos Resend)
-#
-#  ⚠ POST-APPLY OBLIGATORIO · ver mensaje al final
+#    · EventMap expandido · 18 eventos tipados (antes 13):
+#      + book_tab_changed (cambio de tab del Libro)
+#      + boletin_viewed (viewer de boletín · snapshot vs onDemand)
+#      + feedback_opened / submitted / dismissed (widget L8)
+#      + session_recording_paused / resumed (control opt-out)
+#    · Session replay opt-in · activado vía env var
+#      NEXT_PUBLIC_ENABLE_SESSION_REPLAY=1
+#    · Banner SessionRecordingNotice bottom-left · siempre visible
+#      mientras se graba · permite pausar (persistido localStorage)
+#    · FeedbackWidget instrumentado · open + submit + dismiss
+#      eventos para medir conversion del widget
+#    · README de funnels en src/lib/analytics/README.md ·
+#      catálogo completo + 4 funnels recomendados + privacy guide
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -27,7 +28,7 @@ if [ ! -d "$PAYLOAD" ]; then echo "❌ no encuentro $PAYLOAD"; exit 1; fi
 if [ ! -f "package.json" ]; then echo "❌ no estoy en el root del repo"; exit 1; fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L8-feedback-widget · widget global de feedback"
+echo "  S1-L9-posthog-events · custom events + session replay"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
@@ -53,11 +54,12 @@ apply_file() {
   fi
 }
 
-apply_file "prisma/schema.prisma"
-apply_file "prisma/migrations/20260504194000_add_feedback/migration.sql"
-apply_file "src/app/api/feedback/route.ts"
+apply_file "src/lib/analytics/posthog.ts"
+apply_file "src/lib/analytics/README.md"
+apply_file "src/components/analytics/PostHogProvider.tsx"
+apply_file "src/components/analytics/SessionRecordingNotice.tsx"
+apply_file "src/components/analytics/SessionRecordingNotice.module.css"
 apply_file "src/components/maxtracker/feedback/FeedbackWidget.tsx"
-apply_file "src/components/maxtracker/feedback/FeedbackWidget.module.css"
 apply_file "src/app/(product)/layout.tsx"
 
 echo ""
@@ -74,17 +76,15 @@ rm -rf "$PAYLOAD"
 echo "✅ Lote aplicado"
 echo ""
 echo "═══════════════════════════════════════════════════"
-echo "  ⚠ POST-APPLY OBLIGATORIO"
+echo "  Setup opcional para activar session replay"
 echo "═══════════════════════════════════════════════════"
 echo ""
-echo "1. Regenerar Prisma client (modelo Feedback nuevo):"
-echo "   npx prisma generate"
+echo "Para builds de tester (queremos ver session replays):"
+echo "  Vercel → Settings → Environment Variables"
+echo "  NEXT_PUBLIC_ENABLE_SESSION_REPLAY=1"
 echo ""
-echo "2. Aplicar migration al DB:"
-echo "   npx prisma migrate deploy"
+echo "Para producción/clientes finales: dejar la var desactivada o"
+echo "pedir opt-in explícito (próximo lote · checkbox /configuracion)"
 echo ""
-echo "3. Reiniciar dev server:"
-echo "   rm -rf .next && npm run dev"
-echo ""
-echo "Para ver feedbacks recibidos (mientras no haya admin UI):"
-echo "  SELECT * FROM \"Feedback\" ORDER BY \"createdAt\" DESC;"
+echo "Próximo paso · reiniciar dev server:"
+echo "  rm -rf .next && npm run dev"

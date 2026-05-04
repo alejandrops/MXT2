@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { MessageSquare, X, Check, AlertCircle } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { track } from "@/lib/analytics/posthog";
 import styles from "./FeedbackWidget.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -51,9 +52,15 @@ export function FeedbackWidget() {
   const open = useCallback(() => {
     setState("open");
     setErrorMsg(null);
+    track("feedback_opened", {});
   }, []);
 
   const close = useCallback(() => {
+    // Trackear dismiss · si tenía mensaje pendiente, indicar que abandonó
+    const hadDraft = message.trim().length > 0 && state !== "success";
+    if (state === "open" || state === "error") {
+      track("feedback_dismissed", { hadDraft });
+    }
     setState("closed");
     // Pequeño delay antes de limpiar para que la animación tenga tiempo
     setTimeout(() => {
@@ -61,7 +68,7 @@ export function FeedbackWidget() {
       setCategory("OTHER");
       setErrorMsg(null);
     }, 200);
-  }, []);
+  }, [message, state]);
 
   // Cerrar con ESC
   useEffect(() => {
@@ -111,6 +118,10 @@ export function FeedbackWidget() {
       }
 
       setState("success");
+      track("feedback_submitted", {
+        category,
+        messageLength: trimmed.length,
+      });
       // Cerrar automáticamente después de 1.5s con success
       setTimeout(() => {
         close();

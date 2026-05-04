@@ -29,18 +29,49 @@ import posthog from "posthog-js";
 // ───────────────────────────────────────────────────────────────
 
 export type EventMap = {
+  // ── Auth ─────────────────────────────────────────────────
   user_login: { success: boolean; profileLabel?: string; reason?: string };
   user_logout: Record<string, never>;
   account_switched: { from: string | null; to: string };
+
+  // ── Command palette ──────────────────────────────────────
   cmdk_opened: Record<string, never>;
   cmdk_searched: { queryLength: number };
+
+  // ── Alarmas / seguridad ──────────────────────────────────
   alarm_attended: { alarmId: string; severity: string };
   alarm_closed: { alarmId: string; resolution?: string };
+
+  // ── Libro del Objeto · S1-L4/L5/L6 ──────────────────────
   vehicle_view: { assetId: string; source: "list" | "map" | "search" | "cmdk" };
+  /** Cambio de tab del Libro · entender qué módulos consumen los users */
+  book_tab_changed: {
+    objectType: "vehiculo" | "conductor" | "grupo";
+    fromTab: string | null;
+    toTab: string;
+  };
+
+  // ── Reportes / boletín ───────────────────────────────────
   report_generated: { type: string; period?: string; metric?: string };
+  /** Usuario vio el boletín mensual · medir adopción */
+  boletin_viewed: { period: string; source: "snapshot" | "onDemand" };
   export_clicked: { format: "csv" | "pdf" | "excel" };
+
+  // ── Configuración / preferences ──────────────────────────
   theme_changed: { mode: "LIGHT" | "DARK" | "AUTO" };
   password_set_for_user: { targetUserId: string };
+
+  // ── Feedback widget · S1-L8 ──────────────────────────────
+  feedback_opened: Record<string, never>;
+  feedback_submitted: {
+    category: "BUG" | "FEATURE" | "OTHER";
+    messageLength: number;
+  };
+  feedback_dismissed: { hadDraft: boolean };
+
+  // ── Session replay opt-out · S1-L9 ───────────────────────
+  session_recording_paused: Record<string, never>;
+  session_recording_resumed: Record<string, never>;
 };
 
 export type EventName = keyof EventMap;
@@ -109,6 +140,72 @@ export function initPostHog(opts: {
   } catch (err) {
     console.warn("[posthog] init failed", err);
     enabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Session recording · S1-L9
+//  ─────────────────────────────────────────────────────────────
+//  Control opt-in/opt-out de la grabación de sesión. La decisión
+//  de habilitarla por default se toma en el caller (Provider · vía
+//  env var NEXT_PUBLIC_ENABLE_SESSION_REPLAY o un flag por user).
+//
+//  El usuario puede pausar desde el banner de aviso · persistido
+//  en localStorage para que sobreviva refresh.
+// ═══════════════════════════════════════════════════════════════
+
+const PAUSED_KEY = "mxt_session_recording_paused";
+
+export function isSessionRecordingPausedByUser(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(PAUSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function pauseSessionRecording(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PAUSED_KEY, "1");
+  } catch {
+    // localStorage puede estar deshabilitado · ignoramos
+  }
+  if (!enabled) return;
+  try {
+    posthog.stopSessionRecording();
+  } catch (err) {
+    console.warn("[posthog] stop session recording failed", err);
+  }
+}
+
+export function resumeSessionRecording(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(PAUSED_KEY);
+  } catch {
+    // localStorage puede estar deshabilitado · ignoramos
+  }
+  if (!enabled) return;
+  try {
+    posthog.startSessionRecording();
+  } catch (err) {
+    console.warn("[posthog] start session recording failed", err);
+  }
+}
+
+/**
+ * Enciende session recording si el user no lo pausó previamente.
+ * Llamado por el Provider cuando session_replay está habilitado.
+ */
+export function maybeStartSessionRecording(): void {
+  if (!enabled) return;
+  if (isSessionRecordingPausedByUser()) return;
+  try {
+    posthog.startSessionRecording();
+  } catch (err) {
+    console.warn("[posthog] start session recording failed", err);
   }
 }
 
