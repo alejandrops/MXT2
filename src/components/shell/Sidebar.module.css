@@ -356,17 +356,15 @@
   color: var(--t3);
   cursor: pointer;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
 }
 
 .configBtnActive {
   color: var(--tx);
   background: var(--bg);
-}
-  background: transparent;
-  border: none;
-  text-decoration: none;
-  font-family: inherit;
-  transition: background 0.1s, color 0.1s;
 }
 
 .collapseBtn:hover,
