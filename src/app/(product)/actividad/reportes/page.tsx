@@ -140,8 +140,11 @@ export default async function ReportesPage({ searchParams }: PageProps) {
         <div className="appPage">
           <ReportesClient
             modo="visual"
+            layout="time"
+            subject="vehicles"
             vista={vista}
             visualData={data}
+            baseUrl="/actividad/reportes"
           />
         </div>
       </>
@@ -186,6 +189,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
           subject="vehicles"
           layout="time"
           data={data}
+          baseUrl="/actividad/reportes"
         />
         </div>
       </>
@@ -207,6 +211,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
           subject="vehicles"
           layout="metrics"
           multiData={multiData}
+          baseUrl="/actividad/reportes"
         />
         </div>
       </>
@@ -228,6 +233,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
           subject="drivers"
           layout="time"
           driversData={driversData}
+          baseUrl="/actividad/reportes"
         />
         </div>
       </>
@@ -249,6 +255,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
           subject="drivers"
           layout="metrics"
           driversMultiData={driversMultiData}
+          baseUrl="/actividad/reportes"
         />
       </div>
     </>
