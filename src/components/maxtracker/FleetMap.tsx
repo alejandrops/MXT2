@@ -86,6 +86,9 @@ export default function FleetMap({
   onAssetSelectRef.current = onAssetSelect;
   const initialFitDoneRef = useRef(false);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // S1-L1 fix F1 · refs para auto-fit reactivo y soft-follow
+  const lastVisibleIdsRef = useRef<string>("");
+  const lastSelectedPosRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // ── Init Leaflet once ──────────────────────────────────────
   useEffect(() => {
@@ -357,7 +360,16 @@ export default function FleetMap({
         }
       }
 
-      // Initial fit (only once · don't fight user pan/zoom afterwards)
+      // S1-L1 fix F1 · Auto-fit reactivo al cambio del SET de assets visibles.
+      // Antes: initialFitDoneRef encuadraba SOLO la primera vez, después
+      // respetaba el pan/zoom del usuario. Pero el feedback del PO pedía:
+      //   · Si agrego un asset al filtro y queda fuera del recuadro,
+      //     el zoom debe alejarse para incluirlo.
+      //   · Si saco uno, el zoom debe acercarse a los que quedan.
+      // O sea, refit cuando cambia el SET de IDs (no en cada tick por
+      // movimiento). Esa lógica vive ahora en un useEffect dedicado más
+      // abajo. Acá solo dejamos el initialFit muy mínimo · cubre el
+      // caso "primer paint, todavía no entró ningún tick al efecto reactivo".
       if (!initialFitDoneRef.current && latLngs.length > 0) {
         const bounds = L.latLngBounds(latLngs);
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
@@ -462,6 +474,68 @@ export default function FleetMap({
       }
     }
   }, [selectedAssetId, assets]);
+
+  // ── S1-L1 fix F1 · Auto-fit reactivo al cambio del SET de assets ────
+  // Cuando cambia el conjunto de IDs visibles (filtro aplicado, grupo
+  // agregado/sacado, etc.) refit el viewport para que los assets nuevos
+  // entren y los que se fueron no dejen espacio muerto.
+  // Solo se dispara al cambiar el SET, no por movimiento (mismo set
+  // de IDs en distintas posiciones · ese caso lo cubre soft-follow).
+  // Si hay selectedAssetId, NO refit · respetar el seguimiento.
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = LRef.current;
+    if (!map || !L) return;
+    if (selectedAssetId !== null) return; // hay selección · soft-follow gana
+
+    // Compute deterministic key del set de IDs
+    const ids = assets.map((a) => a.id).sort().join(",");
+    if (ids === lastVisibleIdsRef.current) return; // mismo set · skip
+    lastVisibleIdsRef.current = ids;
+
+    if (assets.length === 0) return;
+    if (assets.length === 1) {
+      const only = assets[0];
+      if (!only) return;
+      const targetZoom = Math.max(map.getZoom() ?? 12, 12);
+      map.setView([only.lat, only.lng], targetZoom, { animate: true });
+      return;
+    }
+    const points = assets.map(
+      (a) => [a.lat, a.lng] as [number, number],
+    );
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, {
+      padding: [60, 60],
+      maxZoom: 14,
+      animate: true,
+    });
+  }, [assets, selectedAssetId]);
+
+  // ── S1-L1 fix F1 · Soft-follow del asset seleccionado ────
+  // Cuando hay un asset seleccionado y se mueve (cambian sus lat/lng
+  // entre ticks del simulador o updates reales), pan suave al nuevo
+  // punto SIN cambiar el zoom. Esto resuelve el feedback "no mantiene
+  // centrado, se va de escala". Si el user hizo pan/zoom mientras
+  // tanto, lo respetamos solo en la dimensión de zoom (el center se
+  // re-actualiza al asset, que es el comportamiento "follow" estándar
+  // tipo Samsara/Geotab).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (selectedAssetId === null) {
+      lastSelectedPosRef.current = null;
+      return;
+    }
+    const asset = assets.find((a) => a.id === selectedAssetId);
+    if (!asset) return;
+    const last = lastSelectedPosRef.current;
+    if (last && (last.lat !== asset.lat || last.lng !== asset.lng)) {
+      // panTo sin cambiar zoom · animation suave
+      map.panTo([asset.lat, asset.lng], { animate: true, duration: 0.5 });
+    }
+    lastSelectedPosRef.current = { lat: asset.lat, lng: asset.lng };
+  }, [assets, selectedAssetId]);
 
   // ── Fly to a target asset on demand ───────────────────────
   // Re-fires only when the nonce changes. With the CSS fix that

@@ -1,17 +1,25 @@
 .wrap {
+  /* S1-L1 fix F2 · v3 inline declara "1 fila" pero el CSS legacy
+     tenía flex-direction: column (heredado de v2 con dayRow/timeRow
+     separadas). El JSX actual es flat · todos los hijos en una
+     sola fila. La fix L5.A había puesto min-width: 480px como
+     parche para que no colapsara en columnas, pero la causa raíz
+     era el direction. Acá lo arreglamos correctamente. */
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 6px 10px;
   background: var(--bg);
   border: 1px solid var(--brd);
   border-radius: var(--r-sm);
-  /* L5.A fix · evitar que el wrap quede colapsado en columnas
-     cuando el filter bar es flex con wrap. Se necesita ancho
-     mínimo para que dayRow + timeRow no se rompan en columnas. */
-  min-width: 480px;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   box-sizing: border-box;
+  /* min-width chico para evitar overflow en mobile · si no entra,
+     el filterbar padre con flex-wrap baja el grupo entero a otra
+     fila, no rompe el picker en pedazos. */
+  min-width: 0;
 }
 
 .wrap[aria-disabled="true"] {

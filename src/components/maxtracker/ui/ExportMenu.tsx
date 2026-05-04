@@ -38,10 +38,24 @@ interface Props {
   onExportCsv?: (() => void) | null;
   /** Handler para exportar Excel · si null, no aparece la opción */
   onExportXlsx?: (() => void) | null;
-  /** Período del imprimible · si null, no aparece la opción */
+  /** Período del imprimible · si null, no aparece la opción.
+   *  Abre el imprimible HTML del módulo en una pestaña nueva. */
   printPeriod?: PrintPeriodKey | null;
   /** Override del path base del imprimible */
   printBasePath?: string;
+  /**
+   * Handler de impresión arbitrario · si se pasa, agrega la
+   * opción "Imprimir / PDF" que ejecuta este callback en lugar
+   * de abrir un imprimible HTML separado.
+   *
+   * Caso de uso típico: el documento actual ya es la versión
+   * imprimible (Boletín, Libro del Objeto), entonces el callback
+   * llama a `window.print()` directamente.
+   *
+   * Excluyente con `printPeriod` · solo uno de los dos modos
+   * de impresión tiene sentido por instancia.
+   */
+  onPrintDocument?: (() => void) | null;
 }
 
 export function ExportMenu({
@@ -49,15 +63,22 @@ export function ExportMenu({
   onExportXlsx,
   printPeriod,
   printBasePath = DEFAULT_PRINT_BASE,
+  onPrintDocument,
 }: Props) {
   const hasCsv = !!onExportCsv;
   const hasXlsx = !!onExportXlsx;
-  const hasPrint = printPeriod != null;
+  const hasPrintHref = printPeriod != null;
+  const hasPrintDoc = !!onPrintDocument;
+  const hasPrint = hasPrintHref || hasPrintDoc;
 
   // Nada que mostrar
   if (!hasCsv && !hasXlsx && !hasPrint) return null;
 
   function handlePrint() {
+    if (hasPrintDoc) {
+      onPrintDocument?.();
+      return;
+    }
     if (!printPeriod) return;
     const href = buildPrintHref(printBasePath, printPeriod);
     window.open(href, "_blank", "noopener,noreferrer");

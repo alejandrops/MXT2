@@ -2,8 +2,8 @@
 
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileSpreadsheet, Printer } from "lucide-react";
 import { MonthPicker } from "@/components/maxtracker/time";
+import { ExportMenu } from "@/components/maxtracker/ui/ExportMenu";
 import styles from "./BoletinHeader.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -15,9 +15,8 @@ import styles from "./BoletinHeader.module.css";
 //      - flechas ‹ › prev/next igual que antes
 //      - dropdown con lista de meses históricos (24 meses)
 //      - dot verde por meses con datos disponibles
-//  · Botón Excel (L10.B) · si recibe boletinData · POST a
-//    /api/export/xlsx con kind="boletin-with-data"
-//  · Botón imprimir / guardar PDF (window.print)
+//  · ExportMenu unificado (S1-L1 fix F3) · combina Excel + Imprimir/PDF
+//    en un solo dropdown · reemplaza los 2 botones separados anteriores.
 //
 //  En print stylesheet los controles se ocultan · queda solo
 //  el título.
@@ -212,33 +211,25 @@ export function BoletinHeader({
         </div>
 
         <div className={styles.barRight}>
-          {exportPayload && (
-            <button
-              type="button"
-              className={styles.printBtn}
-              onClick={handleExportXlsx}
-              disabled={xlsxStatus === "loading"}
-              title="Descargar boletín en Excel (.xlsx)"
+          {xlsxStatus !== "idle" && (
+            <span
+              className={
+                xlsxStatus === "error" ? styles.statusError : styles.statusLoading
+              }
+              role="status"
+              aria-live="polite"
             >
-              <FileSpreadsheet size={13} />
-              <span>
-                {xlsxStatus === "loading"
-                  ? "Generando…"
-                  : xlsxStatus === "error"
-                    ? "Error · reintentar"
-                    : "Excel"}
-              </span>
-            </button>
+              {xlsxStatus === "loading"
+                ? "Generando…"
+                : "Error · reintentá"}
+            </span>
           )}
-          <button
-            type="button"
-            className={styles.printBtn}
-            onClick={handlePrint}
-            title="Imprimir o guardar como PDF"
-          >
-            <Printer size={13} />
-            <span>Imprimir / PDF</span>
-          </button>
+          <ExportMenu
+            onExportXlsx={
+              exportPayload && xlsxStatus !== "loading" ? handleExportXlsx : null
+            }
+            onPrintDocument={handlePrint}
+          />
         </div>
       </div>
 
