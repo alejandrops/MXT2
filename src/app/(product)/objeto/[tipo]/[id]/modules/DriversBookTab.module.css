@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════════════════════════
+   DriversBookTab.module.css · S1-L5
+   ───────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 28px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--t2);
+  margin: 0;
+}
+
+.empty {
+  background: var(--sf);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-md);
+  padding: 24px;
+  text-align: center;
+}
+
+.empty p {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--t2);
+  margin: 0;
+}

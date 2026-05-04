@@ -6,11 +6,12 @@
 //
 //  El cubo del MSD: Object × Time × Module
 //
-//  Matriz validada (S1-L4 libros-vehiculo):
+//  Matriz validada (S1-L4 + L5):
 //
-//    | Módulo           | vehículo | conductor | grupo |
+//    | Tab              | vehículo | conductor | grupo |
 //    |------------------|----------|-----------|-------|
 //    | Telemetría 🆕    |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Conductores 🆕   |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
 //    | Actividad        |    ✓     |     ✓     |   ✓   |
 //    | Seguridad        |    ✓     |     ✓     |   ✓   |
 //    | Conducción       |    ✓     |     ✓     |   ✓   |
@@ -20,17 +21,18 @@
 //    | Documentación    |    ✓     |     ✓     |   ✗   |
 //    | Sostenibilidad   |    ✓     |     ✗     |   ✓   |
 //
-//  Nota arquitectónica · "telemetria" es una tab intrínseca del
-//  vehículo (no es módulo del cubo · no aparece en sidebar). Vive
-//  acá como ModuleKey por simplicidad · si crece el modelo de
-//  tabs del Libro, valdría refactor a "BookTabKey" con dos sources
-//  (module / intrinsic).
+//  Nota arquitectónica · "telemetria" y "conductores" son tabs
+//  intrínsecas del vehículo (no son módulos del cubo · no aparecen
+//  en sidebar). Viven acá como ModuleKey por simplicidad · si crece
+//  el modelo de tabs del Libro, valdría refactor a "BookTabKey" con
+//  dos sources (module / intrinsic).
 // ═══════════════════════════════════════════════════════════════
 
 export type ObjectType = "vehiculo" | "conductor" | "grupo";
 
 export type ModuleKey =
   | "telemetria"
+  | "conductores"
   | "actividad"
   | "seguridad"
   | "conduccion"
@@ -50,6 +52,7 @@ export interface ModuleDef {
 // con el sidebar y los SwitchCases del page.tsx del Libro.
 const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
   telemetria: true, // S1-L4 · habilitada · tab nueva con datos CAN
+  conductores: true, // S1-L5 · habilitada · historial de quién manejó
   actividad: true,
   seguridad: true,
   conduccion: true, // S1-L2 · habilitada · scorecard activo, resto Sprint 4
@@ -65,6 +68,7 @@ const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
 const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
   vehiculo: [
     "telemetria",
+    "conductores",
     "actividad",
     "seguridad",
     "conduccion",
@@ -93,6 +97,7 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
 
 const MODULE_LABELS: Record<ModuleKey, string> = {
   telemetria: "Telemetría",
+  conductores: "Conductores",
   actividad: "Actividad",
   seguridad: "Seguridad",
   conduccion: "Conducción",
