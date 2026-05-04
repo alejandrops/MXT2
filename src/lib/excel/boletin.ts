@@ -116,7 +116,9 @@ export async function generateBoletinXlsx(
   setColumnWidths(summary, [28, 18, 18, 14]);
 
   summary.addRow([`Boletín mensual · ${options.periodLabel}`]);
-  summary.getRow(1).font = KPI_TITLE_STYLE.font;
+  if (KPI_TITLE_STYLE.font) {
+    summary.getRow(1).font = KPI_TITLE_STYLE.font;
+  }
   summary.mergeCells("A1:D1");
 
   summary.addRow([]);
