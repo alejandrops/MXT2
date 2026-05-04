@@ -1,0 +1,332 @@
+/* ═══════════════════════════════════════════════════════════════
+   FeedbackRow.module.css · S2-L6
+   ═══════════════════════════════════════════════════════════════ */
+
+.row {
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color 0.1s;
+}
+.row:has(.header[aria-expanded="true"]) {
+  border-color: var(--brd2);
+}
+
+/* ── Header (clickeable) ──────────────────────────────────── */
+
+.header {
+  display: grid;
+  grid-template-columns: 18px auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--f);
+  transition: background 0.1s;
+}
+.header:hover {
+  background: var(--bg);
+}
+
+.chevron {
+  display: inline-flex;
+  color: var(--t3);
+}
+
+.cat {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.catBug {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FCA5A5;
+}
+.catFeature {
+  background: #ECFEFF;
+  color: #155E75;
+  border: 1px solid #67E8F9;
+}
+.catOther {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+}
+
+.headerMessage {
+  font-size: 13px;
+  color: var(--tx);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.headerMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.headerUser {
+  font-size: 12px;
+  color: var(--t2);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerDate {
+  font-family: var(--m);
+  font-size: 11px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Status badges ────────────────────────────────────────── */
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.badgeNew {
+  background: #DBEAFE;
+  color: #1E3A8A;
+}
+.badgeReviewed {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.badgeClosed {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+/* ── Body (expandido) ────────────────────────────────────── */
+
+.body {
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--brd);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionLabel {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--t3);
+}
+
+.message {
+  font-family: var(--f);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tx);
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+}
+
+/* ── Context grid ─────────────────────────────────────────── */
+
+.contextGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.contextValue {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  line-height: 1.5;
+}
+
+.contextSub {
+  font-size: 11.5px;
+  color: var(--t3);
+  margin-top: 1px;
+}
+
+.linkValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--blu);
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-all;
+}
+.linkValue:hover {
+  text-decoration: underline;
+}
+.linkValue code {
+  font-family: var(--m);
+  font-size: 11.5px;
+}
+
+/* ── Notes ────────────────────────────────────────────────── */
+
+.notesInput {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--tx);
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  resize: vertical;
+  min-height: 50px;
+  line-height: 1.4;
+}
+.notesInput:focus {
+  outline: none;
+  border-color: var(--blu);
+}
+
+.savedHint {
+  color: #15803D;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
+.saveBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 11.5px;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.saveBtn:hover:not(:disabled) {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Actions ──────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--brd);
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.actionBtn:hover:not(:disabled) {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionPrimary {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #ffffff;
+}
+.actionPrimary:hover:not(:disabled) {
+  border-color: var(--dark);
+  color: #ffffff;
+  opacity: 0.92;
+}
+
+.actionId {
+  margin-left: auto;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--t3);
+}
+.actionId code {
+  background: var(--sf);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--brd);
+  color: var(--t2);
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .header {
+    grid-template-columns: 18px auto 1fr;
+    grid-template-rows: auto auto;
+  }
+  .headerMessage {
+    grid-column: 2 / -1;
+    white-space: normal;
+  }
+  .headerMeta {
+    grid-column: 2 / -1;
+    flex-wrap: wrap;
+  }
+}

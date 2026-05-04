@@ -15,6 +15,7 @@ import {
   UserCog,
   ShieldCheck,
   Activity,
+  MessageSquare,
 } from "lucide-react";
 import styles from "./AdminSidebar.module.css";
 
@@ -85,6 +86,11 @@ const NAV: NavItem[] = [
     href: "/admin/perfiles",
     label: "Perfiles",
     icon: <ShieldCheck size={15} />,
+  },
+  {
+    href: "/admin/feedback",
+    label: "Feedback",
+    icon: <MessageSquare size={15} />,
   },
 ];
 

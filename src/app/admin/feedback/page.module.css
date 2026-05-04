@@ -1,0 +1,188 @@
+/* ═══════════════════════════════════════════════════════════════
+   /admin/feedback · page.module.css · S2-L6
+   ═══════════════════════════════════════════════════════════════ */
+
+.page {
+  padding: 20px 24px;
+  max-width: 1200px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--tx);
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--f);
+  font-size: 13px;
+  color: var(--t3);
+  margin: 4px 0 0;
+}
+
+.headStats {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statBadge {
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t2);
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+}
+.statBadge strong {
+  color: var(--tx);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+
+/* ── Filters ──────────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterLabel {
+  font-family: var(--m);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--t3);
+}
+
+.filterRow {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--brd);
+  border-radius: 999px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  transition: all 0.1s;
+}
+.filterChip:hover {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+
+.filterActive {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #ffffff;
+}
+.filterActive:hover {
+  border-color: var(--dark);
+  color: #ffffff;
+}
+
+.chipCount {
+  font-size: 10.5px;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.filterActive .chipCount {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* ── List ─────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty {
+  padding: 56px 24px;
+  text-align: center;
+  background: var(--sf);
+  border: 1px dashed var(--brd);
+  border-radius: var(--r-md);
+  color: var(--t3);
+  font-family: var(--f);
+  font-size: 14px;
+}
+
+/* ── Pagination ───────────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-sm);
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  text-decoration: none;
+  transition: all 0.1s;
+}
+.pageBtn:hover {
+  border-color: var(--brd2);
+  color: var(--tx);
+}
+
+.pageInfo {
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
