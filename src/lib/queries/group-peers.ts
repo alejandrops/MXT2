@@ -44,8 +44,7 @@ const TELEMETRY_EVENT_TYPES = [
   "HARSH_BRAKING",
   "HARSH_CORNERING",
   "SPEEDING",
-  "OVERSPEED",
-  "IDLE",
+  "IDLING",
 ] as const;
 
 export async function getGroupPeers(
