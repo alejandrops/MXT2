@@ -67,20 +67,6 @@ export function setColumnWidths(sheet: Worksheet, widths: number[]) {
   });
 }
 
-/** Auto-fit columns · estima ancho a partir del contenido máximo */
-export function autoFitColumns(sheet: Worksheet, padding = 2, max = 40) {
-  sheet.columns.forEach((col: import("exceljs").Column | undefined) => {
-    if (!col) return;
-    let maxLen = 10;
-    col.eachCell?.({ includeEmpty: false }, (cell: import("exceljs").Cell) => {
-      const v = cell.value;
-      const len = v == null ? 0 : String(v).length;
-      if (len > maxLen) maxLen = len;
-    });
-    col.width = Math.min(maxLen + padding, max);
-  });
-}
-
 /** Formato de fecha estándar (dd/mm/yyyy) */
 export const DATE_FMT = "dd/mm/yyyy";
 

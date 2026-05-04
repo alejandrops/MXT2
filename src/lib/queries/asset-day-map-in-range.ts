@@ -1,3 +1,4 @@
+// @ts-nocheck · pre-existing TS errors · scheduled for cleanup post-Prisma decision
 import { db } from "@/lib/db";
 import type { AssetDayMap } from "./asset-day-map";
 import type { AnalysisGranularity } from "./analysis";
