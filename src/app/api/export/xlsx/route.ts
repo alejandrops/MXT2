@@ -47,12 +47,86 @@ interface ReportesGenericRequestBody {
   rows: (string | number | boolean | null)[][];
 }
 
+interface BoletinWithDataRequestBody {
+  kind: "boletin-with-data";
+  period: string;
+  periodLabel: string;
+  payload: {
+    summary: {
+      current: {
+        distanceKm: number;
+        activeMin: number;
+        tripCount: number;
+        eventCount: number;
+        alarmCount: number;
+        activeAssetCount: number;
+        activeDriverCount: number;
+      };
+      previous: {
+        distanceKm: number;
+        activeMin: number;
+        tripCount: number;
+        eventCount: number;
+        alarmCount: number;
+      };
+      fleet: { totalAssets: number; totalDrivers: number; totalGroups: number };
+    };
+    vehicles: {
+      assetId: string;
+      assetName: string;
+      plate: string | null;
+      groupName: string | null;
+      distanceKm: number;
+      activeMin: number;
+      tripCount: number;
+      eventCount: number;
+      eventsPer100km: number;
+    }[];
+    drivers: {
+      personId: string;
+      fullName: string;
+      safetyScore: number;
+      distanceKm: number;
+      tripCount: number;
+      eventCount: number;
+    }[];
+    groups: {
+      groupId: string;
+      groupName: string;
+      assetCount: number;
+      distanceKm: number;
+      activeMin: number;
+      tripCount: number;
+      eventCount: number;
+      eventsPer100km: number;
+    }[];
+    alarms: {
+      total: number;
+      activeAtClose: number;
+      mttrMin: number;
+      bySeverity: { severity: string; count: number }[];
+      byDomain: { domain: string; count: number }[];
+      topVehicles: {
+        assetId: string;
+        assetName: string;
+        plate: string | null;
+        count: number;
+      }[];
+    };
+    events: { type: string; count: number }[];
+  };
+}
+
 interface BoletinRequestBody {
   kind: "boletin";
   period: string; // YYYY-MM
 }
 
-type RequestBody = TripsRequestBody | ReportesGenericRequestBody | BoletinRequestBody;
+type RequestBody =
+  | TripsRequestBody
+  | ReportesGenericRequestBody
+  | BoletinRequestBody
+  | BoletinWithDataRequestBody;
 
 export async function POST(request: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────
@@ -85,6 +159,8 @@ export async function POST(request: NextRequest) {
         return await handleReportesGeneric(body);
       case "boletin":
         return await handleBoletin(body, scopedAccountId);
+      case "boletin-with-data":
+        return await handleBoletinWithData(body);
       default: {
         const _exhaustive: never = body;
         return NextResponse.json(
@@ -150,25 +226,37 @@ async function handleBoletin(
   body: BoletinRequestBody,
   _scopedAccountId: string | null,
 ): Promise<Response> {
-  // El boletín es complejo · su data se carga en `loadBoletinData()`
-  // dentro de la page. Para no duplicar 200 LOC de query, en el
-  // MVP exportamos solo lo que el cliente nos pase pre-procesado
-  // (ver consumer: BoletinHeader llama con la data ya cargada).
-  //
-  // En esta primera iteración, devolvemos error · el caller debe
-  // usar el endpoint /api/export/xlsx?kind=boletin-with-data que
-  // recibe el data inline. Si querés evitar el roundtrip, llamá
-  // desde la misma server component que ya tiene la data.
+  // El boletín completo requiere refactorizar loadBoletinData() · queda
+  // como vía alternativa por si el cliente no tiene la data lista.
+  // En la práctica el cliente usa "boletin-with-data" desde la page del
+  // boletín que ya tiene la data cargada en server.
   return NextResponse.json(
     {
       error:
-        "Para exportar el boletín, el cliente debe pasar la data pre-cargada · ver doc en lib/excel/boletin.ts",
+        "kind=boletin requiere refactor de loadBoletinData · usá kind=boletin-with-data desde el cliente",
     },
     { status: 501 },
   );
+}
 
-  // El handler real vendrá en una siguiente iteración cuando
-  // refactorice loadBoletinData() a un módulo compartido.
+async function handleBoletinWithData(
+  body: BoletinWithDataRequestBody,
+): Promise<Response> {
+  const { generateBoletinXlsx } = await import("@/lib/excel/boletin");
+
+  const buffer = await generateBoletinXlsx({
+    period: body.period,
+    periodLabel: body.periodLabel,
+    summary: body.payload.summary,
+    vehicles: body.payload.vehicles,
+    drivers: body.payload.drivers,
+    groups: body.payload.groups,
+    alarms: body.payload.alarms,
+    events: body.payload.events,
+  });
+
+  const filename = `boletin_${body.period}.xlsx`;
+  return xlsxResponse(buffer, filename);
 }
 
 // ── Helpers ──────────────────────────────────────────────────

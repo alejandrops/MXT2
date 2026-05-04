@@ -15,6 +15,7 @@ import type { DriverForFilter } from "@/lib/queries/persons";
 import { buildTripsHref, type TripsParams } from "@/lib/url-trips";
 import { TimeRangePicker } from "./time";
 import { FilterFieldGroup } from "./ui/FilterFieldGroup";
+import { EmptyState } from "./ui";
 import styles from "./TripsFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -269,7 +270,7 @@ function MultiSelectPicker({
 
           <div className={styles.pickerList}>
             {filtered.length === 0 ? (
-              <div className={styles.pickerEmpty}>Sin resultados</div>
+              <EmptyState size="inline" title="Sin resultados" />
             ) : (
               filtered.map((opt) => {
                 const checked = selectedIds.includes(opt.id);

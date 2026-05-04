@@ -16,6 +16,7 @@ import { FleetRanking } from "@/components/maxtracker/analysis/FleetRanking";
 import { FleetSmallMultiples } from "@/components/maxtracker/analysis/FleetSmallMultiples";
 import { ExportMenu, granularityToPeriod } from "@/components/maxtracker/ui";
 import { downloadCsv, csvNum, csvFilename } from "@/lib/utils/csv";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./DistributionView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -124,6 +125,45 @@ export function VisualView({ vista, data }: Props) {
     });
   }
 
+  // ── Excel export (L10) ──────────────────────────────────────
+  async function exportXlsx() {
+    const columns: { header: string; width?: number; format?: "int" | "decimal1" | "text" }[] = [
+      { header: "Vehículo", width: 28 },
+      { header: "Patente", width: 12 },
+      { header: "Grupo", width: 20 },
+      { header: "Total", width: 14, format: "decimal1" },
+    ];
+    for (let i = 0; i < data.colCount; i++) {
+      const lbl = data.colLabels.find((l) => l.col === i);
+      columns.push({
+        header: lbl?.label ?? `Col ${i + 1}`,
+        width: 14,
+        format: "decimal1",
+      });
+    }
+
+    const rows = data.rows.map((row) => {
+      const cells: (string | number | null)[] = [
+        row.assetName,
+        row.assetPlate ?? "",
+        row.groupName ?? "",
+        row.total,
+      ];
+      for (let i = 0; i < data.colCount; i++) {
+        const c = row.cells.find((x) => x.col === i);
+        cells.push(c ? c.value : 0);
+      }
+      return cells;
+    });
+
+    await exportReportesXlsx({
+      subject: `Reporte visual ${vista} · ${data.granularity} · ${data.anchorIso}`,
+      sheetName: `visual_${vista}_${data.granularity}_${data.anchorIso}`,
+      columns,
+      rows,
+    });
+  }
+
   const printPeriod = granularityToPeriod(data.granularity);
 
   return (
@@ -139,7 +179,11 @@ export function VisualView({ vista, data }: Props) {
         />
         <div className={styles.toolbarSpacer} />
         <MetricSelector value={data.metric} onChange={setMetric} />
-        <ExportMenu onExportCsv={exportCsv} printPeriod={printPeriod} />
+        <ExportMenu
+          onExportCsv={exportCsv}
+          onExportXlsx={exportXlsx}
+          printPeriod={printPeriod}
+        />
       </div>
 
       <ScopeFiltersBar

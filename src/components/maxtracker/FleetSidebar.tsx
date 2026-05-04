@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { FleetAssetLive } from "@/lib/queries/tracking";
 import { MotorGlyph } from "./MotorGlyph";
+import { EmptyState } from "./ui";
 import styles from "./FleetSidebar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -94,7 +95,7 @@ export function FleetSidebar({
       </div>
 
       {filtered.length === 0 ? (
-        <div className={styles.empty}>Sin resultados.</div>
+        <EmptyState size="inline" title="Sin resultados" />
       ) : (
         <ul className={styles.list}>
           {filtered.map((a) => {

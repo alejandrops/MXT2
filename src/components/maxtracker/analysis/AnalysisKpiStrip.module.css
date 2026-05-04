@@ -132,14 +132,14 @@
   position: relative;
   height: 4px;
   background: rgba(0, 0, 0, 0.06);
-  border-radius: 2px;
+  border-radius: var(--r-md);
   margin-top: 6px;
 }
 
 .barFill {
   height: 100%;
   background: var(--blu);
-  border-radius: 2px;
+  border-radius: var(--r-md);
 }
 
 .barLabel {

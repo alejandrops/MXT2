@@ -58,7 +58,7 @@
   background: transparent;
   color: var(--t3);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: var(--r-md);
 }
 .pillRemove:hover {
   background: #fee2e2;

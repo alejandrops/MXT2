@@ -42,7 +42,7 @@
   width: 2px;
   height: 12px;
   background: var(--t3);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
   pointer-events: none;
   opacity: 0.55;
 }
@@ -71,7 +71,7 @@
   appearance: none;
   height: 4px;
   background: var(--brd2);
-  border-radius: 2px;
+  border-radius: var(--r-md);
   outline: none;
   position: relative;
   z-index: 1;

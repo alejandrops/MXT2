@@ -3,7 +3,7 @@
 import { ChevronDown, Truck, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FleetAssetLive } from "@/lib/queries/tracking";
-import { FilterFieldGroup } from "./ui";
+import { FilterFieldGroup, EmptyState } from "./ui";
 import styles from "./FleetFilterBar.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -243,7 +243,7 @@ function MultiPicker({
 
           <div className={styles.pickerList}>
             {filtered.length === 0 ? (
-              <div className={styles.pickerEmpty}>Sin resultados</div>
+              <EmptyState size="inline" title="Sin resultados" />
             ) : (
               filtered.map((opt) => {
                 const checked = selectedIds.includes(opt.id);

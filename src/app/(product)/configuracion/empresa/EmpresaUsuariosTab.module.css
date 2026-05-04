@@ -22,7 +22,7 @@
   padding: 2px 6px;
   background: color-mix(in srgb, var(--blu, #2563eb) 12%, var(--sf));
   color: var(--blu, #2563eb);
-  border-radius: 4px;
+  border-radius: var(--r-md);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;

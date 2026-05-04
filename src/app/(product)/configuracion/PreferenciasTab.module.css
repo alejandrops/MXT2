@@ -45,7 +45,7 @@
   padding: 8px 10px;
   background: #FFFFFF;
   border: 1px solid #D1D5DB;
-  border-radius: 4px;
+  border-radius: var(--r-md);
   outline: none;
   cursor: pointer;
   max-width: 280px;
@@ -84,7 +84,7 @@
   padding: 12px;
   background: #FFFFFF;
   border: 1px solid #D1D5DB;
-  border-radius: 4px;
+  border-radius: var(--r-md);
   cursor: pointer;
   transition: border-color 80ms, background-color 80ms;
 }
@@ -150,7 +150,7 @@
   background: #2563EB;
   color: #FFFFFF;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--r-md);
   font-family: var(--f);
   font-size: 12.5px;
   font-weight: 500;

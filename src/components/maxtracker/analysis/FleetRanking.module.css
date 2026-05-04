@@ -62,7 +62,7 @@
 
 .scaleSwatch[data-kind="bar"] {
   background: var(--blu);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
 }
 
 .scaleSwatch[data-kind="avg"] {
@@ -73,7 +73,7 @@
 
 .scaleSwatch[data-kind="anomaly"] {
   background: var(--red);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
 }
 
 /* ── List ────────────────────────────────────────────────── */
@@ -163,13 +163,13 @@
   width: 100%;
   height: 14px;
   background: rgba(0, 0, 0, 0.03);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
 }
 
 .barFill {
   height: 100%;
   background: var(--blu);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
   transition: width 0.18s ease-out;
 }
 

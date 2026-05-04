@@ -1,43 +1,58 @@
+/* ═══════════════════════════════════════════════════════════════
+   KpiTile · L5.B · alineado visualmente con KpiCard.size="sm"
+   ─────────────────────────────────────────────────────────────
+   Cambio clave (vs versión anterior):
+     · Layout: ahora label arriba, value abajo (patrón enterprise
+       Samsara/Geotab/HubSpot · era: value arriba, label abajo)
+     · Padding/gap reducidos para densidad coherente con KpiCard
+     · Tipografía alineada con KpiCard.sm (label 9.5px / value 18-22px)
+
+   La API se mantiene igual · cero migración necesaria en los 15
+   consumers actuales.
+   ═══════════════════════════════════════════════════════════════ */
+
 .tile {
   background: var(--sf);
   border: 1px solid var(--brd);
-  border-radius: var(--r-md);
-  padding: 14px 16px 12px;
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+  font-family: var(--f);
 }
 
+/* Label · arriba · uppercase chiquito */
+.label {
+  font-size: 9.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  /* No margin-top (era 4px) · ahora va primero en el flow */
+}
+
+/* Value · grande pero más contenido que antes (32px era pesado) */
 .value {
   font-family: var(--m);
-  font-size: 32px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--tx);
-  line-height: 1.05;
-  letter-spacing: -1px;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
+  /* removido letter-spacing -1px que afeaba con tamaño nuevo */
 }
 
-.label {
-  font-size: 11px;
-  color: var(--t2);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 500;
-  margin-top: 4px;
-}
-
+/* Caption · debajo del value · gris suave */
 .caption {
   font-size: 11px;
   color: var(--t3);
-  margin-top: 2px;
   font-family: var(--m);
 }
 
-/* Accent variants tint just the value. The label stays muted so
-   the visual emphasis lands on the number, not the descriptor. */
-.accent_red .value { color: var(--red-dark); }
-.accent_grn .value { color: var(--grn); }
-.accent_amb .value { color: var(--ora-t); }
-.accent_blu .value { color: var(--blu-t); }
+/* Accent variants · pintan el value · color como excepción Tufte */
+.accent_red .value { color: var(--red, #dc2626); }
+.accent_grn .value { color: var(--grn, #16a34a); }
+.accent_amb .value { color: var(--ora-t, #b45309); }
+.accent_blu .value { color: var(--blu-t, #1e40af); }

@@ -19,6 +19,7 @@ import {
   type ColumnDef,
 } from "@/components/maxtracker/ui";
 import { downloadCsv, csvFilename } from "@/lib/utils/csv";
+import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./ScorecardClient.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -184,6 +185,34 @@ export function ScorecardClient({ data }: Props) {
     });
   }
 
+  // ── Excel export (L10) ─────────────────────────────────────
+  async function exportXlsx() {
+    await exportReportesXlsx({
+      subject: `Scorecard de conductores · ${data.anchorIso}`,
+      sheetName: `scorecard_${data.anchorIso}`,
+      columns: [
+        { header: "Pos", width: 6, format: "int" },
+        { header: "Conductor", width: 28 },
+        { header: "Score", width: 10, format: "int" },
+        { header: "Km", width: 12, format: "decimal1" },
+        { header: "Eventos", width: 10, format: "int" },
+        { header: "Excesos", width: 10, format: "int" },
+        { header: "Críticos", width: 10, format: "int" },
+        { header: "Vmax (km/h)", width: 12, format: "int" },
+      ],
+      rows: ranked.map((r, i) => [
+        i + 1,
+        r.personName,
+        r.score,
+        Number(r.km.toFixed(1)),
+        Math.round(r.events),
+        Math.round(r.speeding),
+        Math.round(r.critical),
+        Math.round(r.vmax),
+      ]),
+    });
+  }
+
   // ── Columns para DataTable ─────────────────────────────────
   const columns: ColumnDef<RankedDriver & { _idx: number }>[] = [
     {
@@ -313,6 +342,7 @@ export function ScorecardClient({ data }: Props) {
         actions={
           <ExportMenu
             onExportCsv={exportCsv}
+            onExportXlsx={exportXlsx}
             printPeriod={granularityToPeriod(data.granularity)}
           />
         }

@@ -73,7 +73,7 @@
   transform: translateX(-50%);
   background: var(--bg);
   border: 1px solid var(--brd2);
-  border-radius: 3px;
+  border-radius: var(--r-md);
   padding: 1px 5px;
   font-family: var(--m);
   font-size: 11px;

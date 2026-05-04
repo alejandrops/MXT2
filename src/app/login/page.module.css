@@ -20,6 +20,12 @@
   overflow: hidden;
 }
 
+/* Variante para LoginPicker · más ancho para que el badge de rol
+   y el email entren cómodos en una fila */
+.cardWide {
+  max-width: 520px;
+}
+
 .brandSection {
   padding: 28px 32px 20px;
   border-bottom: 1px solid var(--brd);

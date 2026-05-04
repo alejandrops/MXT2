@@ -41,7 +41,7 @@
   color: var(--t2);
   background: var(--bg);
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--r-md);
   border: 1px solid var(--brd);
 }
 

@@ -5,6 +5,7 @@ import { Search, Sparkles, X } from "lucide-react";
 import type { FleetAssetLive } from "@/lib/queries/tracking";
 import type { SelectionMode } from "./MultiMapGrid";
 import { MotorGlyph } from "./MotorGlyph";
+import { EmptyState } from "./ui";
 import styles from "./VehicleSelectorModal.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -216,7 +217,7 @@ export function VehicleSelectorModal({
           }`}
         >
           {filtered.length === 0 ? (
-            <div className={styles.emptyList}>Sin resultados.</div>
+            <EmptyState size="inline" title="Sin resultados" />
           ) : (
             filtered.map((a) => {
               const checked = selectedIds.includes(a.id);

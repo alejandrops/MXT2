@@ -212,7 +212,7 @@
 .heatCell {
   width: 8px;
   height: 8px;
-  border-radius: 1px;
+  border-radius: var(--r-sm);
   outline: 1px solid transparent;
   transition: outline-color 0.1s;
 }

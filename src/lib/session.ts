@@ -125,6 +125,7 @@ async function getSessionFromDemoCookie(): Promise<SessionData> {
   const userIdCookie = cookieStore.get(COOKIE_NAME);
   const userId = userIdCookie?.value ?? null;
 
+  // Si hay cookie · intentamos resolver el user
   let user = userId
     ? await db.user.findFirst({
         where: { id: userId, status: "ACTIVE" },
@@ -132,24 +133,12 @@ async function getSessionFromDemoCookie(): Promise<SessionData> {
       })
     : null;
 
+  // L7-DEMO · no fallback automático · forzar al user a elegir explícitamente
+  // en /login. Esto da UX coherente con el modo "logear como distintos users".
+  // Si la cookie estaba seteada pero el user no existe (deleted), también
+  // limpiamos y mandamos a elegir.
   if (!user) {
-    user = await db.user.findFirst({
-      where: { profile: { systemKey: "SUPER_ADMIN" }, status: "ACTIVE" },
-      include: { profile: true, account: true, organization: true },
-    });
-  }
-
-  if (!user) {
-    user = await db.user.findFirst({
-      where: { status: "ACTIVE" },
-      include: { profile: true, account: true, organization: true },
-    });
-  }
-
-  if (!user) {
-    throw new Error(
-      "No hay usuarios activos en la base · ejecutá los seeds",
-    );
+    redirect("/login");
   }
 
   return mapUser(user, "demo");

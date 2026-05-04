@@ -133,6 +133,51 @@ export default async function BoletinPage({ params }: PageProps) {
         month={month}
         prevPeriod={prevPeriod}
         nextPeriod={hasNext ? nextPeriod : null}
+        exportPayload={{
+          summary: {
+            current: data.current,
+            previous: data.previous,
+            fleet: data.fleet,
+          },
+          vehicles: data.vehicles.map((v) => ({
+            assetId: v.assetId,
+            assetName: v.assetName,
+            plate: v.plate,
+            groupName: v.groupName,
+            distanceKm: v.distanceKm,
+            activeMin: v.activeMin,
+            tripCount: v.tripCount,
+            eventCount: v.eventCount,
+            eventsPer100km: v.eventsPer100km,
+          })),
+          drivers: data.drivers.map((d) => ({
+            personId: d.personId,
+            fullName: d.fullName,
+            safetyScore: d.safetyScore,
+            distanceKm: d.distanceKm,
+            tripCount: d.tripCount,
+            eventCount: d.eventCount,
+          })),
+          groups: data.groups.map((g) => ({
+            groupId: g.groupId,
+            groupName: g.groupName,
+            assetCount: g.assetCount,
+            distanceKm: g.distanceKm,
+            activeMin: g.activeMin,
+            tripCount: g.tripCount,
+            eventCount: g.eventCount,
+            eventsPer100km: g.eventsPer100km,
+          })),
+          alarms: {
+            total: data.alarms.total,
+            activeAtClose: data.alarms.activeAtClose,
+            mttrMin: data.alarms.mttrMin,
+            bySeverity: data.alarms.bySeverity,
+            byDomain: data.alarms.byDomain,
+            topVehicles: data.alarms.topVehicles,
+          },
+          events: data.eventsByType,
+        }}
       />
 
       <article className={styles.body}>

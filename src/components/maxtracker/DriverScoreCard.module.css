@@ -69,14 +69,14 @@
   flex: 1;
   height: 5px;
   background: var(--brd2);
-  border-radius: 3px;
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--brd);
 }
 
 .barFill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--r-md);
   transition: width 0.3s ease;
 }
 

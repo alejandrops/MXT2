@@ -72,7 +72,7 @@
   color: var(--t3);
   cursor: pointer;
   padding: 4px;
-  border-radius: 3px;
+  border-radius: var(--r-md);
   display: inline-flex;
   align-items: center;
 }
@@ -193,7 +193,7 @@
   padding: 1px 5px;
   background: var(--sf);
   border: 1px solid var(--brd);
-  border-radius: 3px;
+  border-radius: var(--r-md);
   color: var(--t1);
   font-weight: 500;
 }

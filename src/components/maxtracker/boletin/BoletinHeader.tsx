@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Printer } from "lucide-react";
+import { FileSpreadsheet, Printer } from "lucide-react";
 import { MonthPicker } from "@/components/maxtracker/time";
 import styles from "./BoletinHeader.module.css";
 
@@ -15,6 +15,8 @@ import styles from "./BoletinHeader.module.css";
 //      - flechas ‹ › prev/next igual que antes
 //      - dropdown con lista de meses históricos (24 meses)
 //      - dot verde por meses con datos disponibles
+//  · Botón Excel (L10.B) · si recibe boletinData · POST a
+//    /api/export/xlsx con kind="boletin-with-data"
 //  · Botón imprimir / guardar PDF (window.print)
 //
 //  En print stylesheet los controles se ocultan · queda solo
@@ -36,6 +38,77 @@ const MONTHS = [
   "Diciembre",
 ];
 
+/** Payload mínimo para generar el Excel · matchea la shape del
+ *  generador en lib/excel/boletin.ts */
+export interface BoletinExportPayload {
+  summary: {
+    current: {
+      distanceKm: number;
+      activeMin: number;
+      tripCount: number;
+      eventCount: number;
+      alarmCount: number;
+      activeAssetCount: number;
+      activeDriverCount: number;
+    };
+    previous: {
+      distanceKm: number;
+      activeMin: number;
+      tripCount: number;
+      eventCount: number;
+      alarmCount: number;
+    };
+    fleet: {
+      totalAssets: number;
+      totalDrivers: number;
+      totalGroups: number;
+    };
+  };
+  vehicles: {
+    assetId: string;
+    assetName: string;
+    plate: string | null;
+    groupName: string | null;
+    distanceKm: number;
+    activeMin: number;
+    tripCount: number;
+    eventCount: number;
+    eventsPer100km: number;
+  }[];
+  drivers: {
+    personId: string;
+    fullName: string;
+    safetyScore: number;
+    distanceKm: number;
+    tripCount: number;
+    eventCount: number;
+  }[];
+  groups: {
+    groupId: string;
+    groupName: string;
+    assetCount: number;
+    distanceKm: number;
+    activeMin: number;
+    tripCount: number;
+    eventCount: number;
+    eventsPer100km: number;
+  }[];
+  alarms: {
+    total: number;
+    activeAtClose: number;
+    mttrMin: number;
+    bySeverity: { severity: string; count: number }[];
+    byDomain: { domain: string; count: number }[];
+    topVehicles: {
+      assetId: string;
+      assetName: string;
+      plate: string | null;
+      count: number;
+    }[];
+  };
+  events: { type: string; count: number }[];
+}
+
 interface Props {
   year: number;
   month: number;
@@ -51,6 +124,11 @@ interface Props {
    * Default: undefined · todos los meses se ven sin distinción.
    */
   availableMonths?: readonly string[];
+  /**
+   * Data del boletín · si se pasa, se habilita el botón Excel.
+   * Si es undefined (caso fallback), solo se muestra el botón Imprimir.
+   */
+  exportPayload?: BoletinExportPayload;
 }
 
 export function BoletinHeader({
@@ -58,9 +136,13 @@ export function BoletinHeader({
   month,
   nextPeriod,
   availableMonths,
+  exportPayload,
 }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [xlsxStatus, setXlsxStatus] = useState<"idle" | "loading" | "error">(
+    "idle",
+  );
 
   const currentPeriod = useMemo(
     () => `${year}-${String(month).padStart(2, "0")}`,
@@ -70,6 +152,39 @@ export function BoletinHeader({
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
+
+  async function handleExportXlsx() {
+    if (!exportPayload || xlsxStatus === "loading") return;
+    setXlsxStatus("loading");
+    try {
+      const periodLabel = `${MONTHS[month - 1]} ${year}`;
+      const res = await fetch("/api/export/xlsx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "boletin-with-data",
+          period: currentPeriod,
+          periodLabel,
+          payload: exportPayload,
+        }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `boletin_${currentPeriod}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setXlsxStatus("idle");
+    } catch (err) {
+      console.error("[BoletinHeader] export xlsx failed", err);
+      setXlsxStatus("error");
+      setTimeout(() => setXlsxStatus("idle"), 3000);
+    }
+  }
 
   function handleChange(newPeriod: string) {
     // Si el user intenta navegar al mes que aún no cerró (futuro),
@@ -97,6 +212,24 @@ export function BoletinHeader({
         </div>
 
         <div className={styles.barRight}>
+          {exportPayload && (
+            <button
+              type="button"
+              className={styles.printBtn}
+              onClick={handleExportXlsx}
+              disabled={xlsxStatus === "loading"}
+              title="Descargar boletín en Excel (.xlsx)"
+            >
+              <FileSpreadsheet size={13} />
+              <span>
+                {xlsxStatus === "loading"
+                  ? "Generando…"
+                  : xlsxStatus === "error"
+                    ? "Error · reintentar"
+                    : "Excel"}
+              </span>
+            </button>
+          )}
           <button
             type="button"
             className={styles.printBtn}

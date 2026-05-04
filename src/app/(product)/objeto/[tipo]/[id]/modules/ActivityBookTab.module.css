@@ -203,7 +203,7 @@
   position: relative;
   height: 8px;
   background: rgba(0, 0, 0, 0.04);
-  border-radius: 1px;
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 

@@ -102,7 +102,7 @@
   display: inline-block;
   width: var(--cell-size);
   height: var(--cell-size);
-  border-radius: 2px;
+  border-radius: var(--r-md);
 }
 
 /* ── Grid layout ────────────────────────────────────────── */
@@ -174,7 +174,7 @@
   display: block;
   width: var(--cell-size);
   height: var(--cell-size);
-  border-radius: 2px;
+  border-radius: var(--r-md);
   text-decoration: none;
   transition: outline-color 0.08s ease-out;
   outline: 1px solid transparent;

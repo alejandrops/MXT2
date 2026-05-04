@@ -137,7 +137,7 @@
   align-items: center;
   gap: 6px;
   padding: 3px 6px;
-  border-radius: 2px;
+  border-radius: var(--r-md);
   font-size: 12px;
   line-height: 1.2;
   /* Reset button defaults (used when interactive) */
@@ -204,7 +204,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0 4px;
-  border-radius: 2px;
+  border-radius: var(--r-md);
   font-weight: 600;
   line-height: 1.6;
 }

@@ -113,7 +113,7 @@
 .cell {
   height: 14px;
   background: var(--sf2);
-  border-radius: 2px;
+  border-radius: var(--r-md);
   cursor: default;
   transition: outline 0.08s;
 }
@@ -279,7 +279,7 @@
 .legendCell {
   width: 14px;
   height: 14px;
-  border-radius: 2px;
+  border-radius: var(--r-md);
 }
 
 .legendCell[data-slot="legend"][data-intensity="1"] {

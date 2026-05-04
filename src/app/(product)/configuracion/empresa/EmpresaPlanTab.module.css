@@ -190,13 +190,13 @@
   width: 100%;
   height: 6px;
   background: var(--bg);
-  border-radius: 3px;
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
 .usageBarFill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--r-md);
   transition: width 200ms ease-out, background-color 200ms ease-out;
 }
 
