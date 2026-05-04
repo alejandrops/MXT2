@@ -35,7 +35,7 @@ import styles from "./ScorecardClient.module.css";
 //    · Sort-by-score nativo de DataTable
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/scorecard";
+const BASE_PATH = "/conduccion/scorecard";
 
 interface Props {
   data: DriversMultiMetricData;

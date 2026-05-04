@@ -86,10 +86,9 @@ const MODULES: ModuleDef[] = [
     pages: [
       { label: "Mapa", href: "/seguimiento/mapa" },
       { label: "Historial", href: "/seguimiento/historial" },
-      {
-        label: "Torre de control",
-        href: "/seguimiento/torre-de-control",
-      },
+      // S1-L2 ia-reorg · "Torre de control" sacada del sidebar.
+      // La ruta /seguimiento/torre-de-control sigue accesible por URL
+      // por si se retoma · sólo se removió el link visual.
     ],
   },
   {
@@ -101,7 +100,8 @@ const MODULES: ModuleDef[] = [
     pages: [
       { label: "Evolución", href: "/actividad/evolucion" },
       { label: "Resumen", href: "/actividad/resumen" },
-      { label: "Scorecard", href: "/actividad/scorecard" },
+      // S1-L2 ia-reorg · Scorecard movido a Conducción · pertenece al
+      // módulo de safety/scoring (Hybrid Method). La URL vieja redirige.
       { label: "Viajes", href: "/actividad/viajes" },
     ],
   },
@@ -124,8 +124,14 @@ const MODULES: ModuleDef[] = [
     label: "Conducción",
     icon: <Truck size={16} />,
     pathPrefix: "/conduccion",
-    enabled: false,
-    pages: [],
+    // S1-L2 ia-reorg · habilitado · solo Scorecard activo por ahora.
+    // El resto de pantallas (Dashboard, Mapa heatmap, Reportes,
+    // Comparativa, Infracciones, Boletín, Configuración) llegan
+    // en Sprint 4 según spec del módulo (post-MVP).
+    enabled: true,
+    pages: [
+      { label: "Scorecard", href: "/conduccion/scorecard" },
+    ],
   },
   {
     key: "log",
@@ -174,8 +180,15 @@ const MODULES: ModuleDef[] = [
     pathPrefix: "/direccion",
     enabled: true,
     pages: [
-      { label: "Vista ejecutiva", href: "/direccion/vista-ejecutiva" },
-      { label: "Distribución por grupo", href: "/direccion/distribucion-grupos" },
+      // S1-L2 ia-reorg · Dirección queda como espacio de análisis
+      // estadístico cross-módulo. Vista Ejecutiva (operacional) se
+      // movió al nuevo /dashboard. Distribución por grupo se renombró
+      // a "Comparativa entre objetos" porque el alcance se amplía a
+      // scatter, slope chart y otros gráficos cross-objeto.
+      {
+        label: "Comparativa entre objetos",
+        href: "/direccion/comparativa-objetos",
+      },
       { label: "Boletín", href: "/direccion/boletin" },
     ],
   },
@@ -248,7 +261,9 @@ export function Sidebar({ openAlarmsCount }: SidebarProps = {}) {
   return (
     <aside className={sidebarClass}>
       {/* ── Brand block ───────────────────────────────────────── */}
-      <Link href="/seguridad/dashboard" className={styles.brandBlock}>
+      {/* S1-L2 ia-reorg · brand apunta al nuevo /dashboard cross-módulo
+         (patrón "logo = home"). Antes apuntaba a /seguridad/dashboard. */}
+      <Link href="/dashboard" className={styles.brandBlock}>
         <div className={styles.brandMark}>
           <Radio size={14} />
         </div>

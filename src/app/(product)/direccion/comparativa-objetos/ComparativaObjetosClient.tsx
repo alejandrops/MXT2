@@ -12,16 +12,16 @@ import { FleetBoxPlot } from "@/components/maxtracker/analysis/FleetBoxPlot";
 import { MetricSelector } from "@/components/maxtracker/activity/MetricSelector";
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
-import styles from "./DistribucionGruposClient.module.css";
+import styles from "./ComparativaObjetosClient.module.css";
 import { PageHeader } from "@/components/maxtracker/ui";
 
-const BASE_PATH = "/direccion/distribucion-grupos";
+const BASE_PATH = "/direccion/comparativa-objetos";
 
 interface Props {
   data: FleetAnalysisData;
 }
 
-export function DistribucionGruposClient({ data }: Props) {
+export function ComparativaObjetosClient({ data }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 

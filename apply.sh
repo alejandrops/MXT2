@@ -1,21 +1,31 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Maxtracker · S1-L1-fixes · apply.sh
-#  Sprint 1 · Lote 1 · 3 fixes acotados:
-#    F1 · Mapa · auto-fit reactivo + soft-follow del seleccionado
-#    F2 · DayWithTimePicker · selector fecha multi-fila → 1 fila
-#    F3 · Boletín · unificar Excel + PDF en ExportMenu
+#  Maxtracker · S1-L2-ia-reorg · apply.sh
+#  Sprint 1 · Lote 2 · Reorganización de IA
+#
+#  Cambios:
+#    · Mover Scorecard de Actividad a Conducción
+#    · Renombrar "Distribución por grupo" a "Comparativa entre objetos"
+#    · Eliminar Vista Ejecutiva (queda redirect a /dashboard)
+#    · Crear nueva pantalla /dashboard (scaffold)
+#    · Sacar Torre de control del sidebar (URL queda accesible)
+#    · Brand block del sidebar apunta a /dashboard
+#    · Topbar agrega icono Home → /dashboard
+#    · Habilitar módulo Conducción con Scorecard como única página
+#    · Actualizar entries del CMDK
 #
 #  Idempotente · usa cmp -s antes de cp · seguro de re-ejecutar.
+#  Soporta creates, updates y deletes.
 # ═══════════════════════════════════════════════════════════════
 
 set -e
 
 PAYLOAD="_payload"
+DELETE_LIST="$PAYLOAD/_delete.txt"
 
 if [ ! -d "$PAYLOAD" ]; then
   echo "❌ ERROR · no encuentro carpeta $PAYLOAD"
-  echo "   Asegurate de haber hecho 'unzip -o S1-L1-fixes.zip -d maxtracker-functional'"
+  echo "   Asegurate de haber hecho 'unzip -o S1-L2-ia-reorg.zip -d maxtracker-functional'"
   echo "   y de estar parado en el root del repo (donde está package.json)"
   exit 1
 fi
@@ -26,12 +36,14 @@ if [ ! -f "package.json" ]; then
 fi
 
 echo "═══════════════════════════════════════════════════"
-echo "  S1-L1-fixes · aplicando 3 fixes"
+echo "  S1-L2-ia-reorg · aplicando reorganización de IA"
 echo "═══════════════════════════════════════════════════"
 
 COUNT_NEW=0
 COUNT_UPD=0
 COUNT_SAME=0
+COUNT_DEL=0
+COUNT_DEL_SKIP=0
 
 apply_file() {
   local rel="$1"
@@ -57,28 +69,65 @@ apply_file() {
   fi
 }
 
-# F1 · Mapa
-apply_file "src/components/maxtracker/FleetMap.tsx"
+apply_delete() {
+  local rel="$1"
+  if [ -f "$rel" ]; then
+    rm "$rel"
+    echo "  - $rel  (eliminado)"
+    COUNT_DEL=$((COUNT_DEL + 1))
+  else
+    COUNT_DEL_SKIP=$((COUNT_DEL_SKIP + 1))
+  fi
+}
 
-# F2 · Selector fecha
-apply_file "src/components/maxtracker/time/DayWithTimePicker.module.css"
+# ── Apply files (creates + updates) ─────────────────────────
+echo ""
+echo "→ Procesando archivos a crear/actualizar..."
 
-# F3 · Boletín ExportMenu
-apply_file "src/components/maxtracker/ui/ExportMenu.tsx"
-apply_file "src/components/maxtracker/boletin/BoletinHeader.tsx"
-apply_file "src/components/maxtracker/boletin/BoletinHeader.module.css"
+# Encuentra todos los archivos en _payload excepto _delete.txt
+# y los aplica en su ruta relativa
+find "$PAYLOAD" -type f ! -name "_delete.txt" | while read src; do
+  rel="${src#$PAYLOAD/}"
+  echo "$rel"
+done | while read rel; do
+  apply_file "$rel"
+done
+
+# Recalcular contadores · subshell del while pierde los counters.
+# Reproducimos la cuenta acá para reportar bien.
+COUNT_FILES_TOTAL=$(find "$PAYLOAD" -type f ! -name "_delete.txt" | wc -l)
+
+# ── Apply deletes ────────────────────────────────────────────
+echo ""
+echo "→ Procesando archivos a eliminar..."
+
+if [ -f "$DELETE_LIST" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip empty lines and comments
+    [ -z "$line" ] && continue
+    [[ "$line" =~ ^# ]] && continue
+    apply_delete "$line"
+  done < "$DELETE_LIST"
+fi
+
+# Cleanup · si después de borrar quedaron carpetas vacías, las dejamos
+# (Next.js no se queja, y son seguras). El zip las recreará vacías
+# en el próximo apply (porque las rutas de redirect viven ahí).
 
 echo ""
 echo "═══════════════════════════════════════════════════"
 echo "  Resumen"
 echo "═══════════════════════════════════════════════════"
-echo "  Nuevos:        $COUNT_NEW"
-echo "  Actualizados:  $COUNT_UPD"
-echo "  Sin cambios:   $COUNT_SAME"
+echo "  Archivos en payload:    $COUNT_FILES_TOTAL"
+echo "  Eliminaciones aplicadas: $COUNT_DEL"
+if [ "$COUNT_DEL_SKIP" -gt 0 ]; then
+  echo "  Eliminaciones ya hechas: $COUNT_DEL_SKIP"
+fi
+echo ""
+echo "  (corré 'git status' para ver el detalle exacto de cambios)"
 echo ""
 
-# Cleanup payload (idempotente · si volvés a aplicar el mismo zip
-# se vuelve a extraer)
+# Cleanup payload
 rm -rf "$PAYLOAD"
 
 echo "✅ Lote aplicado"

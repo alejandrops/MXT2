@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, ChevronRight, Settings, Shield, User, LogOut } from "lucide-react";
+import { Bell, ChevronRight, Home, Settings, Shield, User, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./Topbar.module.css";
@@ -58,7 +58,10 @@ const PAGE_LABELS: Record<string, string> = {
   actividad: "Actividad",
   direccion: "Dirección",
   boletin: "Boletín",
-  "vista-ejecutiva": "Vista ejecutiva",
+  // S1-L2 ia-reorg · vista-ejecutiva se eliminó (redirige a /dashboard).
+  // distribucion-grupos quedó como redirect a comparativa-objetos.
+  "comparativa-objetos": "Comparativa entre objetos",
+  conduccion: "Conducción",
 };
 
 interface TopbarUser {
@@ -139,6 +142,16 @@ export function Topbar({ user, isSuperAdmin }: Props) {
       </nav>
 
       <div className={styles.spacer} />
+
+      {/* S1-L2 ia-reorg · link al Dashboard cross-módulo · home del sistema */}
+      <Link
+        href="/dashboard"
+        className={styles.iconBtn}
+        aria-label="Dashboard · estado actual de la flota"
+        title="Dashboard"
+      >
+        <Home size={15} />
+      </Link>
 
       <button className={styles.iconBtn} aria-label="Notificaciones">
         <Bell size={15} />

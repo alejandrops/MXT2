@@ -1,82 +1,23 @@
-import {
-  getFleetAnalysis,
-  getFleetMultiMetric,
-  getDriversMultiMetric,
-  type ScopeFilters,
-} from "@/lib/queries";
-import { resolveAccountScope } from "@/lib/queries/tenant-scope";
-import { getSession } from "@/lib/session";
-import { VistaEjecutivaClient } from "./VistaEjecutivaClient";
+import { redirect } from "next/navigation";
 
 // ═══════════════════════════════════════════════════════════════
-//  /direccion/vista-ejecutiva
+//  /direccion/vista-ejecutiva · ELIMINADO · redirect a /dashboard
 //  ─────────────────────────────────────────────────────────────
-//  Movido desde /actividad/dashboard.
-//  Es vista snapshot del mes corriente · KPIs grandes, tendencia,
-//  top performers, anomalías destacadas. Pensada para director
-//  que entra una vez por semana a tener un pulse general · NO
-//  para operador que ve datos a diario.
+//  S1-L2 ia-reorg · Esta pantalla mostraba el "ahora" cross-módulo
+//  pero estaba mal hecha. Se decidió:
+//    · Dirección queda como espacio de análisis estadístico
+//      (Comparativas, Correlaciones, Comparativa entre objetos,
+//      Boletín ejecutivo) · todo analítico sobre períodos.
+//    · El "ahora" cross-módulo (estado en vivo de la flota) vive
+//      en /dashboard como home del sistema · pantalla nueva.
 //
-//  Multi-tenant scope (U1b): el scope.accountId pasa por
-//  resolveAccountScope. Para CA y OP, los KPIs de la vista
-//  ejecutiva representan SOLO su cuenta. Para SA y MA, la flota
-//  completa cross-account.
+//  Distinción conceptual:
+//    Dashboard = operacional ("ahora")
+//    Dirección = analítico (período histórico)
+//
+//  El redirect preserva bookmarks viejos.
 // ═══════════════════════════════════════════════════════════════
 
-export const revalidate = 60;
-
-interface PageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-export default async function VistaEjecutivaPage({ searchParams }: PageProps) {
-  const sp = await searchParams;
-  const get = (k: string): string | null => {
-    const v = sp[k];
-    if (Array.isArray(v)) return v[0] ?? null;
-    return typeof v === "string" && v.length > 0 ? v : null;
-  };
-
-  const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const todayIso = `${todayLocal.getUTCFullYear()}-${String(
-    todayLocal.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
-  const anchor = get("d") ?? todayIso;
-
-  // Multi-tenant scope (U1b)
-  const session = await getSession();
-  const scopedAccountId = resolveAccountScope(session, "direccion", null);
-
-  const scope: ScopeFilters = {
-    accountId: scopedAccountId,
-  };
-
-  const [analysis, fleetMulti, driversMulti] = await Promise.all([
-    getFleetAnalysis({
-      granularity: "month-days",
-      anchor,
-      metric: "distanceKm",
-      scope,
-    }),
-    getFleetMultiMetric({
-      granularity: "month-days",
-      anchor,
-      metric: "distanceKm",
-      scope,
-    }),
-    getDriversMultiMetric({
-      granularity: "month-days",
-      anchor,
-      metric: "distanceKm",
-      scope,
-    }),
-  ]);
-
-  return (
-    <VistaEjecutivaClient
-      analysis={analysis}
-      fleetMulti={fleetMulti}
-      driversMulti={driversMulti}
-    />
-  );
+export default function RedirectVistaEjecutiva() {
+  redirect("/dashboard");
 }

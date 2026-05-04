@@ -59,16 +59,25 @@ export const SCREENS: ScreenEntry[] = [
     module: "Actividad",
   },
   {
-    label: "Scorecard",
-    keywords: ["scorecard", "ranking", "conductores", "score"],
-    href: "/actividad/scorecard",
-    module: "Actividad",
-  },
-  {
     label: "Viajes",
     keywords: ["viajes", "trips", "recorridos"],
     href: "/actividad/viajes",
     module: "Actividad",
+  },
+
+  // Conducción
+  {
+    label: "Scorecard",
+    keywords: [
+      "scorecard",
+      "ranking",
+      "conductores",
+      "score",
+      "conduccion",
+      "conducción",
+    ],
+    href: "/conduccion/scorecard",
+    module: "Conducción",
   },
 
   // Seguridad
@@ -85,17 +94,37 @@ export const SCREENS: ScreenEntry[] = [
     module: "Seguridad",
   },
 
-  // Dirección
+  // Dashboard cross-módulo (S1-L2 ia-reorg · home del sistema)
   {
-    label: "Vista ejecutiva",
-    keywords: ["vista", "ejecutiva", "dashboard", "tablero", "ceo", "director"],
-    href: "/direccion/vista-ejecutiva",
-    module: "Dirección",
+    label: "Dashboard",
+    keywords: [
+      "dashboard",
+      "inicio",
+      "home",
+      "ahora",
+      "estado",
+      "tablero",
+    ],
+    href: "/dashboard",
+    module: "Dashboard",
   },
+
+  // Dirección · análisis estadístico cross-módulo
   {
-    label: "Distribución por grupo",
-    keywords: ["distribucion", "distribución", "grupos", "boxplot", "box"],
-    href: "/direccion/distribucion-grupos",
+    label: "Comparativa entre objetos",
+    keywords: [
+      "comparativa",
+      "comparacion",
+      "comparación",
+      "objetos",
+      "distribución",
+      "distribucion",
+      "grupos",
+      "boxplot",
+      "box",
+      "scatter",
+    ],
+    href: "/direccion/comparativa-objetos",
     module: "Dirección",
   },
 

@@ -1,100 +1,30 @@
-import {
-  getFleetAnalysis,
-  type AnalysisGranularity,
-  type ActivityMetric,
-  type ScopeFilters,
-} from "@/lib/queries";
-import { resolveAccountScope } from "@/lib/queries/tenant-scope";
-import { getSession } from "@/lib/session";
-import { DistribucionGruposClient } from "./DistribucionGruposClient";
+import { redirect } from "next/navigation";
 
 // ═══════════════════════════════════════════════════════════════
-//  /direccion/distribucion-grupos
+//  /direccion/distribucion-grupos · ARCHIVADO
 //  ─────────────────────────────────────────────────────────────
-//  Movido desde /actividad/analisis?v=box.
-//  Box plot por grupo · vista analítica para entender la
-//  heterogeneidad operativa de la flota. Detectar grupos con
-//  alta varianza intragrupal · perfil ejecutivo · no operativo.
+//  S1-L2 ia-reorg · Pantalla renombrada a "Comparativa entre objetos"
+//  porque el alcance se amplió: ahora va a contener no solo boxplot
+//  por grupo sino también scatter, slope chart y otros gráficos
+//  comparativos cross-objeto (vehículo, conductor, grupo).
+//
+//  Esta ruta queda como redirect inteligente para preservar
+//  bookmarks viejos · reescribe los searchParams al destino nuevo.
 // ═══════════════════════════════════════════════════════════════
-
-export const revalidate = 60;
-
-const VALID_G: AnalysisGranularity[] = [
-  "day-hours",
-  "week-days",
-  "month-days",
-  "year-weeks",
-  "year-months",
-];
-
-const VALID_M: ActivityMetric[] = [
-  "distanceKm",
-  "activeMin",
-  "idleMin",
-  "tripCount",
-  "eventCount",
-  "highEventCount",
-  "speedingCount",
-  "maxSpeedKmh",
-  "fuelLiters",
-];
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function DistribucionGruposPage({
+export default async function RedirectDistribucionGrupos({
   searchParams,
 }: PageProps) {
   const sp = await searchParams;
-  const get = (k: string): string | null => {
-    const v = sp[k];
-    if (Array.isArray(v)) return v[0] ?? null;
-    return typeof v === "string" && v.length > 0 ? v : null;
-  };
-  const csv = (k: string): string[] | undefined => {
-    const v = get(k);
-    if (!v) return undefined;
-    return v.split(",").filter(Boolean);
-  };
-
-  const gRaw = get("g");
-  const granularity: AnalysisGranularity =
-    gRaw && (VALID_G as string[]).includes(gRaw)
-      ? (gRaw as AnalysisGranularity)
-      : "month-days";
-
-  const mRaw = get("m");
-  const metric: ActivityMetric =
-    mRaw && (VALID_M as string[]).includes(mRaw)
-      ? (mRaw as ActivityMetric)
-      : "distanceKm";
-
-  const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const todayIso = `${todayLocal.getUTCFullYear()}-${String(
-    todayLocal.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
-  const anchor = get("d") ?? todayIso;
-
-  // Multi-tenant scope (U1c)
-  const session = await getSession();
-  const scopedAccountId = resolveAccountScope(session, "direccion", null);
-
-
-  const scope: ScopeFilters = {
-    accountId: scopedAccountId,
-    groupIds: csv("grp"),
-    vehicleTypes: csv("type"),
-    personIds: csv("driver"),
-    search: get("q") ?? undefined,
-  };
-
-  const data = await getFleetAnalysis({
-    granularity,
-    anchor,
-    metric,
-    scope,
-  });
-
-  return <DistribucionGruposClient data={data} />;
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) {
+    if (Array.isArray(v)) qs.set(k, v[0] ?? "");
+    else if (typeof v === "string") qs.set(k, v);
+  }
+  const tail = qs.toString();
+  redirect(`/direccion/comparativa-objetos${tail ? `?${tail}` : ""}`);
 }
