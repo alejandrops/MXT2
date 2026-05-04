@@ -9,6 +9,15 @@
     },
     "src/app/api/ingest/flespi/metrics/route.ts": {
       "maxDuration": 10
+    },
+    "src/app/api/cron/generate-boletines/route.ts": {
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/generate-boletines",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }

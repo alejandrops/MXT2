@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { TELEMETRY_EVENT_TYPES } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
+import { getBoletinSnapshot } from "@/lib/boletin/snapshot";
 import { BoletinHeader } from "@/components/maxtracker/boletin/BoletinHeader";
 import { BlockA_ResumenEjecutivo } from "@/components/maxtracker/boletin/BlockA_ResumenEjecutivo";
 import { BlockB_SaludOperativa } from "@/components/maxtracker/boletin/BlockB_SaludOperativa";
@@ -69,38 +70,52 @@ export default async function BoletinPage({ params }: PageProps) {
   const session = await getSession();
   const scopedAccountId = resolveAccountScope(session, "direccion", null);
 
-  let data: BoletinData;
-  try {
-    data = await loadBoletinData({
-      monthStart: monthStartUtc,
-      monthEnd: nextMonthStartUtc,
-      prevStart: prevMonthStartUtc,
-      prevEnd: prevMonthEndUtc,
-      accountId: scopedAccountId,
-    });
-  } catch (err) {
-    console.error("[BoletinPage] loadBoletinData failed:", err);
-    return (
-      <div className={styles.boletin}>
-        <div
-          style={{
-            padding: "48px 24px",
-            textAlign: "center",
-            color: "var(--t2)",
-          }}
-        >
-          <h2 style={{ marginBottom: 12, color: "var(--tx)" }}>
-            No pudimos cargar el boletín
-          </h2>
-          <p style={{ marginBottom: 6 }}>
-            Hubo un problema generando el boletín de {period}.
-          </p>
-          <p style={{ fontSize: 13 }}>
-            Probá recargar la página o elegí otro período.
-          </p>
+  // S1-L7 cron-scaffold · check snapshot first, fallback on-demand
+  // El cron diario (Vercel) regenera snapshots del mes en curso.
+  // Si existe un snapshot con shape válido, lo usamos · ahorra cómputo
+  // pesado. Si no, fallback a loadBoletinData on-demand (estado actual).
+  // En Sprint 1 los snapshots son placeholder · siempre cae al fallback.
+  // En Sprint 2 cuando refactor de loadBoletinData, los snapshots traerán
+  // payload real y este check empieza a tener efecto.
+  let data: BoletinData | null = null;
+  const snapshot = await getBoletinSnapshot(period, scopedAccountId);
+  if (snapshot && isValidBoletinPayload(snapshot.payload)) {
+    data = snapshot.payload as BoletinData;
+  }
+
+  if (!data) {
+    try {
+      data = await loadBoletinData({
+        monthStart: monthStartUtc,
+        monthEnd: nextMonthStartUtc,
+        prevStart: prevMonthStartUtc,
+        prevEnd: prevMonthEndUtc,
+        accountId: scopedAccountId,
+      });
+    } catch (err) {
+      console.error("[BoletinPage] loadBoletinData failed:", err);
+      return (
+        <div className={styles.boletin}>
+          <div
+            style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              color: "var(--t2)",
+            }}
+          >
+            <h2 style={{ marginBottom: 12, color: "var(--tx)" }}>
+              No pudimos cargar el boletín
+            </h2>
+            <p style={{ marginBottom: 6 }}>
+              Hubo un problema generando el boletín de {period}.
+            </p>
+            <p style={{ fontSize: 13 }}>
+              Probá recargar la página o elegí otro período.
+            </p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Período anterior y siguiente para navigator
@@ -782,5 +797,29 @@ function BlockPlaceholder({
         <p className={styles.placeholderHint}>{hint}</p>
       </div>
     </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  S1-L7 cron-scaffold · type guard del snapshot
+//  ─────────────────────────────────────────────────────────────
+//  Valida que el payload del BoletinSnapshot tenga el shape de
+//  BoletinData. Los snapshots placeholder generados en Sprint 1
+//  retornan false y caen al fallback de loadBoletinData.
+//
+//  Cuando Sprint 2 implemente la generación real, los snapshots
+//  empezarán a pasar este check y el page los usará automáticamente.
+// ═══════════════════════════════════════════════════════════════
+
+function isValidBoletinPayload(payload: unknown): payload is BoletinData {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as Record<string, unknown>;
+  // Discriminator · placeholders del scaffold tienen status="placeholder"
+  if (p.status === "placeholder") return false;
+  // Shape mínimo · si tiene safetyKpis es muy probable que sea BoletinData
+  return (
+    "safetyKpis" in p ||
+    "fleetTotals" in p ||
+    "monthRange" in p
   );
 }

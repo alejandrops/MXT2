@@ -799,3 +799,35 @@ enum ProfileKey {
   CLIENT_ADMIN
   OPERATOR
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  BoletinSnapshot · S1-L7 cron-scaffold
+//  ─────────────────────────────────────────────────────────────
+//  Snapshot pre-computado del boletín mensual de un account.
+//  Generado por el cron diario de Vercel · vive como caché para
+//  que la página del boletín no recompute on-demand.
+//
+//  Period format: YYYY-MM (e.g. "2026-04")
+//
+//  Política de regeneración:
+//    · El cron diario actualiza el snapshot del MES EN CURSO.
+//    · Snapshots de meses pasados se regeneran solo si se borran
+//      manualmente (o vía endpoint POST /api/cron/...).
+//    · La page hace fallback a cómputo on-demand si no hay snapshot.
+// ═══════════════════════════════════════════════════════════════
+model BoletinSnapshot {
+  id          String   @id @default(cuid())
+  /// "YYYY-MM" del mes que el snapshot representa
+  period      String
+  /// null = cross-tenant (SA/MA preview) · de lo contrario, accountId del cliente
+  accountId   String?
+  /// Payload completo del boletín · shape BoletinExportPayload
+  payload     Json
+  generatedAt DateTime @default(now())
+  /// Identifica quién/qué generó este snapshot · "cron" para Vercel cron,
+  /// "manual" para invocación ad-hoc, "onDemand" para fallback de la page
+  source      String   @default("cron")
+
+  @@unique([period, accountId])
+  @@index([generatedAt])
+}
