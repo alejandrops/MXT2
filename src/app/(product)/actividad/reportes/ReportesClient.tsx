@@ -143,15 +143,18 @@ export function ReportesClient(props: Props) {
     modo?: Modo;
     subject?: Subject;
     vista?: VistaVisual;
+    layout?: "time" | "metrics";
   }): string {
     const params = new URLSearchParams();
     const subject = override.subject ?? props.subject;
     const modo = override.modo ?? props.modo;
     const vista = override.vista ?? ("vista" in props ? props.vista : undefined);
+    const layout = override.layout ?? props.layout;
 
     if (subject !== "vehicles") params.set("subject", subject);
     if (modo !== "tabla") params.set("modo", modo);
-    if (modo === "visual" && vista && vista !== "heatmap") {
+    if (modo === "visual" && layout === "metrics") params.set("layout", "metrics");
+    if (modo === "visual" && layout === "time" && vista && vista !== "heatmap") {
       params.set("vista", vista);
     }
     const qs = params.toString();
@@ -176,7 +179,12 @@ export function ReportesClient(props: Props) {
 
   function switchVistaVisual(targetVista: VistaVisual) {
     if (props.modo !== "visual") return;
-    navTo(buildHref({ vista: targetVista }));
+    navTo(buildHref({ vista: targetVista, layout: "time" }));
+  }
+
+  function switchToBullet() {
+    // S3-L4 · cambiar a vista bullet table (layout=metrics, modo=visual)
+    navTo(buildHref({ modo: "visual", layout: "metrics" }));
   }
 
   return (
@@ -239,28 +247,44 @@ export function ReportesClient(props: Props) {
           </div>
         </div>
 
-        {/* ── 3. Vista · sub-sub solo cuando modo=visual y layout=time ─── */}
-        {props.modo === "visual" && props.layout === "time" && (
+        {/* ── 3. Vista · sub-sub solo cuando modo=visual ─────
+              S3-L4 · ahora también incluye "Bullet" (layout=metrics)
+              que muestra el bullet table de vehículos × métricas */}
+        {props.modo === "visual" && (
           <div className={styles.axisGroup}>
             <span className={styles.axisLabel}>Vista</span>
             <div className={styles.toggle} role="tablist">
-              {VISUAL_VISTAS.map((v) => {
-                const active = v.key === props.vista;
-                return (
-                  <button
-                    key={v.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    className={`${styles.btn} ${active ? styles.btnActive : ""}`}
-                    onClick={() => switchVistaVisual(v.key)}
-                    title={v.hint}
-                  >
-                    <v.Icon size={13} />
-                    <span>{v.label}</span>
-                  </button>
-                );
-              })}
+              {/* Vistas temporales (layout=time) · 3 originales */}
+              {props.layout === "time" &&
+                VISUAL_VISTAS.map((v) => {
+                  const active = v.key === props.vista;
+                  return (
+                    <button
+                      key={v.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className={`${styles.btn} ${active ? styles.btnActive : ""}`}
+                      onClick={() => switchVistaVisual(v.key)}
+                      title={v.hint}
+                    >
+                      <v.Icon size={13} />
+                      <span>{v.label}</span>
+                    </button>
+                  );
+                })}
+              {/* Bullet table · layout=metrics · una sola opción extra */}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={props.layout === "metrics"}
+                className={`${styles.btn} ${props.layout === "metrics" ? styles.btnActive : ""}`}
+                onClick={() => switchToBullet()}
+                title="Vehículos × todas las métricas con micro-barras"
+              >
+                <BarChart3 size={13} />
+                <span>Resumen</span>
+              </button>
             </div>
           </div>
         )}

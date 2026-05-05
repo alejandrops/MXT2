@@ -1,28 +1,27 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S3-L4-resumen-visual-bullet · apply.sh
-#  Sprint 3 · Lote 4 · Bullet table en /actividad/resumen modo visual
+#  S3-L4.1-bullet-en-reportes · apply.sh
+#  HOTFIX · el bullet table también disponible en /actividad/reportes
 #
-#  Cambios:
-#    + src/app/(product)/actividad/reportes/BulletMetricView.tsx
-#      Variante visual del MultiMetricView · misma estructura, cada
-#      celda tiene una micro-barra escalada al max de la columna.
-#      Color contextual: barra warn cuando vehículo está top 25% en
-#      métrica reverse (eventos, idle, excesos, vmax).
-#    + src/app/(product)/actividad/reportes/BulletMetricView.module.css
-#      CSS base + classes nuevas para bullet (track, bar, warn, value)
-#    ~ src/app/(product)/actividad/reportes/ReportesClient.tsx
-#      PropsVisualMetrics ahora puede recibir multiData o visualData
-#      Switch usa BulletMetricView si tiene multiData (default S3-L4)
-#    ~ src/app/(product)/actividad/_lib/loadReportesData.ts
-#      Nuevo kind "visual-metrics" carga FleetMultiMetricData
-#      cuando modo=visual + subject=vehicles + layout=metrics
-#    ~ src/app/(product)/actividad/resumen/page.tsx
-#      Wire del nuevo kind al ReportesClient
+#  Causa raíz:
+#    /actividad/reportes y /actividad/resumen son DOS pages independientes.
+#    El bullet table (S3-L4) se aplicó solo a /resumen.
+#    Cuando navegás a /actividad (sin sufijo) redirige a /reportes,
+#    así que el path natural de muchos clicks termina ahí · y el
+#    cambio del bullet no se ve.
 #
-#  Comportamiento:
-#    /actividad/resumen?modo=visual → bullet table con vehículos × 8 métricas
-#    Distancia · Horas · Idle · Viajes · Eventos · Excesos · Vmax · Fuel
+#  Fix:
+#    1. /reportes/page.tsx ahora respeta layout=metrics cuando modo=visual
+#       · carga FleetMultiMetricData y usa BulletMetricView
+#    2. ReportesClient · agrega 4ta opción de Vista cuando modo=visual:
+#       [Heatmap] [Ranking] [Small multiples] [Resumen ← bullet table]
+#       · click en Resumen pone layout=metrics en la URL
+#    3. buildHref del client soporta el override de layout
+#
+#  Comportamiento esperado:
+#    /actividad/reportes?modo=visual&layout=metrics → bullet table
+#    /actividad/resumen?modo=visual                  → bullet table (igual que antes)
+#    Click en toggle "Resumen" del Vista row → navega al bullet
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -30,7 +29,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S3-L4-resumen-visual-bullet · vehículos × métricas (visual) ═══"
+echo "═══ S3-L4.1 · bullet table en /reportes también ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -43,24 +42,21 @@ apply_file() {
   else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; C_UPD=$((C_UPD+1)); fi
 }
 
-apply_file "src/app/(product)/actividad/reportes/BulletMetricView.tsx"
-apply_file "src/app/(product)/actividad/reportes/BulletMetricView.module.css"
+apply_file "src/app/(product)/actividad/reportes/page.tsx"
 apply_file "src/app/(product)/actividad/reportes/ReportesClient.tsx"
-apply_file "src/app/(product)/actividad/_lib/loadReportesData.ts"
-apply_file "src/app/(product)/actividad/resumen/page.tsx"
 
 echo ""
 echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
 rm -rf "$PAYLOAD"
 
 echo ""
-echo "✅ Lote aplicado"
+echo "✅ Hotfix aplicado"
 echo ""
 echo "Próximo paso · reiniciar dev server:"
 echo "  rm -rf .next && npm run dev"
 echo ""
-echo "Validación · entrá a /actividad/resumen y elegí modo Visual:"
-echo "  - Tabla de vehículos × 8 métricas con barras inline"
-echo "  - Barras gris para métricas neutras"
-echo "  - Barras rojo para anomalías (top 25% en métricas reverse:"
-echo "    idle, eventos, excesos, vmax)"
+echo "Validación:"
+echo "  1. Entrá a /actividad/reportes"
+echo "  2. Click 'Visual' en el toggle Modo"
+echo "  3. Vas a ver 4 botones de Vista: Heatmap · Ranking · Small multiples · Resumen"
+echo "  4. Click 'Resumen' → bullet table con todos los vehículos × 8 métricas"

@@ -121,6 +121,33 @@ export default async function ReportesPage({ searchParams }: PageProps) {
 
   // ── MODO VISUAL ─────────────────────────────────────────────
   if (modo === "visual") {
+    // S3-L4 · si layout=metrics, mostrar bullet table (vehículos × métricas)
+    // en vez del heatmap/ranking/multiples temporal. Misma data que la
+    // tabla de /resumen + ?modo=visual.
+    const layoutRaw = get("layout");
+    if (layoutRaw === "metrics") {
+      const multiData = await getFleetMultiMetric({
+        granularity,
+        anchor,
+        metric,
+        scope,
+      });
+      return (
+        <>
+          <PageHeader variant="module" title="Reportes" />
+          <div className="appPage">
+            <ReportesClient
+              modo="visual"
+              layout="metrics"
+              subject="vehicles"
+              multiData={multiData}
+              baseUrl="/actividad/reportes"
+            />
+          </div>
+        </>
+      );
+    }
+
     const vistaRaw = get("vista");
     const vista: VistaVisual =
       vistaRaw === "ranking" || vistaRaw === "multiples"
