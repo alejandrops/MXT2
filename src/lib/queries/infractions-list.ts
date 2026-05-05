@@ -253,3 +253,111 @@ export async function listInfractionsForHeatmap(
     severity: r.severity,
   }));
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  getInfractionById · S4-L3d
+//  ─────────────────────────────────────────────────────────────
+//  Fetcher de una infracción individual con todos los detalles
+//  necesarios para el recibo PDF imprimible. Incluye el operador
+//  que la descartó (si aplica · necesario para el footer del
+//  recibo "Descartado por X el Y").
+//
+//  Multi-tenant · si se pasa accountId no-null, garantiza que
+//  la infracción pertenece a esa cuenta · si no coincide
+//  devuelve null (efectivamente "no encontrada" para el caller).
+// ═══════════════════════════════════════════════════════════════
+
+export interface InfractionDetail extends InfractionListRow {
+  startedAtIso: string;
+  endedAtIso: string;
+  discardedByName: string | null;
+}
+
+export async function getInfractionById(
+  id: string,
+  accountId?: string | null,
+): Promise<InfractionDetail | null> {
+  const r = await db.infraction.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      severity: true,
+      startedAt: true,
+      endedAt: true,
+      durationSec: true,
+      vmaxKmh: true,
+      peakSpeedKmh: true,
+      maxExcessKmh: true,
+      distanceMeters: true,
+      startLat: true,
+      startLon: true,
+      endLat: true,
+      endLon: true,
+      startAddress: true,
+      endAddress: true,
+      vehicleType: true,
+      roadType: true,
+      trackJson: true,
+      status: true,
+      discardReason: true,
+      discardedAt: true,
+      discardedById: true,
+      accountId: true,
+      assetId: true,
+      driverId: true,
+      asset: { select: { name: true, plate: true } },
+      driver: { select: { firstName: true, lastName: true } },
+    },
+  });
+
+  if (!r) return null;
+  if (accountId !== undefined && accountId !== null && r.accountId !== accountId) {
+    return null;
+  }
+
+  // Si está descartada, traer el nombre del usuario que la descartó
+  let discardedByName: string | null = null;
+  if (r.discardedById) {
+    const u = await db.user.findUnique({
+      where: { id: r.discardedById },
+      select: { firstName: true, lastName: true },
+    });
+    if (u) {
+      discardedByName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || null;
+    }
+  }
+
+  return {
+    id: r.id,
+    severity: r.severity,
+    startedAt: r.startedAt,
+    endedAt: r.endedAt,
+    startedAtIso: r.startedAt.toISOString(),
+    endedAtIso: r.endedAt.toISOString(),
+    durationSec: r.durationSec,
+    vmaxKmh: r.vmaxKmh,
+    peakSpeedKmh: r.peakSpeedKmh,
+    maxExcessKmh: r.maxExcessKmh,
+    distanceMeters: r.distanceMeters,
+    startLat: r.startLat,
+    startLon: r.startLon,
+    endLat: r.endLat,
+    endLon: r.endLon,
+    startAddress: r.startAddress,
+    endAddress: r.endAddress,
+    vehicleType: r.vehicleType,
+    roadType: r.roadType,
+    trackJson: r.trackJson,
+    status: r.status,
+    discardReason: r.discardReason,
+    discardedAt: r.discardedAt,
+    assetId: r.assetId,
+    assetName: r.asset.name,
+    assetPlate: r.asset.plate,
+    personId: r.driverId,
+    personName: r.driver
+      ? `${r.driver.firstName ?? ""} ${r.driver.lastName ?? ""}`.trim()
+      : null,
+    discardedByName,
+  };
+}

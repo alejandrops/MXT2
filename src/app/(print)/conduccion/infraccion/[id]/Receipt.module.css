@@ -1,0 +1,291 @@
+/* ═══════════════════════════════════════════════════════════════
+   InfractionReceipt · CSS A4 imprimible
+   Patrón replicado de actividad/imprimible/PrintReport.module.css
+   ═══════════════════════════════════════════════════════════════ */
+
+.report {
+  background: #f3f4f6;
+  min-height: 100vh;
+  padding: 24px 0;
+  font-family: var(--f);
+  color: #111827;
+}
+
+.floatActions {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+}
+
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #1e40af;
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.printBtn:hover {
+  background: #1e3a8a;
+}
+
+.page {
+  background: #fff;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 14mm 16mm;
+  margin: 0 auto;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+  position: relative;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+
+.docHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #111827;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.brandWord {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+.brandSubtitle {
+  font-size: 9px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 2px;
+}
+
+.docTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-align: right;
+}
+
+.docId {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+/* ── Banner descartada ─────────────────────────────────────── */
+
+.discardedBanner {
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 3px solid #dc2626;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #991b1b;
+}
+
+/* ── Datos · 2 columnas ────────────────────────────────────── */
+
+.dataSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dataCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dataLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dataValue {
+  font-size: 12px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.dataValueBig {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dataValueMono {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dataValueSeverity {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+/* ── Inicio / Fin con dirección ────────────────────────────── */
+
+.locationSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.locationRow {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.locationDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.locationData {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.locationLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.locationValue {
+  font-size: 11.5px;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.coords {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px;
+  color: #475569;
+}
+
+/* ── Mapa ──────────────────────────────────────────────────── */
+
+.mapSection {
+  width: 100%;
+  height: 90mm;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* ── Curva velocidad/tiempo ────────────────────────────────── */
+
+.curveSection {
+  width: 100%;
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+
+.docFooter {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  font-size: 9.5px;
+  color: #6b7280;
+}
+
+.footerGenerated {
+  color: #4b5563;
+}
+
+.footerContact {
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Print styles
+   ═══════════════════════════════════════════════════════════ */
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .report {
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .floatActions {
+    display: none !important;
+  }
+  .page {
+    border: 0 !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    overflow: hidden;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

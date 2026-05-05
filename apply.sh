@@ -1,73 +1,55 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S4-L3c · /conduccion/infracciones · listado + heatmap + descartar
+#  S4-L3d · Recibo PDF imprimible de infracción
 #  ─────────────────────────────────────────────────────────────
-#  Pantalla nueva con todos los componentes funcionales para
-#  gestión operativa de infracciones de velocidad.
+#  Última pieza del bloque S4-L3 (Conducción · módulo completo).
+#  Ruta nueva en el route group (print) de Next.js · layout sin
+#  sidebar/topbar, CSS @page A4. El usuario hace Cmd+P y guarda
+#  como PDF nativo del browser.
 #
 #  CAMBIOS:
 #
-#    1. Queries nuevas · src/lib/queries/infractions-list.ts
-#       · listInfractions          · paginada con filtros
-#       · listInfractionsForHeatmap · todos los puntos sin paginar
-#       Filtros · severidad, grupos, tipo de vehículo, conductor,
-#       búsqueda libre, status (activa por default).
+#    1. Query nueva · getInfractionById (en infractions-list.ts)
+#       Fetcher individual con multi-tenant scope. Trae el nombre
+#       del operador que descartó (si aplica). Devuelve null si
+#       la infracción no pertenece al account del usuario · el
+#       page hace notFound() en ese caso.
 #
-#    2. Server action · actions.ts
-#       · discardInfraction(id, reason)
-#       Marca infracción como DISCARDED con audit trail completo:
-#       discardedById, discardedAt, discardReason. Validación
-#       multi-tenant · usuarios CA/OP no pueden descartar
-#       infracciones de otra cuenta. Reabrir queda fuera de MVP.
+#    2. Componente extraído · SpeedCurve
+#       La curva velocidad/tiempo del side panel se sacó de
+#       InfractionDetailPanel y se movió a su propio componente
+#       para reusarla en el recibo. SVG inline puro, sin hooks
+#       (sirve tanto en server como cliente). Helper
+#       parseTrackToSpeedSamples() para convertir trackJson.
 #
-#    3. Pantalla · /conduccion/infracciones
-#       · PeriodNavigator integrado (g, d en URL)
-#       · Tabs Lista | Heatmap (view en URL)
-#       · ScopeFiltersBar (grupos, vehicleTypes, drivers, q)
-#       · InfractionSeverityFilter (LEVE/MEDIA/GRAVE chips)
-#       · Tabla paginada con click-row → side panel
-#       · Heatmap con toggle Heatmap | Pins (mismo patrón S4-L2)
-#       · Side panel con detalle:
-#         · Datos · vmax, pico, exceso, duración, distancia, vía
-#         · Mini-mapa con polilínea del segmento + marcadores
-#         · Curva velocidad/tiempo SVG inline · marca de vmax
-#           punteada y área de exceso rellena con color severity
-#         · Bloque "Descartar" con 4 razones tipificadas
-#         · Banner si ya está descartada
+#    3. Componente nuevo · InfractionPrintMap
+#       Mapa Leaflet específico para A4 · sin controles, sin
+#       interacción, polilínea más gruesa. Cliente (Leaflet
+#       requiere browser).
 #
-#    4. Componentes nuevos · src/components/maxtracker/infractions/
-#       · InfractionSeverityFilter · chips LEVE/MEDIA/GRAVE
-#       · InfractionHeatmap        · Leaflet con toggle heat/pins
-#       · InfractionDetailPanel    · drill completo + descartar
+#    4. Pantalla nueva · /conduccion/infraccion/[id]
+#       URL limpia (sin /print/) gracias al route group (print).
+#       Layout · header MAXTRACKER + datos en 2 columnas + bloque
+#       inicio/fin con direcciones + mapa con polilínea + curva
+#       velocidad/tiempo + footer con operador y fecha.
 #
-#    5. Sidebar · entrada "Infracciones" agregada arriba de
-#       Scorecard en la sección Conducción.
+#       Si la infracción está descartada · banner rojo arriba
+#       con razón + quién + cuándo.
 #
-#  DECISIONES TÉCNICAS:
+#    5. Side panel actualizado · InfractionDetailPanel
+#       Botón "Abrir recibo imprimible" agregado entre los datos
+#       y el mapa · target=_blank para abrir en nueva tab. La
+#       curva interna se reemplaza por el componente extraído
+#       (cero cambio funcional, refactor limpio).
 #
-#    · El @ts-nocheck en page.tsx es porque DriverForFilter /
-#      AssetForFilter del repo no exponen los campos name /
-#      vehicleType que usa la UI · mismo patrón que tiene
-#      /actividad/eventos/page.tsx. Pendiente refactor que está
-#      fuera del scope de este lote.
+#  LIMITACIÓN CONOCIDA:
 #
-#    · El @ts-nocheck en infractions-list.ts es porque el Prisma
-#      client del sandbox está en stub mode · en máquina real
-#      con prisma generate, los tipos resuelven correcto.
-#
-#    · MVP NO permite reabrir infracciones descartadas · si se
-#      descarta por error hay que tocar BD. Es defensivo.
-#      Reabrir llega cuando se implemente roles (post-MVP).
-#
-#    · Cualquier user logueado puede descartar (con scope
-#      multi-tenant validado). Restricción a CA/SA/MA llega con
-#      el módulo de roles (post-MVP).
-#
-#  NO se tocó:
-#    · ScorecardClient.tsx · sigue con cálculo viejo homemade.
-#      Decisión pendiente · absorber en una versión posterior.
-#    · /conduccion/dashboard · ya integrado · este lote consume
-#      las mismas Infraction que ya usa el dashboard.
+#    Las tiles de Leaflet cargan async. Si el usuario hace Cmd+P
+#    inmediatamente al abrir el recibo, puede que el mapa no se
+#    haya pintado completo. Workaround para el usuario · esperar
+#    1-2 segundos hasta ver el mapa antes de imprimir. Soluciones
+#    server-side (capture, static map API) quedan post-MVP · es
+#    una optimización, no un bloqueante.
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -75,7 +57,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S4-L3c · /conduccion/infracciones · listado + heatmap + descartar ═══"
+echo "═══ S4-L3d · Recibo PDF imprimible de infracción ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -104,16 +86,21 @@ echo "Validación:"
 echo ""
 echo "  npx tsc --noEmit"
 echo ""
-echo "Después arrancá el dev y abrí la pantalla:"
+echo "Pruebas funcionales:"
 echo ""
 echo "  npm run dev"
-echo "  → http://localhost:3000/conduccion/infracciones"
 echo ""
-echo "Validación funcional · esperás ver:"
-echo "  · Lista paginada · graves primero, después medias, después leves"
-echo "  · Filtros operativos · período, grupos, severity, etc."
-echo "  · Click en fila → side panel con polilínea + curva velocidad"
-echo "  · Toggle Heatmap → mapa con densidad por severity"
-echo "  · Botón 'Descartar' → 4 razones · queda audit trail en DB"
+echo "  1. Ir a /conduccion/infracciones"
+echo "  2. Click en cualquier infracción → side panel abre"
+echo "  3. Click en 'Abrir recibo imprimible' → nueva tab con recibo A4"
+echo "  4. Ver el mapa con polilínea + curva velocidad cargados"
+echo "  5. Click en 'Imprimir / Guardar PDF' (botón azul flotante)"
+echo "  6. Diálogo nativo de impresión · 'Guardar como PDF'"
 echo ""
-echo "Próximo lote · S4-L3d · recibo PDF imprimible (ruta /print/)"
+echo "URL del recibo · /conduccion/infraccion/<infraction-id>"
+echo ""
+echo "Esto cierra el bloque S4-L3 (Conducción · módulo completo):"
+echo "  · S4-L3a · modelo + cálculo de infracciones"
+echo "  · S4-L3b · score + dashboard"
+echo "  · S4-L3c · listado + heatmap + descartar"
+echo "  · S4-L3d · recibo PDF imprimible  ← este"

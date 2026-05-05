@@ -3,9 +3,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Printer } from "lucide-react";
 import type { InfractionListRow } from "@/lib/queries/infractions-list";
 import { discardInfraction } from "@/app/(product)/conduccion/infracciones/actions";
+import {
+  SpeedCurve,
+  parseTrackToSpeedSamples,
+} from "./SpeedCurve";
 import styles from "./InfractionDetailPanel.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -69,134 +73,10 @@ function formatDuration(sec: number): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Curva velocidad/tiempo · SVG inline
-//  ─────────────────────────────────────────────────────────────
-//  No usamos Recharts ni librerías externas · dibujo custom para
-//  mantener el peso del bundle bajo y para tener control fino del
-//  estilo. Marca de vmax como línea horizontal punteada.
-// ═══════════════════════════════════════════════════════════════
-
-interface SpeedSample {
-  t: number; // segundos desde inicio
-  v: number; // km/h
-}
-
-function SpeedCurve({
-  samples,
-  vmaxKmh,
-  sevColor,
-}: {
-  samples: SpeedSample[];
-  vmaxKmh: number;
-  sevColor: string;
-}) {
-  if (samples.length < 2) return null;
-
-  const W = 280;
-  const H = 96;
-  const PAD_L = 28;
-  const PAD_R = 8;
-  const PAD_T = 8;
-  const PAD_B = 18;
-  const innerW = W - PAD_L - PAD_R;
-  const innerH = H - PAD_T - PAD_B;
-
-  const tMax = samples[samples.length - 1].t;
-  const vMax = Math.max(...samples.map((s) => s.v), vmaxKmh) * 1.05;
-  const vMin = Math.min(...samples.map((s) => s.v)) * 0.9;
-
-  const x = (t: number) => PAD_L + (t / tMax) * innerW;
-  const y = (v: number) => PAD_T + innerH - ((v - vMin) / (vMax - vMin)) * innerH;
-
-  const path = samples
-    .map((s, i) => `${i === 0 ? "M" : "L"} ${x(s.t).toFixed(1)} ${y(s.v).toFixed(1)}`)
-    .join(" ");
-
-  // Área bajo la curva por encima de vmax (relleno claro de exceso)
-  const aboveLimitArea = (() => {
-    const pts: string[] = [];
-    let inside = false;
-    for (let i = 0; i < samples.length; i++) {
-      const s = samples[i];
-      if (s.v > vmaxKmh) {
-        if (!inside) {
-          pts.push(`M ${x(s.t).toFixed(1)} ${y(vmaxKmh).toFixed(1)}`);
-          inside = true;
-        }
-        pts.push(`L ${x(s.t).toFixed(1)} ${y(s.v).toFixed(1)}`);
-      } else if (inside) {
-        pts.push(`L ${x(s.t).toFixed(1)} ${y(vmaxKmh).toFixed(1)} Z`);
-        inside = false;
-      }
-    }
-    if (inside) {
-      const last = samples[samples.length - 1];
-      pts.push(`L ${x(last.t).toFixed(1)} ${y(vmaxKmh).toFixed(1)} Z`);
-    }
-    return pts.join(" ");
-  })();
-
-  return (
-    <div className={styles.speedChart}>
-      <div className={styles.speedChartTitle}>Velocidad durante la infracción</div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none">
-        {/* Eje Y · vmin / vmax */}
-        <text x={2} y={y(vMin) + 3} fontSize={9} fill="#94a3b8" fontFamily="ui-monospace">
-          {Math.round(vMin)}
-        </text>
-        <text x={2} y={y(vMax) + 3} fontSize={9} fill="#94a3b8" fontFamily="ui-monospace">
-          {Math.round(vMax)}
-        </text>
-        {/* Eje X · 0 / tMax */}
-        <text x={PAD_L} y={H - 2} fontSize={9} fill="#94a3b8" fontFamily="ui-monospace">
-          0s
-        </text>
-        <text
-          x={W - PAD_R}
-          y={H - 2}
-          fontSize={9}
-          fill="#94a3b8"
-          fontFamily="ui-monospace"
-          textAnchor="end"
-        >
-          {formatDuration(Math.round(tMax))}
-        </text>
-
-        {/* Línea vmax · referencia */}
-        <line
-          x1={PAD_L}
-          y1={y(vmaxKmh)}
-          x2={W - PAD_R}
-          y2={y(vmaxKmh)}
-          stroke="#94a3b8"
-          strokeWidth={1}
-          strokeDasharray="3 3"
-        />
-        <text
-          x={W - PAD_R - 2}
-          y={y(vmaxKmh) - 3}
-          fontSize={9}
-          fill="#64748b"
-          fontFamily="ui-monospace"
-          textAnchor="end"
-        >
-          vmax {vmaxKmh}
-        </text>
-
-        {/* Área de exceso · relleno de severity */}
-        {aboveLimitArea && (
-          <path d={aboveLimitArea} fill={sevColor} fillOpacity={0.18} />
-        )}
-
-        {/* Curva */}
-        <path d={path} fill="none" stroke={sevColor} strokeWidth={1.6} />
-      </svg>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
 //  Componente principal
+//  ─────────────────────────────────────────────────────────────
+//  La curva velocidad/tiempo se importa desde ./SpeedCurve
+//  (extracción S4-L3d para reusarla en el recibo PDF).
 // ═══════════════════════════════════════════════════════════════
 
 export function InfractionDetailPanel({ infraction, onClose }: Props) {
@@ -322,21 +202,7 @@ export function InfractionDetailPanel({ infraction, onClose }: Props) {
   const isDiscarded = infraction.status === "DISCARDED";
 
   // Reconstruir samples para la curva velocidad/tiempo
-  let speedSamples: SpeedSample[] = [];
-  try {
-    const raw = JSON.parse(infraction.trackJson) as Array<
-      [number, number, string, number]
-    >;
-    if (raw.length > 0) {
-      const t0 = new Date(raw[0][2]).getTime();
-      speedSamples = raw.map(([, , iso, v]) => ({
-        t: (new Date(iso).getTime() - t0) / 1000,
-        v,
-      }));
-    }
-  } catch {
-    /* curva no se renderiza · fallback ya manejado */
-  }
+  const speedSamples = parseTrackToSpeedSamples(infraction.trackJson);
 
   function handleDiscardClick() {
     if (!selectedReason) return;
@@ -471,6 +337,21 @@ export function InfractionDetailPanel({ infraction, onClose }: Props) {
             </div>
           )}
 
+          {/* Acciones rápidas · imprimir recibo */}
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>Recibo</span>
+            <a
+              href={`/conduccion/infraccion/${infraction.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.link}
+            >
+              <Printer size={11} />
+              Abrir recibo imprimible
+              <ExternalLink size={11} />
+            </a>
+          </div>
+
           {/* Mini-mapa con polilínea */}
           <div className={styles.mapWrap}>
             <div ref={containerRef} className={styles.miniMap} />
@@ -481,7 +362,8 @@ export function InfractionDetailPanel({ infraction, onClose }: Props) {
             <SpeedCurve
               samples={speedSamples}
               vmaxKmh={infraction.vmaxKmh}
-              sevColor={sevColor}
+              color={sevColor}
+              title="Velocidad durante la infracción"
             />
           )}
 
