@@ -254,13 +254,15 @@ function deriveVehicleTypes(
     new Set(assetTypes.map((a) => a.vehicleType)),
   ).filter(Boolean);
   const labels: Record<string, string> = {
-    CAR: "Auto",
-    TRUCK: "Camión",
-    VAN: "Van",
-    MOTORCYCLE: "Moto",
-    BUS: "Colectivo",
-    TRAILER: "Acoplado",
-    EQUIPMENT: "Equipo",
+    MOTOCICLETA: "Motocicleta",
+    LIVIANO: "Liviano",
+    UTILITARIO: "Utilitario",
+    PASAJEROS: "Pasajeros",
+    CAMION_LIVIANO: "Camión liviano",
+    CAMION_PESADO: "Camión pesado",
+    SUSTANCIAS_PELIGROSAS: "Sust. peligrosas",
+    MAQUINA_VIAL: "Máquina vial",
+    ASSET_FIJO: "Asset fijo",
   };
   return uniqueTypes.map((t) => ({ value: t, label: labels[t] ?? t }));
 }

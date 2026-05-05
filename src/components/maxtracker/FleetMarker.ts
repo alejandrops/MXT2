@@ -28,13 +28,15 @@ import type { CommState, MotorState } from "@/lib/queries/tracking";
 export type FleetMarkerColorMode = "fleet" | "status";
 
 export type VehicleTypeIcon =
-  | "CAR"
-  | "MOTORCYCLE"
-  | "TRUCK"
-  | "HEAVY_MACHINERY"
-  | "TRAILER"
-  | "SILO"
-  | "GENERIC";
+  | "MOTOCICLETA"
+  | "LIVIANO"
+  | "UTILITARIO"
+  | "PASAJEROS"
+  | "CAMION_LIVIANO"
+  | "CAMION_PESADO"
+  | "SUSTANCIAS_PELIGROSAS"
+  | "MAQUINA_VIAL"
+  | "ASSET_FIJO";
 
 export interface FleetMarkerOpts {
   motor: MotorState;
@@ -191,11 +193,10 @@ function renderTypeIcon(
   motor: MotorState,
 ): string {
   // Rotate only directional vehicles when actually moving.
-  // Stationary types (silo, machinery) and non-moving states
+  // Stationary types (asset fijo, máquina vial estacionaria)
   // get a fixed orientation.
   const directionalAndMoving =
-    motor === "MOVING" &&
-    (type === "TRUCK" || type === "CAR" || type === "MOTORCYCLE");
+    motor === "MOVING" && type !== "MAQUINA_VIAL" && type !== "ASSET_FIJO";
   const transform = directionalAndMoving
     ? `style="transform: rotate(${heading}deg); transition: transform 0.4s linear; transform-origin: 12px 12px;"`
     : "";
@@ -218,26 +219,53 @@ function renderTypeIcon(
  * strings (we can't render React inside marker HTML).
  */
 const ICON_PATHS: Record<VehicleTypeIcon, string> = {
-  TRUCK: `
+  MOTOCICLETA: `
+    <circle cx="18.5" cy="17.5" r="3.5"/>
+    <circle cx="5.5" cy="17.5" r="3.5"/>
+    <circle cx="15" cy="5" r="1"/>
+    <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+  `,
+  LIVIANO: `
+    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+    <circle cx="7" cy="17" r="2"/>
+    <path d="M9 17h6"/>
+    <circle cx="17" cy="17" r="2"/>
+  `,
+  UTILITARIO: `
+    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+    <circle cx="7" cy="17" r="2"/>
+    <path d="M9 17h6"/>
+    <circle cx="17" cy="17" r="2"/>
+  `,
+  PASAJEROS: `
     <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
     <path d="M15 18H9"/>
     <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
     <circle cx="17" cy="18" r="2"/>
     <circle cx="7" cy="18" r="2"/>
   `,
-  CAR: `
-    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-    <circle cx="7" cy="17" r="2"/>
-    <path d="M9 17h6"/>
-    <circle cx="17" cy="17" r="2"/>
+  CAMION_LIVIANO: `
+    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+    <path d="M15 18H9"/>
+    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+    <circle cx="17" cy="18" r="2"/>
+    <circle cx="7" cy="18" r="2"/>
   `,
-  MOTORCYCLE: `
-    <circle cx="18.5" cy="17.5" r="3.5"/>
-    <circle cx="5.5" cy="17.5" r="3.5"/>
-    <circle cx="15" cy="5" r="1"/>
-    <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+  CAMION_PESADO: `
+    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+    <path d="M15 18H9"/>
+    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+    <circle cx="17" cy="18" r="2"/>
+    <circle cx="7" cy="18" r="2"/>
   `,
-  HEAVY_MACHINERY: `
+  SUSTANCIAS_PELIGROSAS: `
+    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+    <path d="M15 18H9"/>
+    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+    <circle cx="17" cy="18" r="2"/>
+    <circle cx="7" cy="18" r="2"/>
+  `,
+  MAQUINA_VIAL: `
     <path d="m10 11 11 .9c.6 0 .9.5.8 1l-1 5.4c-.1.5-.6.9-1.1.9h-1.5"/>
     <path d="M16 18h-5"/>
     <path d="M18 5a1 1 0 0 0-1 1v5.6"/>
@@ -246,21 +274,11 @@ const ICON_PATHS: Record<VehicleTypeIcon, string> = {
     <circle cx="7.5" cy="18" r="2.5"/>
     <path d="M3 13l1-3"/>
   `,
-  TRAILER: `
-    <path d="M22 17h-3.5a2.5 2.5 0 0 1-5 0H10"/>
-    <rect x="3" y="6" width="13" height="11" rx="1"/>
-    <circle cx="16" cy="17" r="1.5"/>
-    <path d="M19 17h.01"/>
-  `,
-  SILO: `
+  ASSET_FIJO: `
     <path d="M3 22V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14"/>
     <path d="M3 22h18"/>
     <path d="M5 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/>
     <path d="M9 22v-5h6v5"/>
-  `,
-  GENERIC: `
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 7v5l3 3"/>
   `,
 };
 

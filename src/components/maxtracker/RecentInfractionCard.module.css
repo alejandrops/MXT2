@@ -1,0 +1,146 @@
+.card {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: var(--pad-card);
+  background: var(--sf);
+  border: 1px solid var(--brd);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s, border-color 0.1s;
+  position: relative;
+}
+
+.card:hover {
+  background: var(--bg);
+  border-color: var(--brd2);
+}
+
+.card:hover .chev {
+  color: var(--tx);
+  transform: translateX(2px);
+}
+
+/* ── Severity dot ─────────────────────────────────────────── */
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--t3);
+  align-self: start;
+  margin-top: 5px;
+}
+
+/* ── Body (3 lines) ──────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.line1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.type {
+  font-size: var(--fs-card-title);
+  font-weight: 500;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sevTag {
+  font-size: 10px;
+  font-family: var(--m);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.line2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-card-body);
+  color: var(--t2);
+  flex-wrap: wrap;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta svg {
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.metaSep {
+  color: var(--brd2);
+}
+
+.metaMuted {
+  color: var(--t3);
+  font-style: italic;
+}
+
+.vmax {
+  font-family: var(--m);
+  color: var(--t3);
+  font-size: var(--fs-card-meta);
+}
+
+.line3 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-card-meta);
+  color: var(--t3);
+  font-family: var(--m);
+}
+
+.line3 svg {
+  flex-shrink: 0;
+}
+
+/* ── Chevron ─────────────────────────────────────────────── */
+
+.chev {
+  color: var(--t3);
+  transition: color 0.1s, transform 0.15s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Severity variants · LEVE / MEDIA / GRAVE
+   Mismas convenciones cromáticas que AlarmCard:
+     LEVE  · ámbar suave (atención)
+     MEDIA · ámbar fuerte (importante)
+     GRAVE · rojo + borde izquierdo (crítico)
+   ═══════════════════════════════════════════════════════════ */
+
+.sev_LEVE .dot     { background: var(--ora); }
+.sev_LEVE .sevTag  { color: var(--ora-t); }
+
+.sev_MEDIA .dot    { background: var(--ora); box-shadow: 0 0 0 2px var(--ora-bg); }
+.sev_MEDIA .sevTag { color: var(--ora-t); }
+
+.sev_GRAVE .dot       { background: var(--red); box-shadow: 0 0 0 2px var(--red-bg); }
+.sev_GRAVE .sevTag    { color: var(--red-dark); }
+.sev_GRAVE            { border-left: 2px solid var(--red); padding-left: 9px; }

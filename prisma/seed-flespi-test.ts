@@ -52,7 +52,7 @@ interface AccountSpec {
   tier: "BASE" | "PRO" | "ENTERPRISE";
   imeiBase: number; // primer IMEI sufijo · ej 1, 31, 61, 91
   plateCountry: "AR" | "CL";
-  vehicleMix: { type: "TRUCK" | "HEAVY_MACHINERY" | "GENERIC"; count: number }[];
+  vehicleMix: { type: "CAMION_LIVIANO" | "MAQUINA_VIAL" | "LIVIANO"; count: number }[];
   users: UserSpec[];
   driverNames: { first: string; last: string }[];
 }
@@ -71,9 +71,9 @@ const ACCOUNTS: AccountSpec[] = [
     imeiBase: 1,
     plateCountry: "AR",
     vehicleMix: [
-      { type: "TRUCK", count: 22 },
-      { type: "GENERIC", count: 6 },
-      { type: "HEAVY_MACHINERY", count: 2 },
+      { type: "CAMION_LIVIANO", count: 22 },
+      { type: "LIVIANO", count: 6 },
+      { type: "MAQUINA_VIAL", count: 2 },
     ],
     users: [
       { email: "admin@transportes-del-sur.com.ar", firstName: "Roberto", lastName: "Giménez", role: "CLIENT_ADMIN" },
@@ -101,8 +101,8 @@ const ACCOUNTS: AccountSpec[] = [
     imeiBase: 31,
     plateCountry: "CL",
     vehicleMix: [
-      { type: "TRUCK", count: 26 },
-      { type: "GENERIC", count: 4 },
+      { type: "CAMION_LIVIANO", count: 26 },
+      { type: "LIVIANO", count: 4 },
     ],
     users: [
       { email: "admin@frigorificos-andinos.cl", firstName: "Patricia", lastName: "Vargas", role: "CLIENT_ADMIN" },
@@ -130,8 +130,8 @@ const ACCOUNTS: AccountSpec[] = [
     imeiBase: 61,
     plateCountry: "AR",
     vehicleMix: [
-      { type: "GENERIC", count: 18 },
-      { type: "TRUCK", count: 12 },
+      { type: "LIVIANO", count: 18 },
+      { type: "CAMION_LIVIANO", count: 12 },
     ],
     users: [
       { email: "admin@logistica-norte.com.ar", firstName: "Lucía", lastName: "Bianchi", role: "CLIENT_ADMIN" },
@@ -159,8 +159,8 @@ const ACCOUNTS: AccountSpec[] = [
     imeiBase: 91,
     plateCountry: "CL",
     vehicleMix: [
-      { type: "GENERIC", count: 24 },
-      { type: "TRUCK", count: 6 },
+      { type: "LIVIANO", count: 24 },
+      { type: "CAMION_LIVIANO", count: 6 },
     ],
     users: [
       { email: "admin@distribuidora-central.cl", firstName: "Camila", lastName: "Pizarro", role: "CLIENT_ADMIN" },
@@ -225,10 +225,10 @@ function plateOf(country: "AR" | "CL", suffix: number): string {
 function buildVehicleSpec(
   spec: AccountSpec,
   index: number,
-): { name: string; vehicleType: "TRUCK" | "HEAVY_MACHINERY" | "GENERIC"; make: string; model: string; year: number } {
+): { name: string; vehicleType: "CAMION_LIVIANO" | "MAQUINA_VIAL" | "LIVIANO"; make: string; model: string; year: number } {
   // Distribuir vehículos según vehicleMix · index 0-29
   let cumulative = 0;
-  let vehicleType: "TRUCK" | "HEAVY_MACHINERY" | "GENERIC" = "TRUCK";
+  let vehicleType: "CAMION_LIVIANO" | "MAQUINA_VIAL" | "LIVIANO" = "CAMION_LIVIANO";
   for (const m of spec.vehicleMix) {
     if (index < cumulative + m.count) {
       vehicleType = m.type;
@@ -239,19 +239,19 @@ function buildVehicleSpec(
 
   // Make/model verosímiles según tipo
   const makesAndModels: Record<typeof vehicleType, [string, string][]> = {
-    TRUCK: [
+    CAMION_LIVIANO: [
       ["Volvo", "FH540"],
       ["Scania", "R450"],
       ["Mercedes-Benz", "Actros 2545"],
       ["Iveco", "Stralis 460"],
       ["Volkswagen", "Constellation 24.280"],
     ],
-    HEAVY_MACHINERY: [
+    MAQUINA_VIAL: [
       ["Caterpillar", "966H"],
       ["Komatsu", "WA470"],
       ["Volvo", "L120F"],
     ],
-    GENERIC: [
+    LIVIANO: [
       ["Ford", "Transit Custom"],
       ["Mercedes-Benz", "Sprinter 415"],
       ["Renault", "Master L3H2"],

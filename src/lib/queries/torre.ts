@@ -297,7 +297,7 @@ export async function getAlarmDetail(
     assetId: alarm.assetId,
     assetName: alarm.asset?.name ?? "—",
     assetPlate: alarm.asset?.plate ?? null,
-    vehicleType: alarm.asset?.vehicleType ?? "GENERIC",
+    vehicleType: alarm.asset?.vehicleType ?? "LIVIANO",
     driverName: driver ? `${driver.firstName} ${driver.lastName}` : null,
     driverDocument: driver?.document ?? null,
     // Phone is not in the schema · we use a synthesized AR-style number

@@ -1,52 +1,30 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S4-L2-eventos-listado · apply.sh
-#  Pantalla nueva /actividad/eventos · listado + heatmap
+#  S4-L3b-fix2 · ModuleKey inválido en /conduccion/dashboard
+#  ─────────────────────────────────────────────────────────────
+#  El page del dashboard pasaba "conduccion" como ModuleKey al
+#  resolver de tenant-scope, pero ese key no existe en el enum
+#  ModuleKey (src/lib/permissions.ts). El sistema definido tiene:
+#    seguimiento | actividad | seguridad | direccion | catalogos
+#    | configuracion | backoffice_*
 #
-#  CAMBIOS:
+#  Cuando el ModuleKey no matchea, getPerm() devuelve undefined →
+#  getScopedAccountIds() devuelve [] → resolveAccountScope()
+#  devuelve NEVER_MATCHING_ACCOUNT ("__no_account__"). Las queries
+#  ejecutan con ese sentinel y el filtro queda imposible de
+#  satisfacer · pero algunas no fallan limpio en producción y
+#  generan el "Application error" de Vercel.
 #
-#    1. Pantalla nueva · /actividad/eventos
-#       Listado tabular de eventos del enterprise con filtros:
-#         · período (PeriodNavigator estándar)
-#         · tipos · multi-select agrupado por categoría
-#           (Conducción / Seguridad / Geocercas)
-#         · severidad · multi-select chips inline
-#         · scope (grupos / tipos vehículo / conductores / search)
-#       Default · sin filtro = todos los tipos.
+#  En desarrollo no rompía porque el Prisma client del sandbox
+#  estaba en stub y devolvía vacíos sin error.
 #
-#    2. Vista alternativa Heatmap
-#       Toggle Lista | Heatmap arriba a la derecha.
-#       Heatmap usa leaflet.heat con gradiente de calor.
-#       Sub-toggle dentro · Heatmap | Pins (colorea por tipo).
+#  CORRECCIÓN:
 #
-#    3. Panel lateral de detalle
-#       Click en fila → panel slide-in con:
-#         · tipo + severity badge
-#         · fecha/hora · vehículo (link al Libro) · conductor (link)
-#         · velocidad · ubicación · metadata
-#         · mini-mapa centrado en el evento
-#       Cierre con X, ESC o click backdrop.
-#
-#    4. Componentes nuevos reusables
-#       · EventHeatmap         · mapa heatmap+pins · usable en otras pantallas
-#       · EventDetailPanel     · panel lateral · usable en otras pantallas
-#       · EventTypeFilter      · multi-select agrupado · reusable
-#       · SeverityFilter       · chips toggleables · reusable
-#
-#    5. Lib reusable
-#       · src/lib/event-catalog.ts
-#         Single source of truth · labels, colors, categorías
-#         de los 19 EventType del enum
-#       · src/lib/queries/events-list.ts
-#         listEvents() · cross-fleet con filtros, paginación, scope
-#         listEventsForHeatmap() · solo lat/lng/type, cap 10k pts
-#
-#    6. Sidebar + cmdk
-#       Item nuevo "Actividad > Eventos"
-#       Cmd+K · "Eventos", "Alarmas", "Infracciones" llevan a /actividad/eventos
-#
-#  DEPENDENCIA NUEVA:
-#    leaflet.heat (instalado vía npm install)
+#    Cambiar el ModuleKey de "conduccion" a "actividad" en el
+#    page del dashboard. Es lo que hace ya el ScorecardClient
+#    del mismo módulo Conducción · ambos comparten el bucket de
+#    permisos "actividad" hasta que Conducción tenga uno propio
+#    (no en MVP).
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -54,7 +32,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S4-L2 · /actividad/eventos · listado + heatmap ═══"
+echo "═══ S4-L3b-fix2 · ModuleKey inválido en /conduccion/dashboard ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -79,17 +57,7 @@ rm -rf "$PAYLOAD"
 echo ""
 echo "✅ Lote aplicado"
 echo ""
-echo "Próximo paso · instalar dependencias y reiniciar dev server:"
-echo "  npm install         # instala leaflet.heat (nuevo en package.json)"
-echo "  rm -rf .next && npm run dev"
+echo "Validación local:"
+echo "  npx tsc --noEmit"
 echo ""
-echo "Validación e2e:"
-echo "  http://localhost:3000/actividad/eventos"
-echo "    → Vista lista · default · 50 eventos por página"
-echo "    → Click en fila → panel lateral con detalle + mini-mapa"
-echo "    → Cambiar a vista Heatmap → mapa con calor por densidad"
-echo "    → Toggle Heatmap/Pins dentro del mapa"
-echo "    → Filtro tipos · agrupado por Conducción/Seguridad/Geocercas"
-echo "    → Filtro severidad · chips toggleables"
-echo "    → Cmd+K · 'Eventos' → llega"
-echo "    → Sidebar · Actividad > Eventos"
+echo "Después committear y pushear · Vercel auto-deploy."

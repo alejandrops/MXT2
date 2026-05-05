@@ -262,7 +262,7 @@ async function loadObjectMeta(
     const metaParts: string[] = [];
     if (asset.plate) metaParts.push(`Patente ${asset.plate}`);
     if (asset.group?.name) metaParts.push(asset.group.name);
-    if (asset.vehicleType && asset.vehicleType !== "GENERIC") {
+    if (asset.vehicleType && asset.vehicleType !== "ASSET_FIJO") {
       metaParts.push(humanizeVehicleType(asset.vehicleType));
     }
 
@@ -359,13 +359,15 @@ function resolveAssetStatus(
 
 function humanizeVehicleType(vt: string): string {
   const map: Record<string, string> = {
-    CAR: "Auto",
-    TRUCK: "Camión",
-    VAN: "Utilitario",
-    BUS: "Colectivo",
-    MOTO: "Moto",
-    MACHINE: "Maquinaria",
-    GENERIC: "",
+    MOTOCICLETA: "Motocicleta",
+    LIVIANO: "Liviano",
+    UTILITARIO: "Utilitario",
+    PASAJEROS: "Pasajeros",
+    CAMION_LIVIANO: "Camión liviano",
+    CAMION_PESADO: "Camión pesado",
+    SUSTANCIAS_PELIGROSAS: "Sustancias peligrosas",
+    MAQUINA_VIAL: "Máquina vial",
+    ASSET_FIJO: "",
   };
   return map[vt] ?? vt;
 }

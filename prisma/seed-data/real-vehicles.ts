@@ -11,14 +11,14 @@
 //    · Patagonia  5 vehicles
 //
 //  Type distribution:
-//    · CAR         1 vehicles
-//    · MOTORCYCLE  6 vehicles
-//    · TRUCK       16 vehicles
+//    · LIVIANO         1 vehicles
+//    · MOTOCICLETA    6 vehicles
+//    · CAMION_LIVIANO 16 vehicles
 //
 //  Classification rules:
-//    · max speed > 150 km/h     → CAR (likely a pickup or executive)
-//    · GBA + max < 95 km/h      → MOTORCYCLE (delivery profile)
-//    · everything else          → TRUCK
+//    · max speed > 150 km/h     → LIVIANO (likely a pickup or executive)
+//    · GBA + max < 95 km/h      → MOTOCICLETA (delivery profile)
+//    · everything else          → CAMION_LIVIANO
 // ═══════════════════════════════════════════════════════════════
 
 export interface RealVehicleSpec {
@@ -27,7 +27,7 @@ export interface RealVehicleSpec {
   name: string;
   make: string;
   model: string;
-  vehicleType: "CAR" | "MOTORCYCLE" | "TRUCK";
+  vehicleType: "LIVIANO" | "MOTOCICLETA" | "CAMION_LIVIANO";
   region: "GBA" | "Cuyo" | "Patagonia" | "NOA" | "Pampa";
   profile: "urbano" | "larga-distancia" | "mixto";
 }
@@ -39,7 +39,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camioneta AG222",
     make: "Toyota",
     model: "Hilux 4x4",
-    vehicleType: "CAR",
+    vehicleType: "LIVIANO",
     region: "Patagonia",
     profile: "larga-distancia",
   },
@@ -49,7 +49,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto AC050",
     make: "Honda",
     model: "CG 150",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -59,7 +59,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto AC224",
     make: "Yamaha",
     model: "YBR 125",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -69,7 +69,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto AD919",
     make: "Honda",
     model: "Wave 110",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -79,7 +79,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto AJW565",
     make: "Honda",
     model: "CG 150",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -89,7 +89,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto ARM810",
     make: "Yamaha",
     model: "YBR 125",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -99,7 +99,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Moto NDD000",
     make: "Honda",
     model: "Wave 110",
-    vehicleType: "MOTORCYCLE",
+    vehicleType: "MOTOCICLETA",
     region: "GBA",
     profile: "urbano",
   },
@@ -109,7 +109,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AE755",
     make: "Volvo",
     model: "FH 460",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Cuyo",
     profile: "larga-distancia",
   },
@@ -119,7 +119,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AG603",
     make: "Mercedes-Benz",
     model: "Atego 1726",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Cuyo",
     profile: "larga-distancia",
   },
@@ -129,7 +129,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AB456",
     make: "Mercedes-Benz",
     model: "Atego 1726",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -139,7 +139,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AC335",
     make: "Iveco",
     model: "Daily 70C16",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -149,7 +149,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AE162",
     make: "Scania",
     model: "G410",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -159,7 +159,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AF847",
     make: "Volkswagen",
     model: "Delivery 11.180",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -169,7 +169,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AH650",
     make: "Iveco",
     model: "Tector 170E22",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -179,7 +179,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión PJC824",
     make: "Iveco",
     model: "Daily 70C16",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -189,7 +189,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión PQV913",
     make: "Scania",
     model: "G410",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "GBA",
     profile: "mixto",
   },
@@ -199,7 +199,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AE262",
     make: "Scania",
     model: "P310",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "NOA",
     profile: "larga-distancia",
   },
@@ -209,7 +209,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AC224",
     make: "Iveco",
     model: "Tector 170E22",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Pampa",
     profile: "mixto",
   },
@@ -219,7 +219,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AH460",
     make: "Mercedes-Benz",
     model: "Accelo 1316",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Pampa",
     profile: "mixto",
   },
@@ -229,7 +229,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AB735",
     make: "Mercedes-Benz",
     model: "Accelo 1316",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Patagonia",
     profile: "larga-distancia",
   },
@@ -239,7 +239,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AE782",
     make: "Volvo",
     model: "VM 270",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Patagonia",
     profile: "larga-distancia",
   },
@@ -249,7 +249,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AE878",
     make: "Volkswagen",
     model: "Constellation 17.190",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Patagonia",
     profile: "larga-distancia",
   },
@@ -259,7 +259,7 @@ export const REAL_VEHICLES: RealVehicleSpec[] = [
     name: "Camión AG222",
     make: "Ford",
     model: "Cargo 1722",
-    vehicleType: "TRUCK",
+    vehicleType: "CAMION_LIVIANO",
     region: "Patagonia",
     profile: "larga-distancia",
   },

@@ -342,7 +342,7 @@ export async function getActivityPivot(
       assetId: a.id,
       assetName: a.name,
       assetPlate: a.plate,
-      vehicleType: a.vehicleType ?? "GENERIC",
+      vehicleType: a.vehicleType ?? "LIVIANO",
       groupId: a.groupId,
       groupName: a.group?.name ?? null,
       byDay,

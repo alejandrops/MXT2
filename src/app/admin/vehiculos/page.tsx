@@ -43,13 +43,15 @@ interface PageProps {
 }
 
 const VEHICLE_TYPE_LABELS: Record<AdminAssetVehicleType, string> = {
-  GENERIC: "Genérico",
-  CAR: "Auto",
-  TRUCK: "Camión",
-  MOTORCYCLE: "Moto",
-  HEAVY_MACHINERY: "Maquinaria",
-  TRAILER: "Trailer",
-  SILO: "Silo",
+  MOTOCICLETA: "Motocicleta",
+  LIVIANO: "Liviano",
+  UTILITARIO: "Utilitario",
+  PASAJEROS: "Pasajeros",
+  CAMION_LIVIANO: "Camión liviano",
+  CAMION_PESADO: "Camión pesado",
+  SUSTANCIAS_PELIGROSAS: "Sust. peligrosas",
+  MAQUINA_VIAL: "Máquina vial",
+  ASSET_FIJO: "Asset fijo",
 };
 
 const VENDOR_LABELS: Record<string, string> = {

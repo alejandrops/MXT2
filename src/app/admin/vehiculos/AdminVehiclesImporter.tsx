@@ -16,37 +16,76 @@ import {
 // ═══════════════════════════════════════════════════════════════
 
 const VALID_VEHICLE_TYPES = [
-  "GENERIC",
-  "CAR",
-  "TRUCK",
-  "MOTORCYCLE",
-  "HEAVY_MACHINERY",
-  "TRAILER",
-  "SILO",
+  "MOTOCICLETA",
+  "LIVIANO",
+  "UTILITARIO",
+  "PASAJEROS",
+  "CAMION_LIVIANO",
+  "CAMION_PESADO",
+  "SUSTANCIAS_PELIGROSAS",
+  "MAQUINA_VIAL",
+  "ASSET_FIJO",
 ];
 
 const VALID_MOBILITY = ["MOBILE", "FIXED"];
 
 /** Mapa de strings comunes → enum. Tolera español/inglés/case-insensitive */
 const VEHICLE_TYPE_MAP: Record<string, string> = {
-  generico: "GENERIC",
-  generic: "GENERIC",
-  auto: "CAR",
-  car: "CAR",
-  automovil: "CAR",
-  automóvil: "CAR",
-  camion: "TRUCK",
-  camión: "TRUCK",
-  truck: "TRUCK",
-  moto: "MOTORCYCLE",
-  motocicleta: "MOTORCYCLE",
-  motorcycle: "MOTORCYCLE",
-  maquinaria: "HEAVY_MACHINERY",
-  "maquinaria pesada": "HEAVY_MACHINERY",
-  heavy_machinery: "HEAVY_MACHINERY",
-  trailer: "TRAILER",
-  acoplado: "TRAILER",
-  silo: "SILO",
+  // Motocicleta
+  moto: "MOTOCICLETA",
+  motocicleta: "MOTOCICLETA",
+  motorcycle: "MOTOCICLETA",
+  // Liviano (auto particular)
+  auto: "LIVIANO",
+  car: "LIVIANO",
+  automovil: "LIVIANO",
+  automóvil: "LIVIANO",
+  liviano: "LIVIANO",
+  // Utilitario / pick-up
+  utilitario: "UTILITARIO",
+  pickup: "UTILITARIO",
+  "pick-up": "UTILITARIO",
+  camioneta: "UTILITARIO",
+  van: "UTILITARIO",
+  // Pasajeros (microbús, ómnibus, casa rodante motor)
+  pasajeros: "PASAJEROS",
+  bus: "PASAJEROS",
+  colectivo: "PASAJEROS",
+  micro: "PASAJEROS",
+  microbus: "PASAJEROS",
+  microbús: "PASAJEROS",
+  omnibus: "PASAJEROS",
+  ómnibus: "PASAJEROS",
+  "casa rodante": "PASAJEROS",
+  // Camión liviano (camión solo, sin acoplado)
+  camion: "CAMION_LIVIANO",
+  camión: "CAMION_LIVIANO",
+  truck: "CAMION_LIVIANO",
+  "camion liviano": "CAMION_LIVIANO",
+  "camión liviano": "CAMION_LIVIANO",
+  // Camión pesado (con acoplado / semi)
+  "camion pesado": "CAMION_PESADO",
+  "camión pesado": "CAMION_PESADO",
+  acoplado: "CAMION_PESADO",
+  trailer: "CAMION_PESADO",
+  "semi-remolque": "CAMION_PESADO",
+  semirremolque: "CAMION_PESADO",
+  // Sustancias peligrosas
+  "sustancias peligrosas": "SUSTANCIAS_PELIGROSAS",
+  peligrosas: "SUSTANCIAS_PELIGROSAS",
+  hazmat: "SUSTANCIAS_PELIGROSAS",
+  cisterna: "SUSTANCIAS_PELIGROSAS",
+  // Máquina vial
+  maquinaria: "MAQUINA_VIAL",
+  "maquinaria pesada": "MAQUINA_VIAL",
+  heavy_machinery: "MAQUINA_VIAL",
+  "maquina vial": "MAQUINA_VIAL",
+  "máquina vial": "MAQUINA_VIAL",
+  // Asset fijo
+  silo: "ASSET_FIJO",
+  fijo: "ASSET_FIJO",
+  "asset fijo": "ASSET_FIJO",
+  generador: "ASSET_FIJO",
 };
 
 const MOBILITY_MAP: Record<string, string> = {
@@ -201,7 +240,7 @@ function parseVehicleRow(
   }
 
   // Resolver enum vehicle_type
-  let vehicleType = "GENERIC";
+  let vehicleType = "LIVIANO";
   if (typeStr.length > 0) {
     const lower = typeStr.toLowerCase().trim();
     const mapped = VEHICLE_TYPE_MAP[lower];
@@ -212,7 +251,7 @@ function parseVehicleRow(
     } else {
       errors.push({
         column: "tipo",
-        message: `Tipo "${typeStr}" inválido · usá: auto, camión, moto, maquinaria pesada, trailer, silo`,
+        message: `Tipo "${typeStr}" inválido · usá: moto, auto, utilitario, pasajeros, camión liviano, camión pesado, sustancias peligrosas, máquina vial, silo`,
       });
     }
   }

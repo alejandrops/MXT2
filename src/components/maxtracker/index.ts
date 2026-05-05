@@ -68,3 +68,4 @@ export { DriverAssetsPanel } from "./DriverAssetsPanel";
 export { AssetDriversHeatmap } from "./AssetDriversHeatmap";
 export { PersonHeader } from "./PersonHeader";
 export { ActivityHeatmap } from "./ActivityHeatmap";
+export { RecentInfractionCard } from "./RecentInfractionCard";

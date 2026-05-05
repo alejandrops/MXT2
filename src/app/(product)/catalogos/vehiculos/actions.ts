@@ -39,13 +39,15 @@ export interface ActionResult {
 }
 
 const VALID_VEHICLE_TYPES = [
-  "GENERIC",
-  "CAR",
-  "TRUCK",
-  "MOTORCYCLE",
-  "HEAVY_MACHINERY",
-  "TRAILER",
-  "SILO",
+  "MOTOCICLETA",
+  "LIVIANO",
+  "UTILITARIO",
+  "PASAJEROS",
+  "CAMION_LIVIANO",
+  "CAMION_PESADO",
+  "SUSTANCIAS_PELIGROSAS",
+  "MAQUINA_VIAL",
+  "ASSET_FIJO",
 ] as const;
 
 const VALID_MOBILITY = ["MOBILE", "FIXED"] as const;

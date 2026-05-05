@@ -57,6 +57,7 @@ import {
 import { REAL_VEHICLES } from "./seed-data/real-vehicles";
 import { parseRealCsv } from "./seed-data/parse-real-csv";
 import { seedUsersAndProfiles } from "./seed-users";
+import { seedInfractions } from "./seed-infractions";
 import { join } from "node:path";
 
 faker.seed(42);
@@ -246,7 +247,7 @@ interface GroupSpec {
 interface FleetSpec {
   count: number;
   mobility: MobilityType;
-  vehicleType: "TRUCK" | "MINING" | "MOTORCYCLE" | "SILO";
+  vehicleType: "CAMION_LIVIANO" | "MAQUINA_VIAL" | "MOTOCICLETA" | "ASSET_FIJO";
   routes: Route[];
 }
 
@@ -264,7 +265,7 @@ const ACCOUNTS: AccountSpec[] = [
     fleet: {
       count: 40,
       mobility: "MOBILE",
-      vehicleType: "TRUCK",
+      vehicleType: "CAMION_LIVIANO",
       routes: [
         ROUTE_BSAS_MAR_DEL_PLATA,
         ROUTE_BSAS_BAHIA_BLANCA,
@@ -288,7 +289,7 @@ const ACCOUNTS: AccountSpec[] = [
     fleet: {
       count: 25, // 20 mobile + 5 silos
       mobility: "MOBILE", // overridden per-asset for silos
-      vehicleType: "MINING",
+      vehicleType: "MAQUINA_VIAL",
       routes: [ROUTE_MINA_CATAMARCA],
     },
     personCount: 20,
@@ -302,7 +303,7 @@ const ACCOUNTS: AccountSpec[] = [
     fleet: {
       count: 15,
       mobility: "MOBILE",
-      vehicleType: "MOTORCYCLE",
+      vehicleType: "MOTOCICLETA",
       routes: [], // bounds-based, not route-based
     },
     personCount: 10,
@@ -501,7 +502,7 @@ async function main() {
       });
 
       const deviceModel =
-        spec.vehicleType === "MOTORCYCLE" ? "FMB001" : "FMB920";
+        spec.vehicleType === "MOTOCICLETA" ? "FMB001" : "FMB920";
       const carrierPick = ["MOVISTAR", "CLARO", "PERSONAL"][totalAssets % 3] as
         | "MOVISTAR"
         | "CLARO"
@@ -520,7 +521,7 @@ async function main() {
           imsi: faker.string.numeric(15),
           carrier: carrierPick,
           apn: apnPick,
-          dataPlanMb: spec.vehicleType === "TRUCK" ? 250 : 100,
+          dataPlanMb: spec.vehicleType === "CAMION_LIVIANO" ? 250 : 100,
           status: "ACTIVE",
           activatedAt: faker.date.past({ years: 1, refDate: NOW }),
         },
@@ -927,6 +928,11 @@ async function main() {
   // v1.1+ · por ahora sesión simulada con cookie + switcher demo.
   console.log("   · seeding users and profiles…");
   await seedUsersAndProfiles(db);
+
+  // ── S4-L3a · Backfill de Infracciones ────────────────────────────
+  // Se ejecuta al final · necesita Position + Asset.vehicleType
+  // ya persistidos. Borra y recrea todas las Infraction (idempotente).
+  await seedInfractions(db);
 
   // ── Summary ──────────────────────────────────────────────────────
   console.timeEnd("seed");

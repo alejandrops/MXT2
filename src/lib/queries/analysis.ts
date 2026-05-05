@@ -1127,12 +1127,15 @@ function stdDev(arr: number[], mean: number): number {
 // ═══════════════════════════════════════════════════════════════
 
 const VEHICLE_TYPES: { value: string; label: string }[] = [
-  { value: "CAR", label: "Auto" },
-  { value: "MOTORCYCLE", label: "Moto" },
-  { value: "TRUCK", label: "Camión" },
-  { value: "HEAVY_MACHINERY", label: "Maquinaria" },
-  { value: "TRAILER", label: "Tráiler" },
-  { value: "GENERIC", label: "Genérico" },
+  { value: "MOTOCICLETA", label: "Motocicleta" },
+  { value: "LIVIANO", label: "Liviano" },
+  { value: "UTILITARIO", label: "Utilitario" },
+  { value: "PASAJEROS", label: "Pasajeros" },
+  { value: "CAMION_LIVIANO", label: "Camión liviano" },
+  { value: "CAMION_PESADO", label: "Camión pesado" },
+  { value: "SUSTANCIAS_PELIGROSAS", label: "Sust. peligrosas" },
+  { value: "MAQUINA_VIAL", label: "Máquina vial" },
+  { value: "ASSET_FIJO", label: "Asset fijo" },
 ];
 
 const MONTH_SHORT = [

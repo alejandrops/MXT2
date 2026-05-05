@@ -64,6 +64,8 @@ model Account {
   assetDriverDays AssetDriverDay[]
   assetWeeklyStats AssetWeeklyStats[]
   users          User[]
+  geofences      Geofence[]
+  infractions    Infraction[]
   createdAt      DateTime     @default(now())
 }
 
@@ -172,7 +174,7 @@ model Asset {
   /// Used by the live tracking map to pick an icon when the
   /// "icons by type" view option is enabled. Falls back to the
   /// generic shape if GENERIC.
-  vehicleType     VehicleType  @default(GENERIC)
+  vehicleType     VehicleType  @default(LIVIANO)
   make            String?
   model           String?
   year            Int?
@@ -192,6 +194,7 @@ model Asset {
   alarms          Alarm[]
   assetDriverDays AssetDriverDay[]
   weeklyStats     AssetWeeklyStats[]
+  infractions     Infraction[]
   createdAt       DateTime     @default(now())
 
   @@index([accountId, status])
@@ -203,14 +206,31 @@ enum MobilityType {
   FIXED
 }
 
+/// Categorización de vehículos alineada con Ley Nacional de
+/// Tránsito 24.449 art. 51 + tipos relevantes para Maxtracker.
+/// Cada categoría tiene velocidades máximas distintas en la
+/// tabla del módulo Conducción (ver src/lib/conduccion/vmax-table.ts).
+///
+/// S4-L3a · migración desde el enum previo (CAR/MOTORCYCLE/TRUCK/...)
 enum VehicleType {
-  CAR
-  MOTORCYCLE
-  TRUCK
-  HEAVY_MACHINERY
-  TRAILER
-  SILO
-  GENERIC
+  /// Motocicleta · 110 ruta / 130 autopista
+  MOTOCICLETA
+  /// Auto particular · 110 ruta / 130 autopista
+  LIVIANO
+  /// Pick-up / camioneta uso comercial · idem liviano por ley
+  UTILITARIO
+  /// Microbús, ómnibus, casa rodante motorizada · 90 ruta / 100 autopista
+  PASAJEROS
+  /// Camión solo, sin acoplado · 90 ruta / 100 autopista
+  CAMION_LIVIANO
+  /// Camión con acoplado/semi-remolque · 80 ruta / 80 autopista
+  CAMION_PESADO
+  /// Transporte de sustancias peligrosas · 80 ruta / 80 autopista
+  SUSTANCIAS_PELIGROSAS
+  /// Maquinaria vial · velocidad propia restringida
+  MAQUINA_VIAL
+  /// Asset fijo (silo, refrigerador, generador) · sin score de conducción
+  ASSET_FIJO
 }
 
 enum AssetStatus {
@@ -379,6 +399,7 @@ model Person {
   alarms           Alarm[]
   trips            Trip[]
   assetDriverDays  AssetDriverDay[]
+  infractions      Infraction[]
 
   @@index([accountId])
 }
@@ -585,6 +606,13 @@ model Position {
   /// src/lib/mock-can/types.ts (interface CanSnapshot) · cuando
   /// llegue el ingestor real, este campo se persiste igual.
   canData    Json?
+
+  /// S4-L3a · Tipo de vía inferido del entorno OSM al momento del
+  /// ping. Null si no se pudo determinar (zona sin datos OSM o
+  /// ingestor sin lookup). Usado por el resolver de vmax para
+  /// aplicar la tabla Ley 24.449 sin recomputar OSM en cada query.
+  /// En seed se asigna heurísticamente desde la velocidad del segmento.
+  roadType   RoadType?
 
   @@index([assetId, recordedAt])
   @@unique([assetId, recordedAt])
@@ -897,4 +925,196 @@ enum FeedbackStatus {
   NEW
   REVIEWED
   CLOSED
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONDUCCIÓN · S4-L3a
+//  ─────────────────────────────────────────────────────────────
+//  Modelo de datos para el módulo Conducción, basado en la
+//  metodología Geotab Driver Safety Scorecard adaptada a LATAM:
+//    · Solo speeding en MVP (los acelerómetros vienen en S5+)
+//    · Infracción = secuencia de excesos consecutivos > 2 min
+//    · Vmax aplicable según Ley Nacional de Tránsito 24.449
+//    · Override por Geofence para zonas especiales (petroleras,
+//      mineras, predios cliente, caminos internos, etc.)
+//
+//  Una infracción NO es un evento puntual · es una agregación
+//  temporal con polilínea, pico de velocidad, distancia recorrida
+//  en exceso y calificación L/M/G.
+// ═══════════════════════════════════════════════════════════════
+
+/// Tipo de vía inferido del entorno OSM. Determina la velocidad
+/// máxima aplicable cuando no hay tag `maxspeed` explícito ni
+/// override de geofence. Mapeo en src/lib/conduccion/vmax-table.ts.
+enum RoadType {
+  /// Calle urbana · 40 km/h todos los vehículos (Ley 24.449)
+  URBANO_CALLE
+  /// Avenida urbana · 60 km/h todos los vehículos
+  URBANO_AVENIDA
+  /// Ruta convencional · 110 livianos / 90 pasajeros / 80 pesados
+  RURAL
+  /// Semiautopista · 120 livianos / 90 pasajeros / 80 pesados
+  SEMIAUTOPISTA
+  /// Autopista · 130 livianos / 100 pasajeros / 80 pesados
+  AUTOPISTA
+  /// Camino rural no pavimentado · 60 km/h default LATAM
+  CAMINO_RURAL
+  /// Sin datos OSM · aplica vmax conservador del fallback
+  DESCONOCIDO
+}
+
+/// Polígono geográfico que aplica reglas particulares al
+/// asset que lo atraviesa. Cubre desde geocercas de seguridad
+/// (entry/exit alarms · ya existentes como EventType) hasta
+/// overrides de velocidad máxima para zonas especiales que la
+/// ley nacional no contempla (yacimientos, minas, predios,
+/// caminos internos).
+///
+/// El polígono se almacena como GeoJSON stringified · cuando se
+/// migre a PostGIS, este campo se reemplaza por geometry(Polygon).
+/// Para "caminos lineales" (ruta interna, camino petrolero) se
+/// usa un polígono fino (buffer del trazado, ej. 50m a cada lado).
+model Geofence {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+
+  name        String
+  description String?
+
+  /// GeoJSON Polygon stringified · ej. {"type":"Polygon","coordinates":[[[...]]]}
+  polygonGeoJson    String
+
+  /// Categoría reutilizable para agrupar geocercas con reglas
+  /// comunes (UI puede filtrar/colorear por categoría).
+  category    GeofenceCategory?
+
+  /// Override de vmax por VehicleType al cruzar el polígono.
+  /// Stringified Record<VehicleType, number>. Ej:
+  ///   {"LIVIANO":40,"CAMION_PESADO":30,"MAQUINA_VIAL":20}
+  /// null = la geocerca solo dispara entry/exit events,
+  /// sin afectar el cálculo de infracciones por velocidad.
+  vmaxOverrideJson  String?
+
+  /// Para resolver conflicto cuando un punto está adentro de
+  /// múltiples geocercas con override. Mayor priority gana.
+  priority    Int      @default(0)
+
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([accountId, active])
+}
+
+enum GeofenceCategory {
+  /// Yacimiento / instalación petrolera principal
+  PETROLERA_PRIMARIA
+  /// Caminos secundarios dentro del área petrolera
+  PETROLERA_SECUNDARIA
+  /// Mina / yacimiento minero
+  MINERA_INTERNA
+  /// Predio / depósito / planta del cliente
+  PREDIO_CLIENTE
+  /// Camino interno (lineal, modelado como buffer fino)
+  CAMINO_INTERNO
+  /// Zona escolar / cruces críticos · post-MVP
+  ZONA_ESCOLAR
+  OTROS
+}
+
+/// Infracción de velocidad · agregación temporal de excesos
+/// consecutivos sostenidos durante más del umbral mínimo (2 min).
+///
+/// El cálculo es server-side desde Position vía
+/// src/lib/conduccion/compute-infractions.ts. Los eventos
+/// puntuales (cada Position con vel > vmax) NO se materializan
+/// como Event para evitar inflar la tabla de eventos.
+///
+/// Status ACTIVE entran al score del conductor.
+/// Status DISCARDED quedan en BD para auditoría pero no afectan
+/// score · el admin puede descartar por error técnico (límite
+/// incorrecto, GPS malo, vehículo con inmunidad, etc.).
+model Infraction {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id])
+  assetId         String
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  driverId        String?
+  driver          Person?  @relation(fields: [driverId], references: [id])
+
+  /// Inicio del primer sample en exceso del segmento
+  startedAt       DateTime
+  /// Fin del último sample en exceso del segmento
+  endedAt         DateTime
+  /// Duración del segmento en segundos · siempre >= 120 (umbral)
+  durationSec     Int
+
+  /// Velocidad máxima aplicable según resolveVmax (la que estaba
+  /// vigente al momento de la infracción · snapshot, no se recalcula)
+  vmaxKmh         Int
+  /// Pico de velocidad alcanzado durante el segmento
+  peakSpeedKmh    Float
+  /// peakSpeedKmh - vmaxKmh · define la severity (L/M/G)
+  maxExcessKmh    Float
+  /// Distancia recorrida en exceso · suma de geo-distance entre
+  /// samples del segmento (entra al Violation Percentage Method)
+  distanceMeters  Float
+
+  /// LEVE | MEDIA | GRAVE según maxExcessKmh
+  /// (≤9 LEVE · 10-17 MEDIA · ≥18 GRAVE · configurable post-MVP)
+  severity        InfractionSeverity
+  /// Snapshot del tipo de vehículo al momento de la infracción
+  vehicleType     VehicleType
+  /// Snapshot del tipo de vía al momento de la infracción
+  roadType        RoadType
+
+  startLat        Float
+  startLon        Float
+  startAddress    String?
+  endLat          Float
+  endLon          Float
+  endAddress      String?
+
+  /// JSON stringified · array de samples del segmento para
+  /// reconstruir polilínea + curva velocidad/tiempo en el
+  /// recibo PDF. Shape: [[lat, lon, isoTimestamp, speedKmh], ...]
+  trackJson       String
+
+  /// ACTIVE entra al score · DISCARDED queda en BD pero no
+  /// afecta score (audit trail de descartes manuales).
+  status          InfractionStatus @default(ACTIVE)
+  /// Razón del descarte · solo populado cuando status=DISCARDED
+  discardReason   DiscardReason?
+  /// User que descartó · solo populado cuando status=DISCARDED
+  discardedById   String?
+  discardedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+
+  @@index([accountId, startedAt])
+  @@index([assetId, startedAt])
+  @@index([driverId, startedAt])
+}
+
+enum InfractionSeverity {
+  LEVE
+  MEDIA
+  GRAVE
+}
+
+enum InfractionStatus {
+  ACTIVE
+  DISCARDED
+}
+
+enum DiscardReason {
+  /// El vmax aplicado no era el correcto (error de OSM, geofence faltante, etc.)
+  WRONG_SPEED_LIMIT
+  /// El tipo de vía inferido no coincide con la realidad
+  WRONG_ROAD_TYPE
+  /// Las posiciones del segmento eran ruido GPS (drift, salto, etc.)
+  POOR_GPS_QUALITY
+  /// Vehículo o conductor con inmunidad operacional (servicios de emergencia, etc.)
+  DRIVER_VEHICLE_IMMUNITY
 }

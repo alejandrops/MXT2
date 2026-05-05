@@ -125,12 +125,13 @@ const MODULES: ModuleDef[] = [
     label: "Conducción",
     icon: <Truck size={16} />,
     pathPrefix: "/conduccion",
-    // S1-L2 ia-reorg · habilitado · solo Scorecard activo por ahora.
-    // El resto de pantallas (Dashboard, Mapa heatmap, Reportes,
-    // Comparativa, Infracciones, Boletín, Configuración) llegan
-    // en Sprint 4 según spec del módulo (post-MVP).
+    // S1-L2 ia-reorg · habilitado.
+    // S4-L3b · Dashboard agregado · KPIs + ranking + recientes.
+    // Pantallas restantes (Mapa heatmap, Reportes, Comparativa,
+    // Infracciones, Boletín, Configuración) llegan en S4-L3c+.
     enabled: true,
     pages: [
+      { label: "Dashboard", href: "/conduccion/dashboard" },
       { label: "Scorecard", href: "/conduccion/scorecard" },
     ],
   },

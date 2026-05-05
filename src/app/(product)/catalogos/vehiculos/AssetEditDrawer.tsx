@@ -18,13 +18,15 @@ import styles from "./AssetEditDrawer.module.css";
 // ═══════════════════════════════════════════════════════════════
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  GENERIC: "Genérico",
-  CAR: "Auto",
-  TRUCK: "Camión",
-  MOTORCYCLE: "Moto",
-  HEAVY_MACHINERY: "Maquinaria pesada",
-  TRAILER: "Trailer",
-  SILO: "Silo",
+  MOTOCICLETA: "Motocicleta",
+  LIVIANO: "Liviano",
+  UTILITARIO: "Utilitario",
+  PASAJEROS: "Pasajeros",
+  CAMION_LIVIANO: "Camión liviano",
+  CAMION_PESADO: "Camión pesado",
+  SUSTANCIAS_PELIGROSAS: "Sustancias peligrosas",
+  MAQUINA_VIAL: "Máquina vial",
+  ASSET_FIJO: "Asset fijo",
 };
 
 const MOBILITY_LABELS: Record<string, string> = {
@@ -120,7 +122,7 @@ export function AssetEditDrawer({
       : "",
   );
   const [vehicleType, setVehicleType] = useState(
-    initialAsset?.vehicleType ?? "GENERIC",
+    initialAsset?.vehicleType ?? "LIVIANO",
   );
   const [mobilityType, setMobilityType] = useState(
     initialAsset?.mobilityType ?? "MOBILE",

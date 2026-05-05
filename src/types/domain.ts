@@ -40,6 +40,15 @@ export type {
   AlarmType,
   AlarmStatus,
   AlarmDomain,
+  VehicleType,
+  // S4-L3a · módulo Conducción
+  RoadType,
+  Geofence,
+  GeofenceCategory,
+  Infraction,
+  InfractionSeverity,
+  InfractionStatus,
+  DiscardReason,
 } from "@prisma/client";
 
 // ── Asset list row (Pantalla 2 · Lista A) ──────────────────────
