@@ -1,7 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
+import {
+  VehicleCell,
+  DriverCell,
+  DistanceCell,
+  DurationCell,
+} from "@/components/maxtracker/cells";
 import type { Day } from "@/lib/queries/trips-by-day";
 import styles from "./DaysList.module.css";
 
@@ -41,34 +46,28 @@ export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
       label: "Vehículo",
       sortable: false,
       render: (day) => (
-        <Link
-          href={`/objeto/vehiculo/${day.assetId}`}
-          className={styles.assetLink}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className={styles.assetName}>{day.assetName}</span>
-          {day.assetPlate && (
-            <span className={styles.plate}>{day.assetPlate}</span>
-          )}
-        </Link>
+        <VehicleCell
+          asset={{
+            id: day.assetId,
+            name: day.assetName,
+            plate: day.assetPlate,
+          }}
+        />
       ),
     },
     {
       key: "driver",
       label: "Conductor",
       sortable: false,
-      render: (day) =>
-        day.driverId && day.driverName ? (
-          <Link
-            href={`/objeto/conductor/${day.driverId}`}
-            className={styles.driverLink}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {day.driverName}
-          </Link>
-        ) : (
-          <span className={styles.dim}>—</span>
-        ),
+      render: (day) => (
+        <DriverCell
+          person={
+            day.driverId && day.driverName
+              ? { id: day.driverId, name: day.driverName }
+              : null
+          }
+        />
+      ),
     },
     {
       key: "distance",
@@ -76,12 +75,7 @@ export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
       align: "right",
       mono: true,
       sortable: false,
-      render: (day) => (
-        <>
-          {formatKm(day.totalDistanceKm)}
-          <span className={styles.unit}> km</span>
-        </>
-      ),
+      render: (day) => <DistanceCell meters={day.totalDistanceKm * 1000} />,
     },
     {
       key: "tripCount",
@@ -110,7 +104,7 @@ export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
       align: "right",
       mono: true,
       sortable: false,
-      render: (day) => formatDuration(day.totalDrivingMs),
+      render: (day) => <DurationCell ms={day.totalDrivingMs} />,
     },
     {
       key: "events",
@@ -173,6 +167,11 @@ export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
 
 // ═══════════════════════════════════════════════════════════════
 //  Helpers
+//  ─────────────────────────────────────────────────────────────
+//  formatDay queda local · es específico del display "DOW DD mes"
+//  que solo usa esta pantalla. Si más tarde otra pantalla
+//  necesita el mismo formato, lo subo a @/lib/format como
+//  formatTimestamp(iso, "dow-day-month").
 // ═══════════════════════════════════════════════════════════════
 
 function countEvents(day: Day): {
@@ -201,20 +200,4 @@ function formatDay(ymd: string): string {
   if (!y || !m || !d) return ymd;
   const date = new Date(Date.UTC(y, m - 1, d));
   return `${DOW[date.getUTCDay()]} ${String(d).padStart(2, "0")} ${MES[m - 1]}`;
-}
-
-function formatDuration(ms: number): string {
-  if (ms <= 0) return "0m";
-  const totalMin = Math.round(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${String(m).padStart(2, "0")}m`;
-}
-
-function formatKm(km: number): string {
-  return km.toLocaleString("es-AR", {
-    maximumFractionDigits: km >= 100 ? 0 : 1,
-  });
 }

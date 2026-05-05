@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
-   InfractionsClient · estilos no-tabla
+   InfractionsClient · estilos no-tabla · S5-T2
    ─────────────────────────────────────────────────────────────
-   La tabla la maneja DataTable v2 · acá solo:
+   Toda la tabla → DataTable v2
+   Todos los renderers de celda → cells canónicos
+   Acá solo:
      · Wrap general
      · Toolbar de período + tabs lista/heatmap
      · Filter row de severity chips
-     · Severity badge (custom · borde + color por nivel)
-     · Asset/driver links (drill-down sin abrir el panel)
    ═══════════════════════════════════════════════════════════════ */
 
 .wrap {
@@ -15,8 +15,6 @@
   gap: 14px;
   padding: 16px 20px 24px;
 }
-
-/* ── Toolbar período + tabs ──────────────────────────────── */
 
 .toolbar {
   display: flex;
@@ -64,64 +62,7 @@
   color: #fff;
 }
 
-/* ── Filter row de severities ────────────────────────────── */
-
 .filterRow {
   display: flex;
   align-items: center;
-}
-
-/* ── Severity badge custom ──────────────────────────────── */
-
-.sevBadge {
-  display: inline-block;
-  padding: 1px 8px;
-  border: 1px solid;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  background: #fff;
-  white-space: nowrap;
-}
-
-/* ── Asset y Driver links · drill-down ──────────────────── */
-
-.assetLink {
-  display: inline-flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: var(--tx);
-  line-height: 1.25;
-}
-
-.assetLink:hover .assetName {
-  color: var(--blu);
-  text-decoration: underline;
-}
-
-.assetName {
-  font-weight: 500;
-  font-size: 12.5px;
-}
-
-.assetPlate {
-  font-family: var(--m);
-  font-size: 11px;
-  color: #6b7280;
-  font-weight: 400;
-}
-
-.driverLink {
-  text-decoration: none;
-  color: var(--tx);
-}
-
-.driverLink:hover {
-  color: var(--blu);
-  text-decoration: underline;
-}
-
-.muted {
-  color: #9ca3af;
 }

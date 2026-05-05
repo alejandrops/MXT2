@@ -1,70 +1,100 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S5-T1 · DataTable v2 unificado · 5 pantallas migradas
+#  S5-T2 · Sistema canónico de listas y paneles
 #  ─────────────────────────────────────────────────────────────
-#  Lote grande · unifica las tablas de toda la app al patrón
-#  validado con el usuario (estilo "Posiciones del libro").
+#  Bloque grande · unifica los renderers de celdas y los side
+#  panels de toda la app, no solo el frame de tabla (eso ya lo
+#  hizo S5-T1). Este lote responde al feedback "las listas son
+#  visualmente distintas aunque sean DataTable v2".
 #
-#  CAMBIOS:
+#  ─────────────────────────────────────────────────────────────
+#  CAPAS NUEVAS
+#  ─────────────────────────────────────────────────────────────
 #
-#  1. DataTable v2 (reemplazo del v1, retrocompat)
-#     · src/components/maxtracker/ui/DataTable.tsx  (~430 líneas)
-#     · src/components/maxtracker/ui/DataTable.module.css
+#  1. Formatters (extiende src/lib/format.ts)
+#     · formatTimestamp(iso, variant)
+#       variants: short | with-seconds | long | long-seconds |
+#                 date-only | time-only | time-only-seconds
+#       Default "short" → dd/mm/yy hh:mm · canónico para tablas
+#     · formatDistance(meters) → "7.45 km" / "850 m"
+#     · formatSpeed(kmh)       → "71 km/h"
+#     · formatCoords(lat,lng)  → "-34.79242, -58.21453"
+#     · formatDurationFromSec(sec) → "6m 17s" / "2h 35m"
+#     · mapSeverityToSemantic(level) → info | warning | danger | critical
+#       Mapea LOW/MEDIUM/HIGH/CRITICAL Y LEVE/MEDIA/GRAVE a la
+#       misma semántica visual.
 #
-#     Patrón visual unificado:
-#       · Headers uppercase pequeños en gris · poco peso visual
-#       · Tipografía monoespaciada (--m IBM Plex Mono) en datos
-#         numéricos · alineación perfecta por dígito
-#       · Numeración de fila opcional (showRowNumber)
-#       · Zebra striping muy sutil
-#       · Hover state con tinte azul (--blu-bg)
-#       · Sin bordes verticales · solo separadores horizontales
-#       · Header del bloque con título + count + botón export
-#       · Sticky header al scroll
-#       · Empty state con texto gris centrado
-#       · Click-row → side panel (callback opcional)
-#       · Sortable headers (column.sortable)
-#       · Paginación footer estándar
-#       · Severity badges con color (mantenidos)
+#  2. Cell renderers · src/components/maxtracker/cells/
+#     · TimestampCell     · timestamp con formato canónico
+#     · VehicleCell       · nombre bold + patente gris mono debajo
+#     · DriverCell        · nombre con link · "—" si no hay
+#     · SeverityBadge     · pill color funcional (acepta cualquier enum)
+#     · EventTypeCell     · dot color + label
+#     · LocationCell      · address o coords mono
+#     · SpeedCell         · "71 km/h" mono
+#     · DistanceCell      · "7.45 km" mono
+#     · DurationCell      · acepta sec o ms · "6m 17s" / "2h 35m"
 #
-#     API retrocompat con v1 · ScorecardClient (único user de v1)
-#     sigue funcionando sin cambios.
+#  3. Panel canónico · src/components/maxtracker/EntityDetailPanel/
+#     · EntityDetailPanel    · shell con header (kicker · título ·
+#                              subtítulo · accentColor) + close ESC
+#     · PanelDataSection     · grid clave/valor · uppercase labels
+#     · PanelMapSection      · Leaflet 3 modos · pin / segmento /
+#                              polilínea · sin controles
+#     · PanelCustomSection   · contenedor genérico
+#     · PanelActionsSection  · botones contextuales
 #
-#  2. CSV export nativo (sin libs)
-#     · src/lib/export/csv.ts
-#     RFC 4180 compliant · BOM para Excel · downloadCsv() helper.
-#     Cada tabla declara `exportColumns` con header + extractor.
+#  ─────────────────────────────────────────────────────────────
+#  PANTALLAS MIGRADAS (3 · todas usan los nuevos cells + panel)
+#  ─────────────────────────────────────────────────────────────
 #
-#  3. Pantallas migradas:
-#     · /conduccion/infracciones · InfractionsClient
-#     · /actividad/eventos · EventsClient
-#     · /actividad/viajes · DaysList
-#     · /catalogos/grupos · usa GroupsTable wrapper
-#     · /gestion/grupos · usa GroupsTable wrapper
+#  · /actividad/eventos · CANÓNICA DE REFERENCIA
+#    EventsClient.tsx · usa todos los cells canónicos
+#    EventDetailPanel.tsx · reescrito sobre EntityDetailPanel
+#                            con secciones modulares
 #
-#  4. GroupsTable wrapper
-#     · src/components/maxtracker/groups/GroupsTable.tsx
-#     Client component reusable para las dos páginas de grupos
-#     (catalogos y gestion) que son server. Recibe rows +
-#     linkBuilder y delega click-row a router.push.
+#  · /conduccion/infracciones
+#    InfractionsClient.tsx · reemplaza renderers ad-hoc por cells
+#    InfractionDetailPanel.tsx · 469 → 290 líneas, mismo
+#                                comportamiento (mapa con polilínea,
+#                                curva velocidad, descartar)
 #
-#  NO MIGRADO EN ESTE LOTE:
+#  · /actividad/viajes (DaysList)
+#    DaysList.tsx · reemplaza renderers ad-hoc por cells.
+#    Su panel timeline (TripDetailPanel) NO se toca · es un
+#    patrón distinto (timeline cronológica del día, no "evento
+#    puntual").
 #
-#    /configuracion/empresa · EmpresaUsuariosTab
-#       Cada UserRow tiene estado interno (edición inline de
-#       perfil, modales por fila) que requiere descomponer el
-#       componente. Es un refactor distinto · sub-lote S5-T1b.
+#  ─────────────────────────────────────────────────────────────
+#  QUÉ NO ENTRA (lo digo de frente para no inflar expectativas)
+#  ─────────────────────────────────────────────────────────────
 #
-#    /conduccion/scorecard · ScorecardClient
-#       Ya usa DataTable (v1) · sigue funcionando con la API
-#       retrocompat. Si querés migrarlo a la nueva API explícita
-#       (con title, count, export) avísame.
+#  · Alarmas · usa AlarmCard (cards apilados) no tabla. Es otro
+#    patrón. Si más adelante decidís pasarlo a tabla, se incluye.
 #
-#  PENDIENTE PARA SUB-LOTES:
-#    · S5-T1b · Empresa Usuarios
-#    · S5-E1  · Boletín de conductor (mensual/anual)
-#    · S5-E2  · Boletín de grupo (ranking, scatter)
-#    · S5-E3  · Boletín de empresa (cross-grupo, evolución 12m)
+#  · /conduccion/scorecard · sigue funcionando pero con el v1
+#    style del DataTable. Migrarlo es trivial pero no cambia su
+#    función.
+#
+#  · /catalogos/grupos y /gestion/grupos · ya están en DataTable
+#    v2 desde S5-T1. Sus celdas son simples (texto · texto ·
+#    texto · número) · podrían usar cells canónicos pero no
+#    aporta mucho. Lo dejo como está.
+#
+#  · TripDetailPanel, DriverAssetsPanel, AssetDetailPanel y los
+#    otros 5 paneles del repo NO se migran. Cada uno tiene
+#    propósitos distintos al patrón "evento puntual" (timelines,
+#    listados, telemetría live, etc.). El EntityDetailPanel es
+#    para eventos discretos · no para todo lo que es lateral.
+#
+#  ─────────────────────────────────────────────────────────────
+#  AUDITORÍAS (lecciones de los lotes anteriores)
+#  ─────────────────────────────────────────────────────────────
+#
+#  ✓ Ningún .module.css tiene :root (CSS Modules no lo permite)
+#  ✓ Ningún server component pasa funciones a client components
+#  ✓ Sin literales viejos de VehicleType (CAR/MOTORCYCLE/...)
+#  ✓ npx tsc --noEmit · 0 errores
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -72,7 +102,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S5-T1 · DataTable v2 · 5 pantallas migradas ═══"
+echo "═══ S5-T2 · Sistema canónico de listas y paneles ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -100,16 +130,12 @@ echo ""
 echo "  npx tsc --noEmit"
 echo "  npm run dev"
 echo ""
-echo "Probá las 5 pantallas migradas:"
-echo "  · /conduccion/infracciones"
-echo "  · /actividad/eventos"
-echo "  · /actividad/viajes"
-echo "  · /catalogos/grupos"
-echo "  · /gestion/grupos"
+echo "Probá las 3 pantallas:"
+echo "  · /actividad/eventos       ← CANÓNICA · referencia"
+echo "  · /conduccion/infracciones ← debería verse igual"
+echo "  · /actividad/viajes        ← debería verse igual"
 echo ""
-echo "En cualquiera deberías ver:"
-echo "  · Header de tabla 'NOMBRE  count' arriba con botón Exportar CSV"
-echo "  · Headers uppercase chicos en gris"
-echo "  · Datos numéricos en monoespaciada alineada a la derecha"
-echo "  · Hover azul claro · click abre side panel (donde aplica)"
-echo "  · Zebra muy sutil · sin bordes verticales"
+echo "Click en cualquier fila → side panel canónico (mismo header,"
+echo "mismas secciones de datos, mismo comportamiento de cierre)."
+echo ""
+echo "PRÓXIMO BLOQUE · S5-E1 · Boletín de conductor (mensual)"

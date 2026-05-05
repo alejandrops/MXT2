@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Map as MapIcon, List } from "lucide-react";
 import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
 import type { EventType, Severity } from "@/types/domain";
@@ -13,7 +12,17 @@ import { EventTypeFilter } from "@/components/maxtracker/events/EventTypeFilter"
 import { SeverityFilter } from "@/components/maxtracker/events/SeverityFilter";
 import { EventHeatmap, type HeatPoint } from "@/components/maxtracker/events/EventHeatmap";
 import { EventDetailPanel } from "@/components/maxtracker/events/EventDetailPanel";
-import { getEventColor, getEventLabel } from "@/lib/event-catalog";
+import {
+  TimestampCell,
+  VehicleCell,
+  DriverCell,
+  SeverityBadge,
+  EventTypeCell,
+  LocationCell,
+  SpeedCell,
+} from "@/components/maxtracker/cells";
+import { getEventColor } from "@/lib/event-catalog";
+import { SEVERITY_LABEL, EVENT_TYPE_LABEL } from "@/lib/format";
 import type {
   AnalysisGranularity,
   ScopeFilters as ScopeFiltersType,
@@ -22,13 +31,6 @@ import type { EventListRow } from "@/lib/queries/events-list";
 import styles from "./EventsClient.module.css";
 
 const BASE_PATH = "/actividad/eventos";
-
-const SEVERITY_LABELS: Record<Severity, string> = {
-  LOW: "Baja",
-  MEDIUM: "Media",
-  HIGH: "Alta",
-  CRITICAL: "Crítica",
-};
 
 interface Props {
   granularity: AnalysisGranularity;
@@ -180,95 +182,58 @@ export function EventsClient(props: Props) {
               label: "Hora",
               mono: true,
               sortable: false,
-              render: (r) =>
-                new Date(r.occurredAt).toLocaleString("es-AR", {
-                  timeZone: "America/Argentina/Buenos_Aires",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
+              render: (r) => <TimestampCell iso={r.occurredAt} />,
             },
             {
               key: "type",
               label: "Tipo",
               sortable: false,
               render: (r) => (
-                <span className={styles.typeCell}>
-                  <span
-                    className={styles.typeDot}
-                    style={{ background: getEventColor(r.type) }}
-                  />
-                  {getEventLabel(r.type)}
-                </span>
+                <EventTypeCell type={r.type} color={getEventColor(r.type)} />
               ),
             },
             {
               key: "severity",
               label: "Severidad",
               sortable: false,
-              render: (r) => {
-                const colorMap: Record<Severity, string> = {
-                  LOW: "#64748b",
-                  MEDIUM: "#f59e0b",
-                  HIGH: "#ea580c",
-                  CRITICAL: "#dc2626",
-                };
-                return (
-                  <span
-                    className={styles.sevBadge}
-                    style={{
-                      color: colorMap[r.severity],
-                      borderColor: colorMap[r.severity],
-                    }}
-                  >
-                    {SEVERITY_LABELS[r.severity]}
-                  </span>
-                );
-              },
+              render: (r) => <SeverityBadge level={r.severity} />,
             },
             {
               key: "vehicle",
               label: "Vehículo",
               sortable: false,
               render: (r) => (
-                <Link
-                  href={`/objeto/vehiculo/${r.assetId}`}
-                  className={styles.assetLink}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className={styles.assetName}>{r.assetName}</span>
-                  {r.assetPlate && (
-                    <span className={styles.assetPlate}>{r.assetPlate}</span>
-                  )}
-                </Link>
+                <VehicleCell
+                  asset={{
+                    id: r.assetId,
+                    name: r.assetName,
+                    plate: r.assetPlate,
+                  }}
+                />
               ),
             },
             {
               key: "person",
               label: "Conductor",
               sortable: false,
-              render: (r) =>
-                r.personName ? (
-                  <span>{r.personName}</span>
-                ) : (
-                  <span className={styles.muted}>—</span>
-                ),
+              render: (r) => (
+                <DriverCell
+                  person={
+                    r.personId && r.personName
+                      ? { id: r.personId, name: r.personName }
+                      : null
+                  }
+                />
+              ),
             },
             {
               key: "location",
               label: "Ubicación",
               sortable: false,
               mono: true,
-              render: (r) =>
-                r.lat && r.lng ? (
-                  <span>
-                    {r.lat.toFixed(3)}, {r.lng.toFixed(3)}
-                  </span>
-                ) : (
-                  <span className={styles.muted}>—</span>
-                ),
+              render: (r) => (
+                <LocationCell lat={r.lat} lng={r.lng} decimals={3} />
+              ),
             },
             {
               key: "speedKmh",
@@ -276,10 +241,7 @@ export function EventsClient(props: Props) {
               align: "right",
               mono: true,
               sortable: false,
-              render: (r) =>
-                r.speedKmh !== null && r.speedKmh !== undefined
-                  ? `${Math.round(r.speedKmh)} km/h`
-                  : "—",
+              render: (r) => <SpeedCell kmh={r.speedKmh} />,
             },
           ]}
           rows={props.rows}
@@ -303,8 +265,8 @@ export function EventsClient(props: Props) {
                   timeZone: "America/Argentina/Buenos_Aires",
                 }),
             },
-            { header: "Tipo", value: (r) => getEventLabel(r.type) },
-            { header: "Severidad", value: (r) => SEVERITY_LABELS[r.severity] },
+            { header: "Tipo", value: (r) => EVENT_TYPE_LABEL[r.type] ?? r.type },
+            { header: "Severidad", value: (r) => SEVERITY_LABEL[r.severity] },
             { header: "Vehiculo", value: (r) => r.assetName },
             { header: "Patente", value: (r) => r.assetPlate ?? "" },
             { header: "Conductor", value: (r) => r.personName ?? "" },
@@ -324,7 +286,7 @@ export function EventsClient(props: Props) {
         <EventHeatmap points={props.heatPoints} height={650} />
       )}
 
-      {/* Panel lateral · al hacer click en una fila */}
+      {/* Panel lateral · canónico EntityDetailPanel */}
       <EventDetailPanel
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}

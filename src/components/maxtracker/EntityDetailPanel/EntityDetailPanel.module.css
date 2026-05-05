@@ -1,0 +1,184 @@
+/* ═══════════════════════════════════════════════════════════════
+   EntityDetailPanel · CSS canónico
+   ─────────────────────────────────────────────────────────────
+   Side panel unificado para todos los módulos con "evento
+   puntual" (Eventos · Alarmas · Infracciones · etc.).
+   ═══════════════════════════════════════════════════════════════ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 90;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 90vw;
+  background: #fff;
+  z-index: 100;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+  border-top: 1px solid var(--brd);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--brd);
+  flex-shrink: 0;
+  border-top: 0 solid transparent;
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  color: var(--blu-t);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.title {
+  font-family: var(--f);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--tx);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.005em;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.closeBtn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: var(--tx);
+}
+
+/* ── Body · scrollable ──────────────────────────────────── */
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Sections ───────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* ── PanelDataSection ──────────────────────────────────── */
+
+.dataGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #f1f1f1;
+  border: 1px solid #f1f1f1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 9px 12px;
+  background: #fff;
+  font-size: 12.5px;
+}
+
+.dataLabel {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  padding-top: 1px;
+}
+
+.dataValue {
+  color: var(--tx);
+  font-weight: 400;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ── PanelMapSection ───────────────────────────────────── */
+
+.mapWrap {
+  width: 100%;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* ── PanelActionsSection ───────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: 8px;
+}

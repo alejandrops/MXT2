@@ -258,3 +258,195 @@ export function safeRound(n: number | null | undefined): number {
   if (n == null || !Number.isFinite(n)) return 0;
   return Math.round(n);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  S5-T2 · Formatters canónicos para tablas y paneles
+//  ─────────────────────────────────────────────────────────────
+//  Funciones puras adicionadas para unificar el display de datos
+//  en todas las listas (Eventos · Alarmas · Infracciones · etc.).
+//  Reglas Tufte:
+//    · Timestamp default → corto, mono, denso (dd/mm/yy hh:mm)
+//    · Solo se muestra el contexto necesario (no segundos en
+//      celdas de tabla salvo cuando aporta información)
+//    · Coords y números siempre en monoespaciada
+// ═══════════════════════════════════════════════════════════════
+
+const ART_TZ = "America/Argentina/Buenos_Aires";
+
+const DOW_SHORT = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+const MES_SHORT = [
+  "ene", "feb", "mar", "abr", "may", "jun",
+  "jul", "ago", "sep", "oct", "nov", "dic",
+];
+
+export type TimestampVariant =
+  | "short"          // 05/05/26 14:32  · default tabla
+  | "with-seconds"   // 05/05/26 14:32:18 · útil cuando los seg importan
+  | "long"           // 5 may 2026, 14:32 ART · panel detalle
+  | "long-seconds"   // 5 may 2026, 14:32:18 ART
+  | "date-only"      // LUN 05 may
+  | "time-only"      // 14:32
+  | "time-only-seconds"; // 14:32:18
+
+/**
+ * Formatea un timestamp ISO en zona ART de forma consistente.
+ * Variante default ("short") es la canónica para celdas de tabla:
+ * dd/mm/yy hh:mm en monoespaciada.
+ */
+export function formatTimestamp(
+  iso: string | Date | null | undefined,
+  variant: TimestampVariant = "short",
+): string {
+  if (iso == null) return "—";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return "—";
+
+  switch (variant) {
+    case "short":
+      return d.toLocaleString("es-AR", {
+        timeZone: ART_TZ,
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    case "with-seconds":
+      return d.toLocaleString("es-AR", {
+        timeZone: ART_TZ,
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    case "long":
+      return d.toLocaleString("es-AR", {
+        timeZone: ART_TZ,
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " ART";
+    case "long-seconds":
+      return d.toLocaleString("es-AR", {
+        timeZone: ART_TZ,
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }) + " ART";
+    case "date-only": {
+      // ART local · usamos ajuste manual a UTC-3
+      const local = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+      const dow = DOW_SHORT[local.getUTCDay()] ?? "";
+      const day = String(local.getUTCDate()).padStart(2, "0");
+      const month = MES_SHORT[local.getUTCMonth()] ?? "";
+      return `${dow} ${day} ${month}`;
+    }
+    case "time-only":
+      return d.toLocaleTimeString("es-AR", {
+        timeZone: ART_TZ,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    case "time-only-seconds":
+      return d.toLocaleTimeString("es-AR", {
+        timeZone: ART_TZ,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+  }
+}
+
+/**
+ * Formatea metros como string completo · "7.45 km" / "850 m".
+ * Distinto de formatKm() que devuelve {value, unit} para KPI strips.
+ */
+export function formatDistance(meters: number | null | undefined): string {
+  if (meters == null || !Number.isFinite(meters) || meters < 0) return "—";
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  const km = meters / 1000;
+  return `${km.toLocaleString("es-AR", {
+    minimumFractionDigits: km < 100 ? 2 : 1,
+    maximumFractionDigits: km < 100 ? 2 : 1,
+  })} km`;
+}
+
+/**
+ * Formatea km/h como string · "71 km/h". Redondea a entero.
+ */
+export function formatSpeed(kmh: number | null | undefined): string {
+  if (kmh == null || !Number.isFinite(kmh)) return "—";
+  return `${Math.round(kmh)} km/h`;
+}
+
+/**
+ * Formatea coords como par mono · "-34.79242, -58.21453".
+ * Default 5 decimales (precisión metro).
+ */
+export function formatCoords(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  decimals = 5,
+): string {
+  if (
+    lat == null ||
+    lng == null ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return "—";
+  }
+  return `${lat.toFixed(decimals)}, ${lng.toFixed(decimals)}`;
+}
+
+/**
+ * Formatea segundos como string corto · "6m 17s" / "45s" / "2h 35m 12s".
+ * Distinto de formatDuration(ms) que es para milisegundos.
+ */
+export function formatDurationFromSec(
+  sec: number | null | undefined,
+): string {
+  if (sec == null || !Number.isFinite(sec) || sec < 0) return "—";
+  const totalMin = Math.floor(sec / 60);
+  const remSec = Math.floor(sec % 60);
+  if (totalMin === 0) return `${remSec}s`;
+  if (totalMin < 60) {
+    return remSec === 0 ? `${totalMin}m` : `${totalMin}m ${remSec}s`;
+  }
+  const h = Math.floor(totalMin / 60);
+  const remMin = totalMin % 60;
+  if (remMin === 0 && remSec === 0) return `${h}h`;
+  if (remSec === 0) return `${h}h ${remMin}m`;
+  return `${h}h ${remMin}m ${remSec}s`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Severity semántica · mapping desde enums del dominio a clases
+//  visuales. Mantiene una sola fuente de verdad para los colores
+//  de severidad en toda la app.
+// ═══════════════════════════════════════════════════════════════
+
+export type SemanticSeverity = "info" | "warning" | "danger" | "critical";
+
+/**
+ * Mapea cualquier valor de severidad (LOW/MEDIUM/HIGH/CRITICAL,
+ * LEVE/MEDIA/GRAVE, "Bajo"/"Medio"/etc.) a una clase semántica
+ * que después se usa para asignar color en SeverityBadge.
+ */
+export function mapSeverityToSemantic(level: string): SemanticSeverity {
+  const v = level.toUpperCase();
+  if (v === "LOW" || v === "BAJO" || v === "BAJA") return "info";
+  if (v === "MEDIUM" || v === "MEDIO" || v === "MEDIA" || v === "LEVE")
+    return "warning";
+  if (v === "HIGH" || v === "ALTO" || v === "ALTA") return "danger";
+  if (v === "GRAVE") return "danger";
+  if (v === "CRITICAL" || v === "CRITICA" || v === "CRÍTICA") return "critical";
+  return "info";
+}

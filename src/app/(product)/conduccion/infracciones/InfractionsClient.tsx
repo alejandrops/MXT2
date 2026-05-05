@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Map as MapIcon, List } from "lucide-react";
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
@@ -11,6 +10,15 @@ import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable"
 import { InfractionSeverityFilterChips } from "@/components/maxtracker/infractions/InfractionSeverityFilter";
 import { InfractionHeatmap } from "@/components/maxtracker/infractions/InfractionHeatmap";
 import { InfractionDetailPanel } from "@/components/maxtracker/infractions/InfractionDetailPanel";
+import {
+  TimestampCell,
+  VehicleCell,
+  DriverCell,
+  SeverityBadge,
+  SpeedCell,
+  DurationCell,
+} from "@/components/maxtracker/cells";
+import { formatTimestamp } from "@/lib/format";
 import type {
   AnalysisGranularity,
   ScopeFilters as ScopeFiltersType,
@@ -37,12 +45,6 @@ import styles from "./InfractionsClient.module.css";
 // ═══════════════════════════════════════════════════════════════
 
 const BASE_PATH = "/conduccion/infracciones";
-
-const SEVERITY_LABELS: Record<InfractionSeverityFilter, string> = {
-  LEVE: "Leve",
-  MEDIA: "Media",
-  GRAVE: "Grave",
-};
 
 const SEVERITY_COLORS: Record<InfractionSeverityFilter, string> = {
   LEVE: "#f59e0b",
@@ -121,72 +123,48 @@ export function InfractionsClient(props: Props) {
     startTransition(() => router.push(href));
   }
 
-  // ── Definición de columnas para DataTable v2 ──────────────
+  // ── Definición de columnas con cells canónicos S5-T2 ──────
   const columns: ColumnDef<InfractionListRow>[] = [
     {
       key: "startedAt",
       label: "Inicio",
       mono: true,
-      sortable: false, // server-sorted
-      render: (r) =>
-        new Date(r.startedAt).toLocaleString("es-AR", {
-          timeZone: "America/Argentina/Buenos_Aires",
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+      sortable: false,
+      render: (r) => <TimestampCell iso={r.startedAt} />,
     },
     {
       key: "severity",
       label: "Severidad",
       sortable: false,
-      render: (r) => (
-        <span
-          className={styles.sevBadge}
-          style={{
-            color: SEVERITY_COLORS[r.severity],
-            borderColor: SEVERITY_COLORS[r.severity],
-          }}
-        >
-          {SEVERITY_LABELS[r.severity]}
-        </span>
-      ),
+      render: (r) => <SeverityBadge level={r.severity} />,
     },
     {
       key: "vehicle",
       label: "Vehículo",
       sortable: false,
       render: (r) => (
-        <Link
-          href={`/objeto/vehiculo/${r.assetId}`}
-          className={styles.assetLink}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className={styles.assetName}>{r.assetName}</span>
-          {r.assetPlate && (
-            <span className={styles.assetPlate}>{r.assetPlate}</span>
-          )}
-        </Link>
+        <VehicleCell
+          asset={{
+            id: r.assetId,
+            name: r.assetName,
+            plate: r.assetPlate,
+          }}
+        />
       ),
     },
     {
       key: "person",
       label: "Conductor",
       sortable: false,
-      render: (r) =>
-        r.personId && r.personName ? (
-          <Link
-            href={`/objeto/conductor/${r.personId}`}
-            className={styles.driverLink}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {r.personName}
-          </Link>
-        ) : (
-          <span className={styles.muted}>—</span>
-        ),
+      render: (r) => (
+        <DriverCell
+          person={
+            r.personId && r.personName
+              ? { id: r.personId, name: r.personName }
+              : null
+          }
+        />
+      ),
     },
     {
       key: "peakVmax",
@@ -196,8 +174,10 @@ export function InfractionsClient(props: Props) {
       sortable: false,
       render: (r) => (
         <>
-          <strong>{Math.round(r.peakSpeedKmh)}</strong>
-          <span className={styles.muted}> / {r.vmaxKmh}</span>
+          <SpeedCell kmh={r.peakSpeedKmh} color={SEVERITY_COLORS[r.severity]} />
+          <span style={{ color: "#9ca3af", marginLeft: 4 }}>
+            / {r.vmaxKmh}
+          </span>
         </>
       ),
     },
@@ -208,7 +188,12 @@ export function InfractionsClient(props: Props) {
       mono: true,
       sortable: false,
       render: (r) => (
-        <span style={{ color: SEVERITY_COLORS[r.severity] }}>
+        <span
+          style={{
+            color: SEVERITY_COLORS[r.severity],
+            fontFamily: "var(--m)",
+          }}
+        >
           +{Math.round(r.maxExcessKmh)}
         </span>
       ),
@@ -219,7 +204,7 @@ export function InfractionsClient(props: Props) {
       align: "right",
       mono: true,
       sortable: false,
-      render: (r) => formatDurationShort(r.durationSec),
+      render: (r) => <DurationCell sec={r.durationSec} />,
     },
   ];
 
@@ -300,12 +285,13 @@ export function InfractionsClient(props: Props) {
           exportColumns={[
             {
               header: "Inicio",
-              value: (r) =>
-                new Date(r.startedAt).toLocaleString("es-AR", {
-                  timeZone: "America/Argentina/Buenos_Aires",
-                }),
+              value: (r) => formatTimestamp(r.startedAt, "with-seconds"),
             },
-            { header: "Severidad", value: (r) => SEVERITY_LABELS[r.severity] },
+            {
+              header: "Severidad",
+              value: (r) =>
+                INFRACTION_SEVERITY_LABEL[r.severity] ?? r.severity,
+            },
             { header: "Vehiculo", value: (r) => r.assetName },
             { header: "Patente", value: (r) => r.assetPlate ?? "" },
             { header: "Conductor", value: (r) => r.personName ?? "" },
@@ -333,10 +319,9 @@ export function InfractionsClient(props: Props) {
   );
 }
 
-function formatDurationShort(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m === 0) return `${s}s`;
-  if (s === 0) return `${m}m`;
-  return `${m}m ${s}s`;
-}
+// Labels para CSV export · capitaliza los enums del módulo de infracciones
+const INFRACTION_SEVERITY_LABEL: Record<InfractionSeverityFilter, string> = {
+  LEVE: "Leve",
+  MEDIA: "Media",
+  GRAVE: "Grave",
+};
