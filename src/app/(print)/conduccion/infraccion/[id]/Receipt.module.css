@@ -1,269 +1,427 @@
 /* ═══════════════════════════════════════════════════════════════
-   InfractionReceipt · CSS A4 imprimible
-   Patrón replicado de actividad/imprimible/PrintReport.module.css
+   Receipt v2 · Lenguaje editorial Maxtracker · S4-L3d-redesign
+   ─────────────────────────────────────────────────────────────
+   Estilo "saas-enterprise editorial" · referencias Stripe
+   annual letter, McKinsey insights, Linear changelog. Sin azul
+   Maxtracker brillante · acento navy sobrio (--navy) en kicker
+   y dividers. Color funcional solo donde duele (severidad).
+
+   Tipografía:
+     · IBM Plex Sans (--font-sans)  · datos, tablas, KPIs
+     · IBM Plex Serif (--font-serif) · título y lead narrativo
+     · IBM Plex Mono (--font-mono)  · folio, identificador, tiempos
    ═══════════════════════════════════════════════════════════════ */
 
+:root {
+  --navy: #1e3a8a;
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --ink-muted: #64748b;
+  --ink-faint: #94a3b8;
+  --rule: #e5e7eb;
+  --rule-soft: #f1f5f9;
+  --canvas: #f3f4f6;
+  --paper: #ffffff;
+  --tint: #f8fafc;
+}
+
+/* ── Lienzo ────────────────────────────────────────────────── */
+
 .report {
-  background: #f3f4f6;
+  background: var(--canvas);
   min-height: 100vh;
-  padding: 24px 0;
-  font-family: var(--f);
-  color: #111827;
+  padding: 32px 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
 }
 
 .floatActions {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: 20px;
+  right: 24px;
   z-index: 100;
 }
 
 .printBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: #1e40af;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--navy);
   color: #fff;
   border: 0;
   border-radius: 4px;
-  font-family: var(--f);
+  font-family: var(--font-sans);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 .printBtn:hover {
-  background: #1e3a8a;
+  background: #1e3a72;
 }
 
+/* ── Página A4 ─────────────────────────────────────────────── */
+
 .page {
-  background: #fff;
+  background: var(--paper);
   width: 210mm;
   min-height: 297mm;
-  padding: 14mm 16mm;
+  padding: 22mm 22mm 18mm 22mm;
   margin: 0 auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
-  gap: 6mm;
+  gap: 9mm;
   position: relative;
 }
 
-/* ── Header ────────────────────────────────────────────────── */
+/* ── Cabecera editorial ────────────────────────────────────── */
 
 .docHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding-bottom: 12px;
-  border-bottom: 2px solid #111827;
+  border-bottom: 1px solid var(--ink);
 }
 
-.brand {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-.brandWord {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.02em;
-}
-.brandSubtitle {
-  font-size: 9px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-top: 2px;
-}
-
-.docTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  text-align: right;
-}
-
-.docId {
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 11px;
+.kicker {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
   font-weight: 500;
-  color: #9ca3af;
-  text-transform: none;
-  letter-spacing: 0;
-  margin-top: 2px;
-}
-
-/* ── Banner descartada ─────────────────────────────────────── */
-
-.discardedBanner {
-  padding: 8px 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-left: 3px solid #dc2626;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #991b1b;
-}
-
-/* ── Datos · 2 columnas ────────────────────────────────────── */
-
-.dataSection {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.dataCol {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.dataRow {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  align-items: baseline;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.dataLabel {
-  font-size: 10px;
-  font-weight: 500;
-  color: #6b7280;
+  color: var(--ink);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.2em;
 }
 
-.dataValue {
-  font-size: 12px;
-  font-weight: 500;
-  color: #111827;
-}
-
-.dataValueBig {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.dataValueMono {
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.dataValueSeverity {
-  font-size: 14px;
-  font-weight: 800;
+.folio {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--ink-muted);
   letter-spacing: 0.04em;
 }
 
-.muted {
-  color: #94a3b8;
-}
+/* ── Título + subtítulo ────────────────────────────────────── */
 
-/* ── Inicio / Fin con dirección ────────────────────────────── */
-
-.locationSection {
+.titleBlock {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  gap: 6px;
+  margin-top: 2mm;
 }
 
-.locationRow {
+.title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  letter-spacing: 0.01em;
+}
+
+/* ── Banner descartada (precede al lead) ───────────────────── */
+
+.discardedBanner {
+  background: var(--rule-soft);
+  border-left: 3px solid var(--ink-soft);
+  border-radius: 0 4px 4px 0;
+  padding: 12px 16px;
+}
+
+.discardedTitle {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.discardedBody {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* ── Lead narrativo · la "noticia" ─────────────────────────── */
+
+.lead {
+  background: var(--tint);
+  border-left: 3px solid var(--ink-soft);
+  border-radius: 0 4px 4px 0;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leadProse {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+}
+
+.leadMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.leadMetaLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+}
+
+.severityChip {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 9px;
+  border: 1px solid;
+  border-radius: 2px;
+  background: transparent;
+}
+
+/* ── Sección numerada ──────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 0 0 4px 0;
+}
+
+.sectionNum {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+
+.sectionTitle {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── Sección 01 · Mapa + ubicaciones ───────────────────────── */
+
+.mapWrap {
+  width: 100%;
+  height: 78mm;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.locationGrid {
   display: grid;
-  grid-template-columns: 14px 1fr;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.locationDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 4px;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px #cbd5e1;
-}
-
-.locationData {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  grid-template-columns: 60px 1fr;
+  gap: 6px 16px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  align-items: baseline;
 }
 
 .locationLabel {
   font-size: 10px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  padding-top: 1px;
 }
 
 .locationValue {
-  font-size: 11.5px;
-  color: #111827;
-  line-height: 1.4;
+  color: var(--ink);
+}
+
+.locationTime {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+  margin-right: 12px;
+  font-size: 10.5px;
 }
 
 .coords {
-  font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 11px;
-  color: #475569;
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+  font-size: 10.5px;
 }
 
-/* ── Mapa ──────────────────────────────────────────────────── */
+/* ── Sección 02 · KPI strip + curva ────────────────────────── */
 
-.mapSection {
-  width: 100%;
-  height: 90mm;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border-radius: 3px;
   overflow: hidden;
 }
 
-/* ── Curva velocidad/tiempo ────────────────────────────────── */
-
-.curveSection {
-  width: 100%;
-}
-
-/* ── Footer ────────────────────────────────────────────────── */
-
-.docFooter {
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+.kpiCell {
+  background: var(--paper);
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  text-align: center;
+}
+
+.kpiLabel {
+  font-family: var(--font-sans);
   font-size: 9.5px;
-  color: #6b7280;
-}
-
-.footerGenerated {
-  color: #4b5563;
-}
-
-.footerContact {
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+
+.kpiValue {
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1;
+  margin-top: 2px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpiUnit {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.curveWrap {
+  margin-top: 4px;
+  /* SpeedCurve viene con su propio wrap · el componente está
+     pensado para fondo gris claro · le doy fondo paper acá */
+  background: var(--tint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+
+/* ── Sección 03 · Detalles ─────────────────────────────────── */
+
+.detailsTable {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.detailsTable tr {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.detailsTable tr:last-child {
+  border-bottom: 0;
+}
+
+.detailLabel {
+  width: 130px;
+  padding: 8px 0;
+  font-size: 9.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  vertical-align: middle;
+}
+
+.detailValue {
+  padding: 8px 0;
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.detailMono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-left: 12px;
+}
+
+.muted {
+  color: var(--ink-faint);
+  font-style: italic;
+  font-family: var(--font-sans);
+}
+
+/* ── Pie editorial ─────────────────────────────────────────── */
+
+.docFooter {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.footerLine {
+  color: var(--ink-soft);
+}
+
+.footerLine strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.footerId {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Print styles
+   Print styles · activan al hacer Cmd+P
    ═══════════════════════════════════════════════════════════ */
 
 @page {

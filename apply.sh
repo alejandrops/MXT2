@@ -1,55 +1,44 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S4-L3d · Recibo PDF imprimible de infracción
+#  S4-L3d-redesign · Recibo de infracción · estilo editorial
 #  ─────────────────────────────────────────────────────────────
-#  Última pieza del bloque S4-L3 (Conducción · módulo completo).
-#  Ruta nueva en el route group (print) de Next.js · layout sin
-#  sidebar/topbar, CSS @page A4. El usuario hace Cmd+P y guarda
-#  como PDF nativo del browser.
+#  Reemplaza los 2 archivos del recibo PDF (Receipt.module.css +
+#  InfractionReceipt.tsx) con un lenguaje editorial corporativo.
+#  Primer eslabón del sistema de boletines (Conducción · Dirección
+#  · post-MVP).
 #
-#  CAMBIOS:
+#  CAMBIOS FUNDAMENTALES vs el receipt anterior:
 #
-#    1. Query nueva · getInfractionById (en infractions-list.ts)
-#       Fetcher individual con multi-tenant scope. Trae el nombre
-#       del operador que descartó (si aplica). Devuelve null si
-#       la infracción no pertenece al account del usuario · el
-#       page hace notFound() en ese caso.
+#    1. Header editorial · "MAXTRACKER · CONDUCCIÓN" uppercase
+#       con tracking amplio + folio mono. Quita el look
+#       "comprobante" del legacy.
 #
-#    2. Componente extraído · SpeedCurve
-#       La curva velocidad/tiempo del side panel se sacó de
-#       InfractionDetailPanel y se movió a su propio componente
-#       para reusarla en el recibo. SVG inline puro, sin hooks
-#       (sirve tanto en server como cliente). Helper
-#       parseTrackToSpeedSamples() para convertir trackJson.
+#    2. Título h1 + subtítulo · jerarquía de revista, no de
+#       formulario.
 #
-#    3. Componente nuevo · InfractionPrintMap
-#       Mapa Leaflet específico para A4 · sin controles, sin
-#       interacción, polilínea más gruesa. Cliente (Leaflet
-#       requiere browser).
+#    3. LEAD NARRATIVO · NUEVO. Oración que cuenta la historia
+#       ("Landen Armstrong superó en +31 km/h durante 6 minutos
+#       17 segundos sobre Av. del Trabajador..."). Es el quiebre
+#       del legacy · función buildLead() template-based, lista
+#       para reemplazo por IA generativa cuando llegue.
 #
-#    4. Pantalla nueva · /conduccion/infraccion/[id]
-#       URL limpia (sin /print/) gracias al route group (print).
-#       Layout · header MAXTRACKER + datos en 2 columnas + bloque
-#       inicio/fin con direcciones + mapa con polilínea + curva
-#       velocidad/tiempo + footer con operador y fecha.
+#    4. Secciones numeradas 01·02·03 · prefigura el formato del
+#       boletín. Cada bloque editorial es una sección numerada.
 #
-#       Si la infracción está descartada · banner rojo arriba
-#       con razón + quién + cuándo.
+#    5. KPI strip de 4 celdas · Pico/Vmax/Exceso/Distancia con
+#       color funcional solo donde "duele" (Pico, Exceso).
 #
-#    5. Side panel actualizado · InfractionDetailPanel
-#       Botón "Abrir recibo imprimible" agregado entre los datos
-#       y el mapa · target=_blank para abrir en nueva tab. La
-#       curva interna se reemplaza por el componente extraído
-#       (cero cambio funcional, refactor limpio).
+#    6. Detalles como tabla clave/valor · sin bordes verticales,
+#       solo separadores sutiles.
 #
-#  LIMITACIÓN CONOCIDA:
+#    7. Footer editorial · 3 líneas centradas con autoría +
+#       solicitud + identificador único mono.
 #
-#    Las tiles de Leaflet cargan async. Si el usuario hace Cmd+P
-#    inmediatamente al abrir el recibo, puede que el mapa no se
-#    haya pintado completo. Workaround para el usuario · esperar
-#    1-2 segundos hasta ver el mapa antes de imprimir. Soluciones
-#    server-side (capture, static map API) quedan post-MVP · es
-#    una optimización, no un bloqueante.
+#  TOKENS DEL REPO RESPETADOS:
+#    · Tipografía  · IBM Plex Sans (--f) + Plex Mono (--m)
+#    · Color marca · #2563EB (--blu) sectionNum + #1E3A8A en kicker
+#    · Severidad   · #E8352A (--red) y #C42820 (--red-dark)
+#    · No serif    · respeta /actividad/imprimible existente
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -57,7 +46,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S4-L3d · Recibo PDF imprimible de infracción ═══"
+echo "═══ S4-L3d-redesign · Recibo editorial ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -82,25 +71,8 @@ rm -rf "$PAYLOAD"
 echo ""
 echo "✅ Lote aplicado"
 echo ""
-echo "Validación:"
-echo ""
+echo "Probá:"
 echo "  npx tsc --noEmit"
-echo ""
-echo "Pruebas funcionales:"
-echo ""
 echo "  npm run dev"
-echo ""
-echo "  1. Ir a /conduccion/infracciones"
-echo "  2. Click en cualquier infracción → side panel abre"
-echo "  3. Click en 'Abrir recibo imprimible' → nueva tab con recibo A4"
-echo "  4. Ver el mapa con polilínea + curva velocidad cargados"
-echo "  5. Click en 'Imprimir / Guardar PDF' (botón azul flotante)"
-echo "  6. Diálogo nativo de impresión · 'Guardar como PDF'"
-echo ""
-echo "URL del recibo · /conduccion/infraccion/<infraction-id>"
-echo ""
-echo "Esto cierra el bloque S4-L3 (Conducción · módulo completo):"
-echo "  · S4-L3a · modelo + cálculo de infracciones"
-echo "  · S4-L3b · score + dashboard"
-echo "  · S4-L3c · listado + heatmap + descartar"
-echo "  · S4-L3d · recibo PDF imprimible  ← este"
+echo "  → /conduccion/infracciones · click cualquier infracción"
+echo "  → 'Abrir recibo imprimible' → nueva tab"
