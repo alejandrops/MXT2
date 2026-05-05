@@ -100,6 +100,7 @@ const MODULES: ModuleDef[] = [
     pages: [
       { label: "Evolución", href: "/actividad/evolucion" },
       { label: "Resumen", href: "/actividad/resumen" },
+      { label: "Eventos", href: "/actividad/eventos" },
       // S1-L2 ia-reorg · Scorecard movido a Conducción · pertenece al
       // módulo de safety/scoring (Hybrid Method). La URL vieja redirige.
       { label: "Viajes", href: "/actividad/viajes" },

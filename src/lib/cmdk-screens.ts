@@ -61,6 +61,21 @@ export const SCREENS: ScreenEntry[] = [
     module: "Actividad",
   },
   {
+    label: "Eventos",
+    keywords: [
+      "eventos",
+      "alarmas",
+      "infracciones",
+      "frenadas",
+      "excesos",
+      "puerta",
+      "panico",
+      "panic",
+    ],
+    href: "/actividad/eventos",
+    module: "Actividad",
+  },
+  {
     label: "Viajes",
     keywords: ["viajes", "trips", "recorridos"],
     href: "/actividad/viajes",
