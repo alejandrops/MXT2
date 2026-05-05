@@ -262,9 +262,13 @@ function AnomalyTile({
                     {a.direction === "high" ? "▲" : "▼"}
                   </span>
                   <span className={styles.anomalyName}>{a.assetName}</span>
-                  <span className={styles.anomalyZ}>
-                    z={a.zScore > 0 ? "+" : ""}
-                    {a.zScore.toFixed(1)}
+                  <span className={styles.anomalyZ} title={`Promedio histórico: ${a.historicalMean.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`}>
+                    {/* S3-L4.8 · texto natural en vez de z= */}
+                    {a.historicalMean < 1
+                      ? "1ra vez"
+                      : Math.abs(a.zScore) >= 3
+                        ? "Muy alto"
+                        : "Alto"}
                   </span>
                 </li>
               ))}

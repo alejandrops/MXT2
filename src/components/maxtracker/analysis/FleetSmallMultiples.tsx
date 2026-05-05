@@ -123,10 +123,15 @@ export function FleetSmallMultiples({ data, formatValue }: Props) {
                           ? styles.zBadgeCritical
                           : styles.zBadgeWarning
                       }`}
+                      title={`Promedio histórico: ${anomaly.historicalMean.toLocaleString("es-AR", { maximumFractionDigits: 0 })}`}
                     >
-                      {anomaly.direction === "high" ? "▲" : "▼"} z=
-                      {anomaly.zScore > 0 ? "+" : ""}
-                      {anomaly.zScore.toFixed(1)}
+                      {/* S3-L4.8 · texto natural en vez de z= */}
+                      {anomaly.direction === "high" ? "▲" : "▼"}{" "}
+                      {anomaly.historicalMean < 1
+                        ? "1ra vez"
+                        : anomaly.severity === "critical"
+                          ? "Muy alto"
+                          : "Alto"}
                     </span>
                   )}
                 </footer>

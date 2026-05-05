@@ -15,11 +15,11 @@ import {
   getDeviceCapabilities,
   resolveCanSnapshot,
 } from "@/lib/mock-can";
-import styles from "./SummaryBookTab.module.css";
+import styles from "./CaratulaBookTab.module.css";
 import { DRIVING_BEHAVIOR_EVENT_TYPES } from "@/lib/event-types";
 
 // ═══════════════════════════════════════════════════════════════
-//  SummaryBookTab · S1-L6 + S3-L1
+//  CaratulaBookTab · S1-L6 + S3-L1
 //  ─────────────────────────────────────────────────────────────
 //  Vista ejecutiva 360° del objeto del Libro.
 //
@@ -38,7 +38,7 @@ interface Props {
   id: string;
 }
 
-export async function SummaryBookTab({ type, id }: Props) {
+export async function CaratulaBookTab({ type, id }: Props) {
   if (type === "vehiculo") return <VehicleSummary id={id} />;
   if (type === "conductor") return <DriverSummary id={id} />;
   return <GroupSummary id={id} />;
@@ -183,7 +183,7 @@ async function VehicleSummary({ id }: { id: string }) {
           {/* KPIs del mes */}
           <Section
             title="Últimos 30 días"
-            hrefDeep={`/objeto/vehiculo/${id}?m=actividad`}
+            hrefDeep={`/objeto/vehiculo/${id}?m=resumen`}
             hint="Datos agregados"
           >
             <div className={styles.kpiQuad}>
@@ -262,7 +262,7 @@ async function VehicleSummary({ id }: { id: string }) {
             <span className={styles.shortcutHint}>Historial completo</span>
           </Link>
           <Link
-            href={`/objeto/vehiculo/${id}?m=actividad`}
+            href={`/objeto/vehiculo/${id}?m=resumen`}
             className={styles.shortcut}
           >
             <span className={styles.shortcutLabel}>Actividad</span>
@@ -385,7 +385,7 @@ async function DriverSummary({ id }: { id: string }) {
           {topVehicles.length > 0 && (
             <Section
               title="Vehículos manejados"
-              hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+              hrefDeep={`/objeto/conductor/${id}?m=resumen`}
               hint={`Top ${topVehicles.length} por km en últimos 30 días`}
             >
               <ul className={styles.assetList}>
@@ -422,7 +422,7 @@ async function DriverSummary({ id }: { id: string }) {
           {/* KPIs del mes */}
           <Section
             title="Últimos 30 días"
-            hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+            hrefDeep={`/objeto/conductor/${id}?m=resumen`}
             hint="Datos agregados"
           >
             <div className={styles.kpiQuad}>
@@ -496,7 +496,7 @@ async function DriverSummary({ id }: { id: string }) {
           {scoreRanking && (
             <Section
               title="Posición en la flota"
-              hrefDeep={`/objeto/conductor/${id}?m=actividad`}
+              hrefDeep={`/objeto/conductor/${id}?m=resumen`}
               hint={`Comparado con ${scoreRanking.total - 1} pares`}
             >
               <div className={styles.rankBox}>
@@ -525,7 +525,7 @@ async function DriverSummary({ id }: { id: string }) {
       <Section title="Explorar" hint="Profundizar en otra dimensión">
         <div className={styles.shortcutGrid}>
           <Link
-            href={`/objeto/conductor/${id}?m=actividad`}
+            href={`/objeto/conductor/${id}?m=resumen`}
             className={styles.shortcut}
           >
             <span className={styles.shortcutLabel}>Actividad</span>
@@ -634,7 +634,7 @@ async function GroupSummary({ id }: { id: string }) {
         <div className={styles.col}>
           <Section
             title="Top vehículos"
-            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+            hrefDeep={`/objeto/grupo/${id}?m=resumen`}
             hint="Por km en últimos 30 días"
           >
             {summary.topVehicles.length === 0 ? (
@@ -666,7 +666,7 @@ async function GroupSummary({ id }: { id: string }) {
 
           <Section
             title="Top conductores"
-            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+            hrefDeep={`/objeto/grupo/${id}?m=resumen`}
             hint="Por km manejados en últimos 30 días"
           >
             {summary.topDrivers.length === 0 ? (
@@ -701,7 +701,7 @@ async function GroupSummary({ id }: { id: string }) {
         <div className={styles.col}>
           <Section
             title="Últimos 30 días"
-            hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+            hrefDeep={`/objeto/grupo/${id}?m=resumen`}
           >
             <div className={styles.kpiQuad}>
               <MiniKpi
@@ -758,7 +758,7 @@ async function GroupSummary({ id }: { id: string }) {
           {scoreRanking && (
             <Section
               title="Posición entre grupos"
-              hrefDeep={`/objeto/grupo/${id}?m=actividad`}
+              hrefDeep={`/objeto/grupo/${id}?m=resumen`}
               hint={`Comparado con ${scoreRanking.total - 1} otros grupos del account`}
             >
               <div className={styles.rankBox}>
@@ -784,7 +784,7 @@ async function GroupSummary({ id }: { id: string }) {
       <Section title="Profundizar">
         <div className={styles.shortcutGrid}>
           <Link
-            href={`/objeto/grupo/${id}?m=actividad`}
+            href={`/objeto/grupo/${id}?m=resumen`}
             className={styles.shortcut}
           >
             <span className={styles.shortcutLabel}>Actividad</span>

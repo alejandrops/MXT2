@@ -6,38 +6,42 @@
 //
 //  El cubo del MSD: Object × Time × Module
 //
-//  Matriz validada (S1-L4 + L5 + L6):
+//  S4-L1 · estructura nueva del Libro del Objeto
 //
-//    | Tab              | vehículo | conductor | grupo |
-//    |------------------|----------|-----------|-------|
-//    | Resumen 🆕       |    ✓     |     ✗     |   ✗   | (intrínseca · vista ejecutiva del ahora)
-//    | Telemetría       |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
-//    | Conductores      |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
-//    | Actividad        |    ✓     |     ✓     |   ✓   |
-//    | Seguridad        |    ✓     |     ✓     |   ✓   |
-//    | Conducción       |    ✓     |     ✓     |   ✓   |
-//    | Mantenimiento    |    ✓     |     ✗     |   ✓   |
-//    | Combustible      |    ✓     |     ✗     |   ✓   |
-//    | Logística        |    ✓     |     ✗     |   ✓   |
-//    | Documentación    |    ✓     |     ✓     |   ✗   |
-//    | Sostenibilidad   |    ✓     |     ✗     |   ✓   |
+//  Matriz validada:
 //
-//  Resumen es la default cuando se entra a un vehículo · es la
-//  vista ejecutiva cross-módulo del "ahora". Las otras tabs
-//  profundizan en una dimensión específica.
+//    | Tab           | vehículo | conductor | grupo |
+//    |---------------|----------|-----------|-------|
+//    | Carátula 🆕   |    ✓     |     ✓     |   ✓   | (vista 360° del ahora · era "resumen")
+//    | Resumen 🆕    |    ✓     |     ✓     |   ✓   | (KPIs + bullet del período · NUEVO)
+//    | Evolución 🆕  |    ✓     |     ✓     |   ✓   | (gráficos temporales · NUEVO)
+//    | Viajes 🆕     |    ✓     |     ✓     |   ✓   | (listado day-by-day · NUEVO)
+//    | Paradas 🆕    |    ✓     |     ✓     |   ✓   | (listado · NUEVO)
+//    | Telemetría    |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Conductores   |    ✓     |     ✗     |   ✗   | (intrínseca al vehículo)
+//    | Seguridad     |    ✓     |     ✓     |   ✓   |
+//    | Conducción    |    ✓     |     ✓     |   ✓   |
+//    | Mantenimiento |    ✓     |     ✗     |   ✓   |
+//    | Combustible   |    ✓     |     ✗     |   ✓   |
+//    | Logística     |    ✓     |     ✗     |   ✓   |
+//    | Documentación |    ✓     |     ✓     |   ✗   |
+//    | Sostenibilid. |    ✓     |     ✗     |   ✓   |
 //
-//  Nota arquitectónica · "resumen", "telemetria" y "conductores"
-//  son tabs intrínsecas del vehículo (no son módulos del cubo · no
-//  aparecen en sidebar). Viven acá como ModuleKey por simplicidad.
+//  S4-L1 · "Actividad" REMOVIDA (era redundante con los 4 nuevos).
+//  Su contenido (KPIs, peers, lista cronológica) se distribuyó en
+//  Carátula, Resumen, Evolución, Viajes y Paradas.
 // ═══════════════════════════════════════════════════════════════
 
 export type ObjectType = "vehiculo" | "conductor" | "grupo";
 
 export type ModuleKey =
+  | "caratula"
   | "resumen"
+  | "evolucion"
+  | "viajes"
+  | "paradas"
   | "telemetria"
   | "conductores"
-  | "actividad"
   | "seguridad"
   | "conduccion"
   | "mantenimiento"
@@ -52,15 +56,16 @@ export interface ModuleDef {
   enabled: boolean;
 }
 
-// Tabs efectivamente construidas en el sistema. Mantener sincronizado
-// con el sidebar y los SwitchCases del page.tsx del Libro.
 const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
-  resumen: true, // S1-L6 · habilitada · vista ejecutiva del vehículo
-  telemetria: true, // S1-L4 · habilitada · tab nueva con datos CAN
-  conductores: true, // S1-L5 · habilitada · historial de quién manejó
-  actividad: true,
+  caratula: true,
+  resumen: true,
+  evolucion: true,
+  viajes: true,
+  paradas: true,
+  telemetria: true,
+  conductores: true,
   seguridad: true,
-  conduccion: true, // S1-L2 · habilitada · scorecard activo, resto Sprint 4
+  conduccion: true,
   mantenimiento: false,
   combustible: false,
   logistica: false,
@@ -68,14 +73,15 @@ const SYSTEM_MODULES: Record<ModuleKey, boolean> = {
   sostenibilidad: false,
 };
 
-// Qué módulos aplican a cada tipo de objeto · matriz validada.
-// El orden define cómo se renderizan las tabs del Libro.
 const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
   vehiculo: [
+    "caratula",
     "resumen",
+    "evolucion",
+    "viajes",
+    "paradas",
     "telemetria",
     "conductores",
-    "actividad",
     "seguridad",
     "conduccion",
     "mantenimiento",
@@ -85,15 +91,21 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
     "sostenibilidad",
   ],
   conductor: [
+    "caratula",
     "resumen",
-    "actividad",
+    "evolucion",
+    "viajes",
+    "paradas",
     "seguridad",
     "conduccion",
     "documentacion",
   ],
   grupo: [
+    "caratula",
     "resumen",
-    "actividad",
+    "evolucion",
+    "viajes",
+    "paradas",
     "seguridad",
     "conduccion",
     "mantenimiento",
@@ -104,10 +116,13 @@ const APPLICABLE_BY_TYPE: Record<ObjectType, ModuleKey[]> = {
 };
 
 const MODULE_LABELS: Record<ModuleKey, string> = {
+  caratula: "Carátula",
   resumen: "Resumen",
+  evolucion: "Evolución",
+  viajes: "Viajes",
+  paradas: "Paradas",
   telemetria: "Telemetría",
   conductores: "Conductores",
-  actividad: "Actividad",
   seguridad: "Seguridad",
   conduccion: "Conducción",
   mantenimiento: "Mantenimiento",
@@ -117,11 +132,6 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
   sostenibilidad: "Sostenibilidad",
 };
 
-/**
- * Devuelve los módulos aplicables a un tipo de objeto en el orden
- * en que deben renderizarse las tabs · primero los habilitados,
- * después los deshabilitados (próximamente).
- */
 export function applicableModules(type: ObjectType): ModuleDef[] {
   return APPLICABLE_BY_TYPE[type].map((key) => ({
     key,
@@ -130,19 +140,11 @@ export function applicableModules(type: ObjectType): ModuleDef[] {
   }));
 }
 
-/**
- * Devuelve el primer módulo habilitado para ser default cuando se
- * entra al Libro sin tab seleccionado. Garantiza que al menos
- * uno (Actividad) está habilitado en MVP.
- */
 export function defaultModule(type: ObjectType): ModuleKey {
   const mods = applicableModules(type);
   return mods.find((m) => m.enabled)?.key ?? mods[0]!.key;
 }
 
-/**
- * Valida si un módulo es aplicable + habilitado para un tipo.
- */
 export function isModuleApplicable(
   type: ObjectType,
   module: ModuleKey,

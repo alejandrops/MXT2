@@ -493,26 +493,45 @@ function VariationCell({
     return <span className={styles.deltaNa}>—</span>;
   }
 
-  // Caso anomalía · chip destacado con z + Δ% · reusa estilos zChip
+  // S3-L4.8 · Z-score quitado del display · jerga estadística inútil
+  // para operadores. Severidad va por color, magnitud por %.
+  // Caso especial · sin histórico significativo · mostrar "1ra vez"
   if (anomaly) {
+    const dir = anomaly.direction === "high" ? "▲" : "▼";
+    // Si el promedio histórico es muy bajo (< 1), no hay referencia
+    // estadísticamente válida · etiquetarlo como "primera vez"
+    // en lugar de mostrar un % falso o un z-score absurdo.
+    const hasHistory = anomaly.historicalMean >= 1;
+
+    if (!hasHistory) {
+      // Caso "primera vez" · usamos el chip warning (más sutil que critical)
+      return (
+        <span
+          className={`${styles.zChip} ${styles.zChipWarning}`}
+          title={`Primera actividad detectada · sin referencia histórica${previousFmt ? ` · período anterior: ${previousFmt}` : ""}`}
+        >
+          {dir} 1ra vez
+        </span>
+      );
+    }
+
+    // Caso anomalía con histórico · sólo % + dirección
     const cls =
       anomaly.severity === "critical"
         ? styles.zChipCritical
         : styles.zChipWarning;
-    const dir = anomaly.direction === "high" ? "▲" : "▼";
     const pctTxt =
       deltaPct === null
-        ? ""
-        : ` · ${(deltaPct * 100 >= 0 ? "+" : "") + (deltaPct * 100).toFixed(0)}%`;
+        ? "" // sin período anterior, mostramos solo dirección
+        : `${deltaPct * 100 >= 0 ? "+" : ""}${(deltaPct * 100).toFixed(0)}%`;
+    const severityLabel =
+      anomaly.severity === "critical" ? "Muy alto" : "Alto";
     return (
       <span
         className={`${styles.zChip} ${cls}`}
-        title={`Anomalía · z=${anomaly.zScore.toFixed(1)} · promedio histórico ${anomaly.historicalMean.toFixed(0)} · σ ${anomaly.historicalStd.toFixed(1)}${previousFmt ? ` · anterior ${previousFmt}` : ""}`}
+        title={`${severityLabel} vs promedio histórico (${anomaly.historicalMean.toLocaleString("es-AR", { maximumFractionDigits: 0 })})${previousFmt ? ` · período anterior: ${previousFmt}` : ""}`}
       >
-        {dir}
-        z={anomaly.zScore > 0 ? "+" : ""}
-        {anomaly.zScore.toFixed(1)}
-        {pctTxt}
+        {dir} {pctTxt || severityLabel}
       </span>
     );
   }

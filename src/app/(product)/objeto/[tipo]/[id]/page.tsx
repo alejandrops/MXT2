@@ -17,11 +17,14 @@ import { LiveStatus } from "@/components/maxtracker/objeto/LiveStatus";
 import { DriverProfile } from "@/components/maxtracker/objeto/DriverProfile";
 import { GroupProfile } from "@/components/maxtracker/objeto/GroupProfile";
 import type { ObjectStatus } from "@/components/maxtracker/ui";
-import { ActivityBookTab } from "./modules/ActivityBookTab";
 import { SecurityBookTab } from "./modules/SecurityBookTab";
 import { TelemetryBookTab } from "./modules/TelemetryBookTab";
 import { DriversBookTab } from "./modules/DriversBookTab";
-import { SummaryBookTab } from "./modules/SummaryBookTab";
+import { CaratulaBookTab } from "./modules/CaratulaBookTab";
+import { ResumenBookTab } from "./modules/ResumenBookTab";
+import { EvolucionBookTab } from "./modules/EvolucionBookTab";
+import { ViajesBookTab } from "./modules/ViajesBookTab";
+import { ParadasBookTab } from "./modules/ParadasBookTab";
 
 // ═══════════════════════════════════════════════════════════════
 //  /objeto/[tipo]/[id]
@@ -41,10 +44,13 @@ export const revalidate = 60;
 
 const VALID_TYPES: ObjectType[] = ["vehiculo", "conductor", "grupo"];
 const VALID_MODULES: ModuleKey[] = [
+  "caratula",
   "resumen",
+  "evolucion",
+  "viajes",
+  "paradas",
   "telemetria",
   "conductores",
-  "actividad",
   "seguridad",
   "conduccion",
   "mantenimiento",
@@ -164,22 +170,46 @@ export default async function ObjectBookPage({
       isAnchorToday={isAnchorToday}
       headerSlot={headerSlot}
     >
+      {activeModule === "caratula" && (
+        <CaratulaBookTab type={type} id={id} />
+      )}
       {activeModule === "resumen" && (
-        <SummaryBookTab type={type} id={id} />
+        <ResumenBookTab
+          type={type}
+          id={id}
+          granularity={granularity}
+          anchorIso={anchorIso}
+        />
+      )}
+      {activeModule === "evolucion" && (
+        <EvolucionBookTab
+          type={type}
+          id={id}
+          granularity={granularity}
+          anchorIso={anchorIso}
+        />
+      )}
+      {activeModule === "viajes" && (
+        <ViajesBookTab
+          type={type}
+          id={id}
+          granularity={granularity}
+          anchorIso={anchorIso}
+        />
+      )}
+      {activeModule === "paradas" && (
+        <ParadasBookTab
+          type={type}
+          id={id}
+          granularity={granularity}
+          anchorIso={anchorIso}
+        />
       )}
       {activeModule === "telemetria" && (
         <TelemetryBookTab type={type} id={id} />
       )}
       {activeModule === "conductores" && (
         <DriversBookTab type={type} id={id} />
-      )}
-      {activeModule === "actividad" && (
-        <ActivityBookTab
-          type={type}
-          id={id}
-          granularity={granularity}
-          anchorIso={anchorIso}
-        />
       )}
       {activeModule === "seguridad" && (
         <SecurityBookTab

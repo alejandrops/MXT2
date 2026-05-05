@@ -1,57 +1,100 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S3-L4.7-fleet-multiplier · apply.sh
-#  Seed con flota multiplicada · consolida L4.3/L4.5/L4.6/L4.7
+#  S4-L1-libro-tabs-nuevos · apply.sh
+#  Restructura completa del Libro del Objeto · 5 tabs nuevos
 #
-#  Cambios:
-#    1. NOW dinámico (S3-L4.3) · era hardcodeado a 2026-04-24
-#    2. Dedup positions por recordedAt (S3-L4.5) · evita P2002
-#    3. Re-anchor de timestamps (S3-L4.6) · última posición = NOW
-#    4. NUEVO · multiplicación de flota (S3-L4.7)
-#       · FLEET_MULTIPLIER = 4 · 23 reales × 4 = ~92 vehículos
-#       · Distribuidos cíclicamente entre los 3 accounts
-#       · Cada clone reusa el mismo CSV con shift de -2 días * cloneIdx
-#         para que las trayectorias no se solapen exactamente
-#       · Plate único · primera pasada usa la real (AB456RM),
-#         clones agregan sufijo (AB456RM-2, AB456RM-3, AB456RM-4)
-#       · Driver y group asignados por account, no global
+#  Para vehículo, conductor y grupo · misma estructura.
 #
-#  Resultado:
-#    Antes  · 23 vehículos en 1 solo account · datos del 20-26 abr
-#    Ahora  · ~92 vehículos en 3 accounts · datos hasta hoy con
-#             distintos rangos temporales por clone
+#  CAMBIOS DE ESTRUCTURA:
 #
-#  IMPORTANTE: este lote SOBRESCRIBE seed.ts · si ya tenés aplicado
-#  L4.3/L4.5/L4.6, este los incluye. Solo correr este (no L4.x previos).
+#    Renombre:
+#      SummaryBookTab.tsx → CaratulaBookTab.tsx
+#      ↳ Era el "Resumen" pero conceptualmente es la "Carátula"
+#        del objeto · vista 360° del momento actual
 #
-#  Idempotente · usa cmp -s antes de cp.
+#    Tabs nuevos (con implementación funcional):
+#      + ResumenBookTab.tsx · KPIs del período + comparativa peers
+#                             (vs período anterior, vs promedio flota/grupo)
+#      + EvolucionBookTab.tsx · 4 gráficos de barras temporales
+#                                (distancia, viajes, tiempo, eventos)
+#      + ViajesBookTab.tsx · listado day-by-day usando
+#                            listTripsAndStopsByDay con scope al objeto
+#      + ParadasBookTab.tsx · misma query, filtra solo stops
+#
+#    Eliminado:
+#      - ActivityBookTab.tsx · contenido distribuido entre
+#        Resumen, Evolución y Viajes
+#
+#    object-modules.ts:
+#      Nueva ModuleKey: caratula | resumen | evolucion | viajes | paradas
+#      ModuleKey eliminada: actividad
+#      "resumen" cambia significado (antes vista 360°, ahora KPIs tabular)
+#      MATRIZ APPLICABLE_BY_TYPE actualizada para los 3 object types
+#
+#    page.tsx del Libro:
+#      VALID_MODULES actualizado
+#      Switch reescrito · 9 cases nuevos
+#
+#    ObjectBook.tsx:
+#      Default module en buildHref · "actividad" → "caratula"
+#
+#    CaratulaBookTab links internos:
+#      "?m=actividad" → "?m=resumen" (deep links al equivalente)
+#
+#  Idempotente · usa cmp -s + maneja deletes via _deletes.txt
 # ═══════════════════════════════════════════════════════════════
 set -e
 PAYLOAD="_payload"
+DELETES_FILE="_deletes.txt"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S3-L4.7 · fleet multiplier × 4 · consolida L4.3+L4.5+L4.6+L4.7 ═══"
+echo "═══ S4-L1 · Libro del Objeto · 5 tabs nuevos ═══"
 
+C_NEW=0; C_UPD=0; C_SAME=0; C_DEL=0
 apply_file() {
   local rel="$1"; local src="$PAYLOAD/$rel"; local dst="$rel"
-  [ ! -f "$src" ] && echo "  ⚠️ payload missing: $rel" && return
+  [ ! -f "$src" ] && return
   if [ ! -f "$dst" ]; then
-    mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"; echo "  + $rel  (nuevo)"
-  elif cmp -s "$src" "$dst"; then echo "  = $rel  (sin cambios)"
-  else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; fi
+    mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"
+    echo "  + $rel  (nuevo)"; C_NEW=$((C_NEW+1))
+  elif cmp -s "$src" "$dst"; then C_SAME=$((C_SAME+1))
+  else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; C_UPD=$((C_UPD+1)); fi
 }
 
-apply_file "prisma/seed.ts"
+while IFS= read -r src; do
+  rel="${src#$PAYLOAD/}"
+  apply_file "$rel"
+done < <(find "$PAYLOAD" -type f)
 
-rm -rf "$PAYLOAD"
+# Aplicar deletes
+if [ -f "$DELETES_FILE" ]; then
+  while IFS= read -r del; do
+    [ -z "$del" ] && continue
+    if [ -f "$del" ]; then
+      rm "$del"; echo "  - $del  (borrado)"; C_DEL=$((C_DEL+1))
+    fi
+  done < "$DELETES_FILE"
+fi
+
 echo ""
-echo "✅ Aplicado"
+echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME · Borrados: $C_DEL"
+rm -rf "$PAYLOAD" "$DELETES_FILE"
+
 echo ""
-echo "Próximo paso · re-correr seed:"
-echo "  npm run db:reset"
+echo "✅ Lote aplicado"
 echo ""
-echo "Vas a ver:"
-echo "  · 'creating real-trajectory vehicles (× 4)…'"
-echo "  · '92 real-trajectory vehicles created across 3 accounts'"
-echo "  · ~80,000-100,000 positions con re-anchor a NOW"
-echo "  · Mapa con muchos vehículos activos hoy"
+echo "Próximo paso · reiniciar dev server:"
+echo "  rm -rf .next && npm run dev"
+echo ""
+echo "Validación e2e:"
+echo "  Vehículo:  http://localhost:3000/objeto/vehiculo/<ID>"
+echo "    → Default tab: Carátula (vista 360°)"
+echo "    → Click en tab Resumen     → KPIs del período + comparativa"
+echo "    → Click en tab Evolución   → 4 gráficos de barras"
+echo "    → Click en tab Viajes      → listado day-by-day"
+echo "    → Click en tab Paradas     → listado de paradas"
+echo "    → Tab Actividad NO existe"
+echo "  Conductor: http://localhost:3000/objeto/conductor/<ID>"
+echo "    → Mismas 5 tabs nuevas (sin Telemetría/Conductores)"
+echo "  Grupo:     http://localhost:3000/objeto/grupo/<ID>"
+echo "    → Mismas 5 tabs nuevas"

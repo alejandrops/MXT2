@@ -109,7 +109,7 @@ export function ObjectBook({
     const g = over.g ?? granularity;
     const d = over.d === null ? null : over.d ?? anchorIso;
 
-    if (m !== "actividad") params.set("m", m);
+    if (m !== "caratula") params.set("m", m);
     if (g !== "month-days") params.set("g", g);
 
     const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);

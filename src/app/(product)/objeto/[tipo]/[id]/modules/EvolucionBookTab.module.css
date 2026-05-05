@@ -1,0 +1,95 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chartCard {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.875rem;
+}
+
+.chartTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.chartTotal {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.barRow {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 100px;
+  border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+  padding-bottom: 1px;
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.barTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  transition: opacity 0.15s ease;
+}
+
+.barCol:hover .bar {
+  opacity: 0.75;
+}
+
+.barFilled {
+  background: var(--color-accent, #2563eb);
+}
+
+.barWarn {
+  background: var(--color-warning, #ea580c);
+}
+
+.barEmpty {
+  background: var(--color-border-subtle, #e5e7eb);
+  height: 2px !important;
+  align-self: flex-end;
+}
+
+.barToday {
+  outline: 1px solid var(--color-accent-strong, #1d4ed8);
+  outline-offset: 1px;
+}
+
+.barLabel {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #94a3b8);
+  margin-top: 0.25rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
