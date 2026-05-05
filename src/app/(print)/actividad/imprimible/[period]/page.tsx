@@ -9,7 +9,7 @@ import {
 import { PrintReport, type PrintPeriod } from "../PrintReport";
 
 // ═══════════════════════════════════════════════════════════════
-//  /actividad/reportes/imprimible/[period]
+//  /actividad/imprimible/[period]
 //  ─────────────────────────────────────────────────────────────
 //  Ruta dinámica única · period en {semanal, mensual, anual}
 //  Reemplaza 3 rutas separadas:

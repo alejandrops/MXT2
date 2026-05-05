@@ -1,10 +1,10 @@
-import { ReportesClient } from "../reportes/ReportesClient";
+import { ActivityViewSwitcher } from "../_views/ActivityViewSwitcher";
 import {
   loadReportesData,
   parseReportesParams,
 } from "../_lib/loadReportesData";
 import { PageHeader } from "@/components/maxtracker/ui";
-import styles from "../reportes/page.module.css";
+import styles from "../_views/page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
 //  /actividad/resumen · L3.5b
@@ -50,7 +50,7 @@ export default async function ResumenPage({ searchParams }: PageProps) {
       <PageHeader variant="module" title="Resumen de actividad" />
       <div className="appPage">
       {result.kind === "visual-metrics" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="metrics"
           modo="visual"
           subject="vehicles"
@@ -58,7 +58,7 @@ export default async function ResumenPage({ searchParams }: PageProps) {
           baseUrl={BASE_URL}
         />
       ) : result.kind === "visual" && params.subject === "vehicles" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="metrics"
           modo="visual"
           subject="vehicles"
@@ -66,7 +66,7 @@ export default async function ResumenPage({ searchParams }: PageProps) {
           baseUrl={BASE_URL}
         />
       ) : result.kind === "vehicles-metrics" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="metrics"
           modo="tabla"
           subject="vehicles"
@@ -74,7 +74,7 @@ export default async function ResumenPage({ searchParams }: PageProps) {
           baseUrl={BASE_URL}
         />
       ) : result.kind === "drivers-metrics" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="metrics"
           modo="tabla"
           subject="drivers"

@@ -23,10 +23,10 @@ import { MultiMetricView } from "./MultiMetricView";
 import { DriversMultiMetricView } from "./DriversMultiMetricView";
 import { VisualView } from "./VisualView";
 import { BulletMetricView } from "./BulletMetricView";
-import styles from "./ReportesClient.module.css";
+import styles from "./ActivityViewSwitcher.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  ReportesClient · L3.5b · refactor de IA
+//  ActivityViewSwitcher · S3-L4.4 · refactor de IA
 //  ─────────────────────────────────────────────────────────────
 //  Cambios vs versión previa:
 //
@@ -130,7 +130,7 @@ const SUBJECTS: { key: Subject; label: string; Icon: any }[] = [
   { key: "drivers", label: "Conductores", Icon: Users },
 ];
 
-export function ReportesClient(props: Props) {
+export function ActivityViewSwitcher(props: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 

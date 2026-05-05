@@ -21,7 +21,7 @@ import { exportReportesXlsx } from "@/lib/excel/client";
 import styles from "./DriversDistributionView.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  ReportesClient · tabla numérica · misma data que Análisis
+//  ActivityViewSwitcher · tabla numérica · misma data que Análisis
 //  ─────────────────────────────────────────────────────────────
 //  Anatomía:
 //    · Toolbar · navigator + métrica + export CSV
@@ -34,7 +34,7 @@ import styles from "./DriversDistributionView.module.css";
 //  scrollea horizontal · header sticky.
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/reportes";
+const BASE_PATH = "/actividad/evolucion";
 
 interface Props {
   data: DriversAnalysisData;

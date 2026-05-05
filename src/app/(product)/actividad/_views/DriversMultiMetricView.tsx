@@ -31,7 +31,7 @@ import styles from "./DriversMultiMetricView.module.css";
 //  manejó la persona en el período.
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/reportes";
+const BASE_PATH = "/actividad/resumen";
 
 const COLS: { key: ActivityMetric; label: string; short: string; reverse: boolean; unit: string }[] = [
   { key: "distanceKm", label: "Distancia", short: "Km", reverse: false, unit: "km" },

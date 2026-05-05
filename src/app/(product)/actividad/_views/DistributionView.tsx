@@ -41,7 +41,7 @@ import styles from "./DistributionView.module.css";
 //    · Footer · totales por columna
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/reportes";
+const BASE_PATH = "/actividad/evolucion";
 
 interface Props {
   data: FleetAnalysisData;

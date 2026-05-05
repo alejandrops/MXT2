@@ -1,10 +1,10 @@
-import { ReportesClient } from "../reportes/ReportesClient";
+import { ActivityViewSwitcher } from "../_views/ActivityViewSwitcher";
 import {
   loadReportesData,
   parseReportesParams,
 } from "../_lib/loadReportesData";
 import { PageHeader } from "@/components/maxtracker/ui";
-import styles from "../reportes/page.module.css";
+import styles from "../_views/page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
 //  /actividad/evolucion · L3.5b
@@ -43,7 +43,7 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
       <PageHeader variant="module" title="Evolución temporal" />
       <div className="appPage">
       {result.kind === "visual" && params.subject === "vehicles" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="time"
           modo="visual"
           subject="vehicles"
@@ -52,7 +52,7 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
           baseUrl={BASE_URL}
         />
       ) : result.kind === "vehicles-time" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="time"
           modo="tabla"
           subject="vehicles"
@@ -60,7 +60,7 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
           baseUrl={BASE_URL}
         />
       ) : result.kind === "drivers-time" ? (
-        <ReportesClient
+        <ActivityViewSwitcher
           layout="time"
           modo="tabla"
           subject="drivers"

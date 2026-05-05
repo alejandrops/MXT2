@@ -31,7 +31,7 @@ import styles from "./MultiMetricView.module.css";
 //  (sutil, debajo del valor) vs período anterior.
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/reportes";
+const BASE_PATH = "/actividad/resumen";
 
 const COLS: { key: ActivityMetric; label: string; short: string; reverse: boolean; unit: string }[] = [
   { key: "distanceKm", label: "Distancia", short: "Km", reverse: false, unit: "km" },

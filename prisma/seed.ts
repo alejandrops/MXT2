@@ -68,9 +68,7 @@ const db = new PrismaClient();
 //  Helpers
 // ═══════════════════════════════════════════════════════════════
 
-// S3-L4.3 · NOW dinámico · siembra hasta el momento de correr el script.
-// Antes era hardcodeado a "2026-04-24" y los datos siempre quedaban
-// desactualizados respecto al día de la demo.
+// S3-L4.3 · NOW dinámico
 const NOW = new Date();
 const MS_DAY = 24 * 60 * 60 * 1000;
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -363,7 +361,7 @@ async function main() {
   });
 
   // ── Accounts + Groups + Persons + Assets + Devices ────────────
-  const allAssets: { id: string; accountId: string; route: Route | null; bounds: keyof typeof CABA_BOUNDS | null; mobility: MobilityType; status: AssetStatus; realCsvFile?: string }[] = [];
+  const allAssets: { id: string; accountId: string; route: Route | null; bounds: keyof typeof CABA_BOUNDS | null; mobility: MobilityType; status: AssetStatus; realCsvFile?: string; cloneIdx?: number }[] = [];
   const allPersons: { id: string; accountId: string }[] = [];
 
   let totalGroups = 0;
@@ -446,97 +444,118 @@ async function main() {
   // ─── Real-trajectory vehicles (the only fleet now) ──────────────
   // Create the 23 vehicles from the REAL_VEHICLES catalog. Their
   // positions come from CSV exports of the production system.
-  console.log("   · creating real-trajectory vehicles…");
-  const firstAccount = allAccounts[0]!;
-  const firstAccountGroups: { id: string }[] = await db.group.findMany({
-    where: { accountId: firstAccount.id },
-    select: { id: true },
-  });
-  const realPersons = allPersons.filter((p) => p.accountId === firstAccount.id);
-  let realVehicleCount = 0;
+  // S3-L4.7 · multiplicar vehículos reales × FLEET_MULTIPLIER y
+  // distribuir entre los 3 accounts. 23 × 4 = ~92 vehículos.
+  // Cada clone reusa el mismo CSV con shift de tiempo distinto.
+  const FLEET_MULTIPLIER = 4;
+  console.log(`   · creating real-trajectory vehicles (× ${FLEET_MULTIPLIER})…`);
 
-  for (const spec of REAL_VEHICLES) {
-    const route = regionToRoute(spec.region);
-    const driverId =
-      realPersons.length > 0 ? pick(realPersons).id : null;
-    const groupId =
-      firstAccountGroups.length > 0 ? pick(firstAccountGroups).id : null;
-
-    const asset = await db.asset.create({
-      data: {
-        accountId: firstAccount.id,
-        groupId,
-        name: spec.name,
-        plate: spec.plate,
-        vin: faker.vehicle.vin(),
-        mobilityType: "MOBILE",
-        vehicleType: spec.vehicleType,
-        make: spec.make,
-        model: spec.model,
-        year: faker.number.int({ min: 2019, max: 2024 }),
-        status: "MOVING",
-        currentDriverId: driverId,
-      },
+  // Pre-cargar groups + persons por account
+  const accountGroupsMap = new Map<string, { id: string }[]>();
+  const accountPersonsMap = new Map<string, { id: string }[]>();
+  for (const acc of allAccounts) {
+    const gs = await db.group.findMany({
+      where: { accountId: acc.id },
+      select: { id: true },
     });
-
-    // Pick a device model based on vehicle type · trucks usually
-    // ship full-featured FMB devices, motorcycles use lighter ones.
-    const deviceModel = spec.vehicleType === "MOTORCYCLE" ? "FMB001" : "FMB920";
-
-    // Crear primero la SIM · después el Device la referencia.
-    // Distribuimos carriers por seed determinístico para variedad.
-    const carrierPick = ["MOVISTAR", "CLARO", "PERSONAL"][totalAssets % 3] as
-      | "MOVISTAR"
-      | "CLARO"
-      | "PERSONAL";
-    const apnPick =
-      carrierPick === "MOVISTAR"
-        ? "internet.movistar.com.ar"
-        : carrierPick === "CLARO"
-          ? "internet.ctimovil.com.ar"
-          : "internet.personal.com";
-
-    const sim = await db.sim.create({
-      data: {
-        iccid: faker.string.numeric(20),
-        phoneNumber: `+54 11 ${faker.string.numeric(4)}-${faker.string.numeric(4)}`,
-        imsi: faker.string.numeric(15),
-        carrier: carrierPick,
-        apn: apnPick,
-        dataPlanMb: spec.vehicleType === "TRUCK" ? 250 : 100,
-        status: "ACTIVE",
-        activatedAt: faker.date.past({ years: 1, refDate: NOW }),
-      },
-    });
-
-    await db.device.create({
-      data: {
-        assetId: asset.id,
-        imei: faker.string.numeric(15),
-        vendor: "TELTONIKA",
-        model: deviceModel,
-        status: "INSTALLED",
-        isPrimary: true,
-        simId: sim.id,
-        installedAt: faker.date.past({ years: 2, refDate: NOW }),
-        lastSeenAt: faker.date.recent({ days: 1, refDate: NOW }),
-      },
-    });
-
-    allAssets.push({
-      id: asset.id,
-      accountId: firstAccount.id,
-      route,
-      bounds: null,
-      mobility: "MOBILE",
-      status: "MOVING",
-      realCsvFile: spec.csvFile,
-    });
-    totalAssets++;
-    totalDevices++;
-    realVehicleCount++;
+    accountGroupsMap.set(acc.id, gs);
+    accountPersonsMap.set(
+      acc.id,
+      allPersons.filter((p) => p.accountId === acc.id),
+    );
   }
-  console.log(`   ✓ ${realVehicleCount} real-trajectory vehicles created`);
+
+  let realVehicleCount = 0;
+  for (let mult = 0; mult < FLEET_MULTIPLIER; mult++) {
+    for (let i = 0; i < REAL_VEHICLES.length; i++) {
+      const spec = REAL_VEHICLES[i]!;
+      // Distribuir cíclicamente entre los 3 accounts
+      const accIdx = (mult * REAL_VEHICLES.length + i) % allAccounts.length;
+      const targetAcc = allAccounts[accIdx]!;
+      const tGroups = accountGroupsMap.get(targetAcc.id) ?? [];
+      const tPersons = accountPersonsMap.get(targetAcc.id) ?? [];
+
+      const route = regionToRoute(spec.region);
+      const driverId = tPersons.length > 0 ? pick(tPersons).id : null;
+      const groupId = tGroups.length > 0 ? pick(tGroups).id : null;
+
+      // Plate único · primera pasada usa la real, las demás agregan sufijo
+      const plate = mult === 0 ? spec.plate : `${spec.plate}-${mult + 1}`;
+      const name = mult === 0 ? spec.name : `${spec.name} #${mult + 1}`;
+
+      const asset = await db.asset.create({
+        data: {
+          accountId: targetAcc.id,
+          groupId,
+          name,
+          plate,
+          vin: faker.vehicle.vin(),
+          mobilityType: "MOBILE",
+          vehicleType: spec.vehicleType,
+          make: spec.make,
+          model: spec.model,
+          year: faker.number.int({ min: 2019, max: 2024 }),
+          status: "MOVING",
+          currentDriverId: driverId,
+        },
+      });
+
+      const deviceModel =
+        spec.vehicleType === "MOTORCYCLE" ? "FMB001" : "FMB920";
+      const carrierPick = ["MOVISTAR", "CLARO", "PERSONAL"][totalAssets % 3] as
+        | "MOVISTAR"
+        | "CLARO"
+        | "PERSONAL";
+      const apnPick =
+        carrierPick === "MOVISTAR"
+          ? "internet.movistar.com.ar"
+          : carrierPick === "CLARO"
+            ? "internet.ctimovil.com.ar"
+            : "internet.personal.com";
+
+      const sim = await db.sim.create({
+        data: {
+          iccid: faker.string.numeric(20),
+          phoneNumber: `+54 11 ${faker.string.numeric(4)}-${faker.string.numeric(4)}`,
+          imsi: faker.string.numeric(15),
+          carrier: carrierPick,
+          apn: apnPick,
+          dataPlanMb: spec.vehicleType === "TRUCK" ? 250 : 100,
+          status: "ACTIVE",
+          activatedAt: faker.date.past({ years: 1, refDate: NOW }),
+        },
+      });
+
+      await db.device.create({
+        data: {
+          assetId: asset.id,
+          imei: faker.string.numeric(15),
+          vendor: "TELTONIKA",
+          model: deviceModel,
+          status: "INSTALLED",
+          isPrimary: true,
+          simId: sim.id,
+          installedAt: faker.date.past({ years: 2, refDate: NOW }),
+          lastSeenAt: faker.date.recent({ days: 1, refDate: NOW }),
+        },
+      });
+
+      allAssets.push({
+        id: asset.id,
+        accountId: targetAcc.id,
+        route,
+        bounds: null,
+        mobility: "MOBILE",
+        status: "MOVING",
+        realCsvFile: spec.csvFile,
+        cloneIdx: mult, // S3-L4.7 · usado en el shift de timestamps
+      });
+      totalAssets++;
+      totalDevices++;
+      realVehicleCount++;
+    }
+  }
+  console.log(`   ✓ ${realVehicleCount} real-trajectory vehicles created across ${allAccounts.length} accounts`);
 
   // ── Synthetic positions removed ──────────────────────────
   //  All positions now come from the real CSV importer below.
@@ -579,18 +598,24 @@ async function main() {
       continue;
     }
 
-    // No re-anchor: keep the CSV's original timestamps. The
-    // demo will show data on the actual dates from the export
-    // (e.g. 23/04 and 24/04). Operators pick those dates from
-    // the date filter; the default date logic on the page
-    // points to the latest date with data so they don't have
-    // to guess.
-    const shiftMs = 0;
+    // S3-L4.6 · re-anchor · última posición del CSV cae en NOW
+    // S3-L4.7 · si el asset es un clone, agregar shift extra para
+    //          que las trayectorias de clones no se solapen
+    let maxOriginalTs = 0;
+    for (const p of parsed.positions) {
+      if (p.recordedAt.getTime() > maxOriginalTs) {
+        maxOriginalTs = p.recordedAt.getTime();
+      }
+    }
+    const cloneShiftMs = (a.cloneIdx ?? 0) * -2 * 24 * 60 * 60 * 1000;
+    const shiftMs =
+      maxOriginalTs > 0
+        ? NOW.getTime() - maxOriginalTs + cloneShiftMs
+        : cloneShiftMs;
 
     // S3-L4.5 · deduplicar por recordedAt antes de insertar.
     // Los CSVs reales tienen timestamps duplicados (eventos múltiples
-    // al mismo segundo). Sin esto, el createMany() falla con P2002
-    // por unique constraint (assetId, recordedAt).
+    // al mismo segundo). Sin esto, el createMany() falla con P2002.
     const seenTs = new Set<number>();
     const positionRows = parsed.positions
       .filter((p) => {

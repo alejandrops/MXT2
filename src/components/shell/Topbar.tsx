@@ -45,7 +45,6 @@ const PAGE_LABELS: Record<string, string> = {
   "torre-de-control": "Torre de control",
   reporte: "Reporte",
   analisis: "Análisis",
-  reportes: "Reportes",
   scorecard: "Scorecard",
   evolucion: "Evolución",
   resumen: "Resumen",

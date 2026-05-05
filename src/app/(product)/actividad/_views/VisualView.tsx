@@ -34,7 +34,7 @@ import styles from "./DistributionView.module.css";
 //  porque cambia la query.
 // ═══════════════════════════════════════════════════════════════
 
-const BASE_PATH = "/actividad/reportes";
+const BASE_PATH = "/actividad/evolucion";
 
 interface Props {
   vista: "heatmap" | "ranking" | "multiples";

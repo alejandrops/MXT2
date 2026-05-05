@@ -31,7 +31,7 @@ import styles from "./ExportMenu.module.css";
 
 export type PrintPeriodKey = "semanal" | "mensual" | "anual";
 
-const DEFAULT_PRINT_BASE = "/actividad/reportes/imprimible";
+const DEFAULT_PRINT_BASE = "/actividad/imprimible";
 
 interface Props {
   /** Handler para exportar CSV · si null, no aparece la opción */
