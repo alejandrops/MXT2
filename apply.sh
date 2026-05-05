@@ -1,99 +1,82 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S5-T2 · Sistema canónico de listas y paneles
+#  S5-T3 · Unificación profunda de Viajes
 #  ─────────────────────────────────────────────────────────────
-#  Bloque grande · unifica los renderers de celdas y los side
-#  panels de toda la app, no solo el frame de tabla (eso ya lo
-#  hizo S5-T1). Este lote responde al feedback "las listas son
-#  visualmente distintas aunque sean DataTable v2".
-#
-#  ─────────────────────────────────────────────────────────────
-#  CAPAS NUEVAS
-#  ─────────────────────────────────────────────────────────────
-#
-#  1. Formatters (extiende src/lib/format.ts)
-#     · formatTimestamp(iso, variant)
-#       variants: short | with-seconds | long | long-seconds |
-#                 date-only | time-only | time-only-seconds
-#       Default "short" → dd/mm/yy hh:mm · canónico para tablas
-#     · formatDistance(meters) → "7.45 km" / "850 m"
-#     · formatSpeed(kmh)       → "71 km/h"
-#     · formatCoords(lat,lng)  → "-34.79242, -58.21453"
-#     · formatDurationFromSec(sec) → "6m 17s" / "2h 35m"
-#     · mapSeverityToSemantic(level) → info | warning | danger | critical
-#       Mapea LOW/MEDIUM/HIGH/CRITICAL Y LEVE/MEDIA/GRAVE a la
-#       misma semántica visual.
-#
-#  2. Cell renderers · src/components/maxtracker/cells/
-#     · TimestampCell     · timestamp con formato canónico
-#     · VehicleCell       · nombre bold + patente gris mono debajo
-#     · DriverCell        · nombre con link · "—" si no hay
-#     · SeverityBadge     · pill color funcional (acepta cualquier enum)
-#     · EventTypeCell     · dot color + label
-#     · LocationCell      · address o coords mono
-#     · SpeedCell         · "71 km/h" mono
-#     · DistanceCell      · "7.45 km" mono
-#     · DurationCell      · acepta sec o ms · "6m 17s" / "2h 35m"
-#
-#  3. Panel canónico · src/components/maxtracker/EntityDetailPanel/
-#     · EntityDetailPanel    · shell con header (kicker · título ·
-#                              subtítulo · accentColor) + close ESC
-#     · PanelDataSection     · grid clave/valor · uppercase labels
-#     · PanelMapSection      · Leaflet 3 modos · pin / segmento /
-#                              polilínea · sin controles
-#     · PanelCustomSection   · contenedor genérico
-#     · PanelActionsSection  · botones contextuales
+#  Resuelve el feedback "Viajes es muy distinto a Eventos e
+#  Infracciones · unifiquemos". Reescribe Viajes desde cero
+#  como clon canónico de Eventos.
 #
 #  ─────────────────────────────────────────────────────────────
-#  PANTALLAS MIGRADAS (3 · todas usan los nuevos cells + panel)
+#  CAMBIOS
 #  ─────────────────────────────────────────────────────────────
 #
-#  · /actividad/eventos · CANÓNICA DE REFERENCIA
-#    EventsClient.tsx · usa todos los cells canónicos
-#    EventDetailPanel.tsx · reescrito sobre EntityDetailPanel
-#                            con secciones modulares
+#  1. XLSX export integrado al DataTable v2
+#     · src/lib/export/xlsx.ts (nuevo)
+#       Carga SheetJS desde CDN on-demand. NO agrega deps al
+#       package.json. Se cachea en window.XLSX.
+#     · src/components/maxtracker/ui/DataTable.tsx (mod)
+#       Default exportFormats = ["csv", "xlsx"] cuando hay
+#       exportFilename. El menú export ahora muestra ambas
+#       opciones en TODAS las tablas migradas.
 #
-#  · /conduccion/infracciones
-#    InfractionsClient.tsx · reemplaza renderers ad-hoc por cells
-#    InfractionDetailPanel.tsx · 469 → 290 líneas, mismo
-#                                comportamiento (mapa con polilínea,
-#                                curva velocidad, descartar)
+#  2. Viajes · reescrito desde cero como clon de Eventos
+#     · src/app/(product)/actividad/viajes/page.tsx
+#       Adopta los mismos URL params que /actividad/eventos:
+#         g · d · view · grp · type · driver · q · page
+#       Sin cap. Paginación normal page/pageSize. Heatmap
+#       deriva puntos desde startLat/Lng de items kind="trip".
 #
-#  · /actividad/viajes (DaysList)
-#    DaysList.tsx · reemplaza renderers ad-hoc por cells.
-#    Su panel timeline (TripDetailPanel) NO se toca · es un
-#    patrón distinto (timeline cronológica del día, no "evento
-#    puntual").
+#     · src/app/(product)/actividad/viajes/TripsClient.tsx
+#       Layout idéntico a EventsClient:
+#         · PageHeader
+#         · Toolbar · PeriodNavigator + tabs Lista/Heatmap
+#         · ScopeFiltersBar (grupos · tipos vehículo · conductor · search)
+#         · DataTable full-width o EventHeatmap
+#         · Side panel canónico DayDetailPanel deslizable
+#       Sin split layout 60/40, sin TripsKpiStrip, sin
+#       TripsExportButton, sin TripsFilterBar.
 #
-#  ─────────────────────────────────────────────────────────────
-#  QUÉ NO ENTRA (lo digo de frente para no inflar expectativas)
-#  ─────────────────────────────────────────────────────────────
-#
-#  · Alarmas · usa AlarmCard (cards apilados) no tabla. Es otro
-#    patrón. Si más adelante decidís pasarlo a tabla, se incluye.
-#
-#  · /conduccion/scorecard · sigue funcionando pero con el v1
-#    style del DataTable. Migrarlo es trivial pero no cambia su
-#    función.
-#
-#  · /catalogos/grupos y /gestion/grupos · ya están en DataTable
-#    v2 desde S5-T1. Sus celdas son simples (texto · texto ·
-#    texto · número) · podrían usar cells canónicos pero no
-#    aporta mucho. Lo dejo como está.
-#
-#  · TripDetailPanel, DriverAssetsPanel, AssetDetailPanel y los
-#    otros 5 paneles del repo NO se migran. Cada uno tiene
-#    propósitos distintos al patrón "evento puntual" (timelines,
-#    listados, telemetría live, etc.). El EntityDetailPanel es
-#    para eventos discretos · no para todo lo que es lateral.
+#  3. DayDetailPanel · panel canónico para Viajes
+#     · src/components/maxtracker/days/DayDetailPanel.tsx
+#     · src/components/maxtracker/days/DayDetailPanel.module.css
+#       Usa EntityDetailPanel + cells canónicos. Mantiene el
+#       valor único de Viajes (la timeline cronológica del día)
+#       dentro de PanelCustomSection. Click en un trip de la
+#       timeline → abre PanelMapSection con el recorrido.
 #
 #  ─────────────────────────────────────────────────────────────
-#  AUDITORÍAS (lecciones de los lotes anteriores)
+#  CÓDIGO MUERTO (no se borra · queda por si querés cleanup)
 #  ─────────────────────────────────────────────────────────────
 #
-#  ✓ Ningún .module.css tiene :root (CSS Modules no lo permite)
+#  Estos archivos ya no se importan de ningún lado · no entran
+#  al bundle. Si querés borrarlos, hacelo a mano o pedime un
+#  sub-lote S5-T3-cleanup:
+#
+#    src/components/maxtracker/TripsKpiStrip.tsx (+ .module.css)
+#    src/components/maxtracker/TripsFilterBar.tsx (+ .module.css)
+#    src/app/(product)/actividad/viajes/TripsExportButton.tsx (+ .module.css)
+#    src/app/(product)/actividad/viajes/TripDetailPanel.tsx (+ .module.css)
+#
+#  ─────────────────────────────────────────────────────────────
+#  EFECTO COLATERAL · las 5 tablas migradas ganan XLSX
+#  ─────────────────────────────────────────────────────────────
+#
+#  Después de aplicar este lote, estas tablas muestran menú
+#  CSV + XLSX automáticamente (sin tocarlas):
+#    · /conduccion/infracciones
+#    · /actividad/eventos
+#    · /actividad/viajes
+#    · /catalogos/grupos
+#    · /gestion/grupos
+#
+#  ─────────────────────────────────────────────────────────────
+#  AUDITORÍAS
+#  ─────────────────────────────────────────────────────────────
+#
+#  ✓ Ningún .module.css tiene :root
 #  ✓ Ningún server component pasa funciones a client components
-#  ✓ Sin literales viejos de VehicleType (CAR/MOTORCYCLE/...)
+#    (TripsClient recibe scope, available, rows, heatPoints,
+#    todos serializables · igual que EventsClient)
 #  ✓ npx tsc --noEmit · 0 errores
 #
 #  Idempotente · usa cmp -s antes de cp.
@@ -102,7 +85,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S5-T2 · Sistema canónico de listas y paneles ═══"
+echo "═══ S5-T3 · Unificación profunda de Viajes ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -130,12 +113,22 @@ echo ""
 echo "  npx tsc --noEmit"
 echo "  npm run dev"
 echo ""
-echo "Probá las 3 pantallas:"
-echo "  · /actividad/eventos       ← CANÓNICA · referencia"
-echo "  · /conduccion/infracciones ← debería verse igual"
-echo "  · /actividad/viajes        ← debería verse igual"
+echo "Probá Viajes:"
+echo "  · /actividad/viajes"
 echo ""
-echo "Click en cualquier fila → side panel canónico (mismo header,"
-echo "mismas secciones de datos, mismo comportamiento de cierre)."
+echo "Debería verse INDISTINGUIBLE de Eventos e Infracciones:"
+echo "  · Mismo PageHeader · misma toolbar · mismos selectores"
+echo "  · Tabs Lista/Heatmap como Eventos"
+echo "  · Click fila → side panel deslizable canónico"
+echo "  · Menú export con CSV + XLSX (igual que las otras)"
+echo "  · Sin KPI strip · sin botón Excel separado · sin split layout"
 echo ""
-echo "PRÓXIMO BLOQUE · S5-E1 · Boletín de conductor (mensual)"
+echo "Cleanup opcional · borrar archivos muertos:"
+echo "  rm src/components/maxtracker/TripsKpiStrip.tsx"
+echo "  rm src/components/maxtracker/TripsKpiStrip.module.css"
+echo "  rm src/components/maxtracker/TripsFilterBar.tsx"
+echo "  rm src/components/maxtracker/TripsFilterBar.module.css"
+echo "  rm src/app/(product)/actividad/viajes/TripsExportButton.tsx"
+echo "  rm src/app/(product)/actividad/viajes/TripsExportButton.module.css"
+echo "  rm src/app/(product)/actividad/viajes/TripDetailPanel.tsx"
+echo "  rm src/app/(product)/actividad/viajes/TripDetailPanel.module.css"

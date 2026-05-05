@@ -8,6 +8,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/export/csv";
+import { exportRowsToXlsx } from "@/lib/export/xlsx";
 import styles from "./DataTable.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -204,8 +205,8 @@ export function DataTable<R>({
     });
   }, [rows, columns, internalSort, isControlled]);
 
-  // Export
-  const formats = exportFormats ?? (exportFilename ? ["csv"] : []);
+  // Export · default = csv + xlsx cuando hay filename
+  const formats = exportFormats ?? (exportFilename ? ["csv", "xlsx"] : []);
   const canExport = formats.length > 0 && rows.length > 0;
 
   async function handleExport(format: ExportFormat) {
@@ -213,15 +214,23 @@ export function DataTable<R>({
       await onExport(format);
       return;
     }
-    if (format === "csv" && exportFilename) {
-      const cols: CsvColumn<R>[] = exportColumns
-        ? exportColumns
-        : columns.map((c) => ({
-            header: typeof c.label === "string" ? c.label : c.key,
-            value: (row: R) =>
-              (row as Record<string, unknown>)[c.key] as string | number | null | undefined,
-          }));
+    if (!exportFilename) return;
+    const cols: CsvColumn<R>[] = exportColumns
+      ? exportColumns
+      : columns.map((c) => ({
+          header: typeof c.label === "string" ? c.label : c.key,
+          value: (row: R) =>
+            (row as Record<string, unknown>)[c.key] as
+              | string
+              | number
+              | null
+              | undefined,
+        }));
+
+    if (format === "csv") {
       exportRowsToCsv(exportFilename, displayRows, cols);
+    } else if (format === "xlsx") {
+      await exportRowsToXlsx(exportFilename, displayRows, cols);
     }
   }
 

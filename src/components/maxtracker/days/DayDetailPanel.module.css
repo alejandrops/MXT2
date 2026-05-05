@@ -1,0 +1,105 @@
+/* ═══════════════════════════════════════════════════════════════
+   DayDetailPanel · estilos de timeline · S5-T3
+   ─────────────────────────────────────────────────────────────
+   El shell del panel viene de EntityDetailPanel.
+   Acá solo la cronología del día (lista de trips y stops
+   con click-select).
+   ═══════════════════════════════════════════════════════════════ */
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #f1f1f1;
+  border: 1px solid #f1f1f1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+
+.timelineItem:hover {
+  background: #f9fafb;
+}
+
+.timelineSelected {
+  background: var(--blu-bg) !important;
+  border-left-color: var(--blu);
+}
+
+.timelineTrip .glyph {
+  color: var(--blu);
+}
+
+.timelineStop .glyph {
+  color: #94a3b8;
+}
+
+.timelineStopLong {
+  background: #fef9c3;
+}
+
+.timelineStopLong:hover {
+  background: #fde68a;
+}
+
+.timelineStopLong.timelineSelected {
+  background: var(--blu-bg) !important;
+}
+
+.glyph {
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.time {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  color: #d1d5db;
+  font-weight: 700;
+  margin: 0 1px;
+}
+
+.value {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.eventHot {
+  color: var(--red, #dc2626);
+  font-weight: 500;
+  font-family: var(--m);
+  font-size: 11px;
+}
+
+.stopLabel {
+  color: #6b7280;
+  font-size: 11.5px;
+}
