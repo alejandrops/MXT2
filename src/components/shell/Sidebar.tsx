@@ -126,12 +126,14 @@ const MODULES: ModuleDef[] = [
     icon: <Truck size={16} />,
     pathPrefix: "/conduccion",
     // S1-L2 ia-reorg · habilitado.
-    // S4-L3b · Dashboard agregado · KPIs + ranking + recientes.
-    // Pantallas restantes (Mapa heatmap, Reportes, Comparativa,
-    // Infracciones, Boletín, Configuración) llegan en S4-L3c+.
+    // S4-L3b · Dashboard · KPIs + ranking + recientes.
+    // S4-L3c · Infracciones · listado + heatmap + descartar.
+    // Pantallas restantes (Reportes, Comparativa, Boletín,
+    // Configuración) llegan en S4-L3d+.
     enabled: true,
     pages: [
       { label: "Dashboard", href: "/conduccion/dashboard" },
+      { label: "Infracciones", href: "/conduccion/infracciones" },
       { label: "Scorecard", href: "/conduccion/scorecard" },
     ],
   },
