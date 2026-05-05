@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 // ═══════════════════════════════════════════════════════════════
 //  /actividad · redirect a primer item del módulo
 //  ─────────────────────────────────────────────────────────────
-//  Antes redirigía a /actividad/dashboard que no existe → 404.
-//  Ahora va a /actividad/reportes (primer item del Sidebar).
+//  S3-L4.2 · ahora va a /actividad/resumen (era /reportes que
+//  quedó como redirect-only). Resumen muestra el bullet table
+//  por default cuando se elige modo Visual.
 // ═══════════════════════════════════════════════════════════════
 
 export default function ActividadIndexPage() {
-  redirect("/actividad/reportes");
+  redirect("/actividad/resumen");
 }

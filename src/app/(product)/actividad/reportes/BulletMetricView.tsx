@@ -65,7 +65,6 @@ export function BulletMetricView({ data }: Props) {
     const g = over.g ?? data.granularity;
     const d = over.d === null ? null : over.d ?? data.anchorIso;
     const scope = over.scope ?? data.appliedScope;
-    const mode = over.mode ?? "fleet-multi";
 
     if (g !== "month-days") params.set("g", g);
 
@@ -76,7 +75,12 @@ export function BulletMetricView({ data }: Props) {
     if (scope.vehicleTypes?.length) params.set("type", scope.vehicleTypes.join(","));
     if (scope.personIds?.length) params.set("driver", scope.personIds.join(","));
     if (scope.search) params.set("q", scope.search);
-    if (mode !== "distribution") params.set("mode", mode);
+
+    // S3-L4.2 · BulletMetricView vive SOLO en modo visual (en /resumen).
+    // Setear modo=visual siempre para que cualquier navegación
+    // (cambio de fecha, granularidad, scope) preserve el modo y no
+    // caiga en tabla por default.
+    params.set("modo", "visual");
 
     const qs = params.toString();
     return qs ? `${BASE_PATH}?${qs}` : BASE_PATH;

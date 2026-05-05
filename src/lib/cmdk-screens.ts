@@ -43,19 +43,21 @@ export const SCREENS: ScreenEntry[] = [
 
   // Actividad
   {
-    label: "Reportes",
+    label: "Resumen de actividad",
     keywords: [
+      "resumen",
       "reportes",
       "analisis",
       "análisis",
       "tabla",
       "pivot",
-      "heatmap",
-      "matriz",
       "ranking",
+      "bullet",
+      "metricas",
+      "métricas",
       "export",
     ],
-    href: "/actividad/reportes",
+    href: "/actividad/resumen",
     module: "Actividad",
   },
   {

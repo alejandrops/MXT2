@@ -1,290 +1,60 @@
-import {
-  getFleetAnalysis,
-  getFleetMultiMetric,
-  getDriversAnalysis,
-  getDriversMultiMetric,
-  type AnalysisGranularity,
-  type ActivityMetric,
-  type ScopeFilters,
-} from "@/lib/queries";
-import { ReportesClient } from "./ReportesClient";
-import { PageHeader } from "@/components/maxtracker/ui";
-import styles from "./page.module.css";
+import { redirect } from "next/navigation";
 
 // ═══════════════════════════════════════════════════════════════
-//  Reportes · 3 ejes (sujeto × modo × vista)
+//  /actividad/reportes · redirect inteligente · S3-L4.2
 //  ─────────────────────────────────────────────────────────────
-//  Lote unificación · Análisis y Reportes se fusionaron en una
-//  sola pantalla con 2 modos top-level:
+//  Antes era una pantalla self-contained que duplicaba la lógica
+//  de /actividad/evolucion + /actividad/resumen. Era deuda de
+//  un refactor incompleto · 3 pantallas haciendo lo mismo.
 //
-//  MODO VISUAL · gráficos exploratorios (data del FleetAnalysis):
-//    · heatmap     · matriz vehículos × tiempo (default)
-//    · ranking     · barras ordenadas con promedio
-//    · multiples   · mini-líneas por vehículo
+//  Ahora es solo redirect · preserva todos los query params y
+//  manda al equivalente correcto:
 //
-//  MODO TABLA · tablas densas para extraer datos:
-//    · time        · pivot vehículos × tiempo (era DistributionView)
-//    · metrics     · multi-métrica vehículos
-//    · drivers-time    · pivot conductores × tiempo
-//    · drivers-metrics · multi-métrica conductores
+//    layout=metrics  o  mode=fleet-multi/drivers-multi  → /resumen
+//    el resto (default · time)                          → /evolucion
 //
-//  URL params:
-//    g       · granularity · default week-days
-//    d       · anchor ISO
-//    m       · metric (en time o visual)
-//    grp     · group ids
-//    type    · vehicle types
-//    driver  · person ids
-//    q       · search
-//    modo    · visual | tabla (default tabla · backward compat)
-//    vista   · solo cuando modo=visual · heatmap|ranking|multiples
-//    subject · solo cuando modo=tabla · vehicles (default) | drivers
-//    layout  · solo cuando modo=tabla · time (default) | metrics
-//
-//  Legacy ?mode=fleet-multi y ?mode=drivers-multi siguen
-//  funcionando como atajo a tabla.
+//  URLs viejas siguen funcionando · ningún link/bookmark roto.
 // ═══════════════════════════════════════════════════════════════
-
-export const revalidate = 60;
-
-const VALID_G: AnalysisGranularity[] = [
-  "day-hours",
-  "week-days",
-  "month-days",
-  "year-weeks",
-  "year-months",
-];
-
-const VALID_M: ActivityMetric[] = [
-  "distanceKm",
-  "activeMin",
-  "idleMin",
-  "tripCount",
-  "eventCount",
-  "highEventCount",
-  "speedingCount",
-  "maxSpeedKmh",
-  "fuelLiters",
-];
-
-type Modo = "visual" | "tabla";
-type VistaVisual = "heatmap" | "ranking" | "multiples";
-type Subject = "vehicles" | "drivers";
-type Layout = "time" | "metrics";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function ReportesPage({ searchParams }: PageProps) {
+export default async function ReportesRedirectPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const get = (k: string): string | null => {
-    const v = sp[k];
-    if (Array.isArray(v)) return v[0] ?? null;
-    return typeof v === "string" && v.length > 0 ? v : null;
-  };
-  const csv = (k: string): string[] | undefined => {
-    const v = get(k);
-    if (!v) return undefined;
-    return v.split(",").filter(Boolean);
-  };
 
-  // ── Comunes ─────────────────────────────────────────────────
-  const gRaw = get("g");
-  const granularity: AnalysisGranularity =
-    gRaw && (VALID_G as string[]).includes(gRaw)
-      ? (gRaw as AnalysisGranularity)
-      : "week-days";
+  const layout = pickStr(sp.layout);
+  const modeRaw = pickStr(sp.mode);
 
-  const mRaw = get("m");
-  const metric: ActivityMetric =
-    mRaw && (VALID_M as string[]).includes(mRaw)
-      ? (mRaw as ActivityMetric)
-      : "distanceKm";
+  const isMetricsLayout =
+    layout === "metrics" ||
+    modeRaw === "fleet-multi" ||
+    modeRaw === "drivers-multi";
 
-  const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const todayIso = `${todayLocal.getUTCFullYear()}-${String(
-    todayLocal.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
-  const anchor = get("d") ?? todayIso;
+  const target = isMetricsLayout
+    ? "/actividad/resumen"
+    : "/actividad/evolucion";
 
-  const scope: ScopeFilters = {
-    groupIds: csv("grp"),
-    vehicleTypes: csv("type"),
-    personIds: csv("driver"),
-    search: get("q") ?? undefined,
-  };
-
-  // ── Modo top-level ──────────────────────────────────────────
-  const modoRaw = get("modo");
-  const modo: Modo = modoRaw === "visual" ? "visual" : "tabla";
-
-  // ── MODO VISUAL ─────────────────────────────────────────────
-  if (modo === "visual") {
-    // S3-L4 · si layout=metrics, mostrar bullet table (vehículos × métricas)
-    // en vez del heatmap/ranking/multiples temporal. Misma data que la
-    // tabla de /resumen + ?modo=visual.
-    const layoutRaw = get("layout");
-    if (layoutRaw === "metrics") {
-      const multiData = await getFleetMultiMetric({
-        granularity,
-        anchor,
-        metric,
-        scope,
-      });
-      return (
-        <>
-          <PageHeader variant="module" title="Reportes" />
-          <div className="appPage">
-            <ReportesClient
-              modo="visual"
-              layout="metrics"
-              subject="vehicles"
-              multiData={multiData}
-              baseUrl="/actividad/reportes"
-            />
-          </div>
-        </>
-      );
-    }
-
-    const vistaRaw = get("vista");
-    const vista: VistaVisual =
-      vistaRaw === "ranking" || vistaRaw === "multiples"
-        ? vistaRaw
-        : "heatmap";
-
-    const data = await getFleetAnalysis({
-      granularity,
-      anchor,
-      metric,
-      scope,
-    });
-
-    return (
-      <>
-        <PageHeader variant="module" title="Reportes" />
-        <div className="appPage">
-          <ReportesClient
-            modo="visual"
-            layout="time"
-            subject="vehicles"
-            vista={vista}
-            visualData={data}
-            baseUrl="/actividad/reportes"
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── MODO TABLA · misma lógica de antes ──────────────────────
-  let subject: Subject = "vehicles";
-  let layout: Layout = "time";
-
-  const subjectRaw = get("subject");
-  const layoutRaw = get("layout");
-  const modeRaw = get("mode");
-
-  if (subjectRaw === "drivers") subject = "drivers";
-  if (layoutRaw === "metrics") layout = "metrics";
-
-  // Legacy mode mappings
-  if (!subjectRaw && !layoutRaw && modeRaw) {
-    if (modeRaw === "fleet-multi") {
-      subject = "vehicles";
-      layout = "metrics";
-    } else if (modeRaw === "drivers-multi") {
-      subject = "drivers";
-      layout = "metrics";
+  // Preservar todos los query params (excepto `mode` legacy que ya
+  // tradujimos a layout). /resumen y /evolucion forzan su layout
+  // internamente · el param se ignora si está, no rompe nada.
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(sp)) {
+    if (value === undefined) continue;
+    if (key === "mode") continue;
+    if (Array.isArray(value)) {
+      if (value[0]) params.set(key, value[0]);
+    } else {
+      params.set(key, value);
     }
   }
 
-  if (subject === "vehicles" && layout === "time") {
-    const data = await getFleetAnalysis({
-      granularity,
-      anchor,
-      metric,
-      scope,
-    });
-    return (
-      <>
-        <PageHeader variant="module" title="Reportes" />
-        <div className="appPage">
-        <ReportesClient
-          modo="tabla"
-          subject="vehicles"
-          layout="time"
-          data={data}
-          baseUrl="/actividad/reportes"
-        />
-        </div>
-      </>
-    );
-  }
-  if (subject === "vehicles" && layout === "metrics") {
-    const multiData = await getFleetMultiMetric({
-      granularity,
-      anchor,
-      metric,
-      scope,
-    });
-    return (
-      <>
-        <PageHeader variant="module" title="Reportes" />
-        <div className="appPage">
-        <ReportesClient
-          modo="tabla"
-          subject="vehicles"
-          layout="metrics"
-          multiData={multiData}
-          baseUrl="/actividad/reportes"
-        />
-        </div>
-      </>
-    );
-  }
-  if (subject === "drivers" && layout === "time") {
-    const driversData = await getDriversAnalysis({
-      granularity,
-      anchor,
-      metric,
-      scope,
-    });
-    return (
-      <>
-        <PageHeader variant="module" title="Reportes" />
-        <div className="appPage">
-        <ReportesClient
-          modo="tabla"
-          subject="drivers"
-          layout="time"
-          driversData={driversData}
-          baseUrl="/actividad/reportes"
-        />
-        </div>
-      </>
-    );
-  }
-  // drivers + metrics
-  const driversMultiData = await getDriversMultiMetric({
-    granularity,
-    anchor,
-    metric,
-    scope,
-  });
-  return (
-    <>
-      <PageHeader variant="module" title="Reportes" />
-      <div className="appPage">
-        <ReportesClient
-          modo="tabla"
-          subject="drivers"
-          layout="metrics"
-          driversMultiData={driversMultiData}
-          baseUrl="/actividad/reportes"
-        />
-      </div>
-    </>
-  );
+  const qs = params.toString();
+  redirect(qs ? `${target}?${qs}` : target);
+}
+
+function pickStr(v: string | string[] | undefined): string | null {
+  if (Array.isArray(v)) return v[0] ?? null;
+  if (typeof v === "string" && v.length > 0) return v;
+  return null;
 }
