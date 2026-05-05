@@ -68,7 +68,10 @@ const db = new PrismaClient();
 //  Helpers
 // ═══════════════════════════════════════════════════════════════
 
-const NOW = new Date("2026-04-24T12:00:00Z");
+// S3-L4.3 · NOW dinámico · siembra hasta el momento de correr el script.
+// Antes era hardcodeado a "2026-04-24" y los datos siempre quedaban
+// desactualizados respecto al día de la demo.
+const NOW = new Date();
 const MS_DAY = 24 * 60 * 60 * 1000;
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
 

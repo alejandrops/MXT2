@@ -30,6 +30,13 @@ export default async function ResumenPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const params = parseReportesParams(sp, "metrics");
 
+  // S3-L4.3 · /resumen no muestra sub-divisiones del período. Si vino
+  // con granularity=year-weeks (desde URL legacy o el navegador full),
+  // normalizar a year-months · es la única forma de "Año" en simple.
+  if (params.granularity === "year-weeks") {
+    params.granularity = "year-months";
+  }
+
   // Drivers + visual no soportado · forzamos tabla
   const effectiveModo =
     params.subject === "drivers" && params.modo === "visual"

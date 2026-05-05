@@ -40,7 +40,7 @@ export default async function AnalisisRedirect({ searchParams }: PageProps) {
     if (val) params.set(key, val);
   }
 
-  redirect(`/actividad/reportes?${params.toString()}`);
+  redirect(`/actividad/evolucion?${params.toString()}`);
 }
 
 function pickFirst(

@@ -12,5 +12,5 @@ export default async function RedirectReportes({ searchParams }: PageProps) {
     else if (typeof v === "string") qs.set(k, v);
   }
   const tail = qs.toString();
-  redirect(`/actividad/reportes${tail ? `?${tail}` : ""}`);
+  redirect(`/actividad/evolucion${tail ? `?${tail}` : ""}`);
 }

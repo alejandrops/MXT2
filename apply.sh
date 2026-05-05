@@ -1,47 +1,51 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S3-L4.2-cleanup-reportes-redirect · apply.sh
-#  Cleanup · /actividad/reportes pasa a redirect-only
-#  Resuelve también el bug del modo visual al cambiar fecha
-#
-#  Causa raíz que se resuelve:
-#    1. Tres pantallas haciendo lo mismo · /reportes, /resumen,
-#       /evolucion · deuda de un refactor incompleto · "el reporte
-#       para qué es? no está deprecado?" — sí, lo estaba.
-#    2. /actividad redirigía a /reportes · perpetuaba la URL vieja
-#    3. BulletMetricView no preservaba modo=visual al cambiar fecha
-#       · cualquier nav con la URL nueva caía en modo tabla default
+#  S3-L4.3-cleanup-real-y-fix-period · apply.sh
+#  Cleanup real de /reportes + fix bug year-weeks/year-months +
+#  navegador simple en /resumen + seed dinámico
 #
 #  Cambios:
-#    ~ /actividad/reportes/page.tsx · pasa a redirect inteligente
-#      preservando query params · va a /resumen si layout=metrics
-#      o mode=fleet-multi/drivers-multi · sino a /evolucion
-#    ~ /actividad/page.tsx · redirige a /resumen (era /reportes)
-#    ~ src/lib/cmdk-screens.ts · entry "Reportes" pasa a "Resumen
-#      de actividad" apuntando a /resumen
-#    ~ ReportesClient.tsx · revertir botón extra "Resumen" del
-#      toggle Vista (era hotfix S3-L4.1) · ya no necesario porque
-#      /reportes no muestra UI · queda Heatmap/Ranking/Multiples
-#    ~ BulletMetricView.tsx · buildHref siempre setea modo=visual
-#      para preservar el modo al cambiar fecha/granularidad/scope
+#    DELETE
+#      - src/app/(product)/actividad/reportes/page.tsx
+#        URL /actividad/reportes deja de existir · 404
+#        Componentes shared (BulletMetricView, MultiMetricView,
+#        VisualView, ReportesClient, etc.) quedan en el dir
+#        porque los siguen importando /resumen y /evolucion
 #
-#  Resultado:
-#    /actividad/resumen     · canónica · default tab Resumen, modo Visual = bullet
-#    /actividad/evolucion   · canónica · vehículos × tiempo
-#    /actividad/reportes    · redirect-only (preserva todos los params)
-#    /actividad             · redirige a /resumen
+#    REDIRECTS legacy a /reportes ahora apuntan a /evolucion
+#      ~ /actividad/analisis/page.tsx
+#      ~ /seguimiento/reportes/page.tsx
 #
-#  URLs viejas (bookmarks, links externos, cmdk) siguen funcionando.
+#    BUG · year-weeks/year-months no persistían
+#      ~ DistributionView · "if (g !== year-weeks)" → siempre setear
+#      ~ MultiMetricView · "if (g !== month-days)" → siempre setear
+#      ~ BulletMetricView · idem
+#      ~ VisualView · idem
+#      ~ DriversDistributionView · idem
+#      ~ DriversMultiMetricView · idem
 #
-#  Idempotente · usa cmp -s antes de cp.
+#    NAVEGADOR SIMPLE · /resumen sin sub-divisiones
+#      ~ PeriodNavigator · nuevo prop `simple={true}`
+#        oculta los sub-hints ("por días", "por meses")
+#        y muestra solo 4 botones: Día / Semana / Mes / Año
+#        donde "Año" siempre es year-months (no year-weeks)
+#      ~ /resumen normaliza year-weeks → year-months al parsear
+#      ~ BulletMetricView, MultiMetricView, DriversMultiMetricView
+#        pasan simple={true} al PeriodNavigator
+#
+#    SEED · dato hasta hoy
+#      ~ prisma/seed.ts · NOW = new Date() · era hardcodeado a 2026-04-24
+#
+#  Idempotente · usa cmp -s + maneja deletes via _deletes.txt
 # ═══════════════════════════════════════════════════════════════
 set -e
 PAYLOAD="_payload"
+DELETES_FILE="_deletes.txt"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S3-L4.2 · cleanup /reportes redirect ═══"
+echo "═══ S3-L4.3 · cleanup real + fix bugs ═══"
 
-C_NEW=0; C_UPD=0; C_SAME=0
+C_NEW=0; C_UPD=0; C_SAME=0; C_DEL=0
 apply_file() {
   local rel="$1"; local src="$PAYLOAD/$rel"; local dst="$rel"
   [ ! -f "$src" ] && echo "  ⚠️ payload missing: $rel" && return
@@ -52,26 +56,52 @@ apply_file() {
   else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; C_UPD=$((C_UPD+1)); fi
 }
 
-apply_file "src/app/(product)/actividad/reportes/page.tsx"
-apply_file "src/app/(product)/actividad/reportes/ReportesClient.tsx"
-apply_file "src/app/(product)/actividad/reportes/BulletMetricView.tsx"
+# Aplicar cambios
 apply_file "src/app/(product)/actividad/page.tsx"
+apply_file "src/app/(product)/actividad/analisis/page.tsx"
+apply_file "src/app/(product)/seguimiento/reportes/page.tsx"
+apply_file "src/app/(product)/actividad/resumen/page.tsx"
 apply_file "src/lib/cmdk-screens.ts"
+apply_file "src/components/maxtracker/period/PeriodNavigator.tsx"
+apply_file "src/app/(product)/actividad/reportes/BulletMetricView.tsx"
+apply_file "src/app/(product)/actividad/reportes/MultiMetricView.tsx"
+apply_file "src/app/(product)/actividad/reportes/DistributionView.tsx"
+apply_file "src/app/(product)/actividad/reportes/VisualView.tsx"
+apply_file "src/app/(product)/actividad/reportes/DriversDistributionView.tsx"
+apply_file "src/app/(product)/actividad/reportes/DriversMultiMetricView.tsx"
+apply_file "src/app/(product)/actividad/reportes/ReportesClient.tsx"
+apply_file "prisma/seed.ts"
+
+# Aplicar deletes
+if [ -f "$DELETES_FILE" ]; then
+  while IFS= read -r del; do
+    [ -z "$del" ] && continue
+    if [ -f "$del" ]; then
+      rm "$del"; echo "  - $del  (borrado)"; C_DEL=$((C_DEL+1))
+    fi
+  done < "$DELETES_FILE"
+fi
 
 echo ""
-echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
-rm -rf "$PAYLOAD"
+echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME · Borrados: $C_DEL"
+rm -rf "$PAYLOAD" "$DELETES_FILE"
 
 echo ""
 echo "✅ Lote aplicado"
 echo ""
-echo "Próximo paso · reiniciar dev server:"
+echo "Próximo paso · reset DB con seed actualizado + restart server:"
+echo ""
+echo "  npx prisma migrate reset --force --skip-seed"
+echo "  npm run db:seed"
 echo "  rm -rf .next && npm run dev"
 echo ""
+echo "⚠️  El reset de DB borra TODO · solo en local/dev"
+echo ""
 echo "Validación e2e:"
-echo "  1. Click 'Actividad' en sidebar → debería ir a /actividad/resumen"
-echo "  2. En /actividad/resumen, click 'Visual' → bullet table aparece"
-echo "  3. Cambiá la fecha con < o > → bullet se mantiene (no vuelve a tabla)"
-echo "  4. Cambiá granularidad (Día/Semana/Mes) → bullet se mantiene"
-echo "  5. URLs viejas: /actividad/reportes?mode=fleet-multi → redirige a /resumen"
-echo "  6. Cmd+K · 'Resumen de actividad' → /resumen"
+echo "  1. /actividad → redirige a /actividad/resumen"
+echo "  2. /actividad/reportes → 404 (URL eliminada)"
+echo "  3. /actividad/resumen → bullet table con datos hasta hoy"
+echo "  4. Navegador en /resumen muestra 4 botones: Día / Semana / Mes / Año"
+echo "  5. Click 'Año' → year-months · datos del año actual"
+echo "  6. /actividad/evolucion → cambiar a 'Año por meses' o 'Año por semanas'"
+echo "     · datos persisten al navegar (bug arreglado)"

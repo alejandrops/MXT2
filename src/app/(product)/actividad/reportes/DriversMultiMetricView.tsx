@@ -61,7 +61,7 @@ export function DriversMultiMetricView({ data }: Props) {
     const d = over.d === null ? null : over.d ?? data.anchorIso;
     const scope = over.scope ?? data.appliedScope;
 
-    if (g !== "month-days") params.set("g", g);
+    params.set("g", g); // S3-L4.3 · siempre persistir granularity
 
     const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const todayIso = `${todayLocal.getUTCFullYear()}-${String(todayLocal.getUTCMonth() + 1).padStart(2, "0")}-${String(todayLocal.getUTCDate()).padStart(2, "0")}`;
@@ -187,6 +187,7 @@ export function DriversMultiMetricView({ data }: Props) {
           isToday={isAnchorToday}
           onChangeGranularity={(g) => nav({ g })}
           onChangeAnchor={(d) => nav({ d })}
+          simple={true}
         />
         <div className={styles.toolbarSpacer} />
         <ExportMenu

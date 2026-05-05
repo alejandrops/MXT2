@@ -59,7 +59,7 @@ export function VisualView({ vista, data }: Props) {
     const m = over.m ?? data.metric;
     const scope = over.scope ?? data.appliedScope;
 
-    if (g !== "month-days") params.set("g", g);
+    params.set("g", g); // S3-L4.3 · siempre persistir granularity
 
     const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const todayIso = `${todayLocal.getUTCFullYear()}-${String(

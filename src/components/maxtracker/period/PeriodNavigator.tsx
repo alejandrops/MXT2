@@ -38,6 +38,9 @@ interface Props {
   onChangeGranularity: (g: AnalysisGranularity) => void;
   /** Click en prev/next/today → cambia el ancla. null = volver a hoy */
   onChangeAnchor: (anchor: string | null) => void;
+  /** S3-L4.3 · cuando true, oculta los sub-hints ("por días", "por meses").
+   *  Útil en /resumen donde la pantalla NO desglosa el período. */
+  simple?: boolean;
 }
 
 const TABS: {
@@ -60,10 +63,21 @@ export function PeriodNavigator({
   isToday,
   onChangeGranularity,
   onChangeAnchor,
+  simple = false,
 }: Props) {
-  const visibleTabs = available
-    ? TABS.filter((t) => available.includes(t.key))
-    : TABS;
+  // En modo simple, solo 4 botones: Día / Semana / Mes / Año (year-months)
+  // No incluye year-weeks porque "es solo año, no hay subdivisiones"
+  const SIMPLE_TABS: AnalysisGranularity[] = [
+    "day-hours",
+    "week-days",
+    "month-days",
+    "year-months",
+  ];
+  const visibleTabs = simple
+    ? TABS.filter((t) => SIMPLE_TABS.includes(t.key))
+    : available
+      ? TABS.filter((t) => available.includes(t.key))
+      : TABS;
 
   return (
     <div className={styles.wrap}>
@@ -112,7 +126,7 @@ export function PeriodNavigator({
               className={`${styles.tab} ${active ? styles.tabActive : ""}`}
             >
               <span className={styles.tabLabel}>{tab.label}</span>
-              <span className={styles.tabHint}>{tab.hint}</span>
+              {!simple && <span className={styles.tabHint}>{tab.hint}</span>}
             </button>
           );
         })}
