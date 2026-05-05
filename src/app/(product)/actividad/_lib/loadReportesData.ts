@@ -180,9 +180,22 @@ export async function loadReportesData(params: ParsedReportesParams) {
     scope: scopeWithAccount,
   };
 
-  // L3.5b · si modo=visual y subject=vehicles, FleetAnalysis sirve
-  // para los 3 layouts (time → heatmap/ranking/multiples;
-  // metrics → ranking solo).
+  // S3-L4 · /resumen + visual + vehicles ahora usa el bullet table
+  // (vehículos × métricas) en vez del ranking de 1 sola métrica.
+  // Carga FleetMultiMetricData igual que la tabla del resumen.
+  if (
+    params.modo === "visual" &&
+    params.subject === "vehicles" &&
+    params.layout === "metrics"
+  ) {
+    return {
+      kind: "visual-metrics" as const,
+      multiData: await getFleetMultiMetric(args),
+    };
+  }
+
+  // L3.5b · si modo=visual y subject=vehicles + layout=time, FleetAnalysis
+  // sirve para los 3 layouts visuales (heatmap/ranking/multiples).
   if (params.modo === "visual" && params.subject === "vehicles") {
     return { kind: "visual" as const, data: await getFleetAnalysis(args) };
   }

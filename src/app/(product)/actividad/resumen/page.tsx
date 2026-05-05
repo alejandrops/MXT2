@@ -42,7 +42,15 @@ export default async function ResumenPage({ searchParams }: PageProps) {
     <>
       <PageHeader variant="module" title="Resumen de actividad" />
       <div className="appPage">
-      {result.kind === "visual" && params.subject === "vehicles" ? (
+      {result.kind === "visual-metrics" ? (
+        <ReportesClient
+          layout="metrics"
+          modo="visual"
+          subject="vehicles"
+          multiData={result.multiData}
+          baseUrl={BASE_URL}
+        />
+      ) : result.kind === "visual" && params.subject === "vehicles" ? (
         <ReportesClient
           layout="metrics"
           modo="visual"

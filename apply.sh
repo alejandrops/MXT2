@@ -1,26 +1,28 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S3-L5 · centro de notificaciones · Bell del Topbar funcional
+#  S3-L4-resumen-visual-bullet · apply.sh
+#  Sprint 3 · Lote 4 · Bullet table en /actividad/resumen modo visual
 #
 #  Cambios:
-#    + src/lib/queries/user-notifications.ts
-#      getUserNotifications agrega: alarmas críticas + boletines
-#      cerrados (24h) + feedback respondido (semana)
-#    + src/app/api/notifications/route.ts · GET endpoint
-#    + src/components/shell/NotificationsBell.tsx · client component
-#      con dropdown · fetch lazy on open · auto-close on outside click + ESC
-#    + src/components/shell/NotificationsBell.module.css
-#    ~ src/components/shell/Topbar.tsx · reemplaza Bell decorativo
+#    + src/app/(product)/actividad/reportes/BulletMetricView.tsx
+#      Variante visual del MultiMetricView · misma estructura, cada
+#      celda tiene una micro-barra escalada al max de la columna.
+#      Color contextual: barra warn cuando vehículo está top 25% en
+#      métrica reverse (eventos, idle, excesos, vmax).
+#    + src/app/(product)/actividad/reportes/BulletMetricView.module.css
+#      CSS base + classes nuevas para bullet (track, bar, warn, value)
+#    ~ src/app/(product)/actividad/reportes/ReportesClient.tsx
+#      PropsVisualMetrics ahora puede recibir multiData o visualData
+#      Switch usa BulletMetricView si tiene multiData (default S3-L4)
+#    ~ src/app/(product)/actividad/_lib/loadReportesData.ts
+#      Nuevo kind "visual-metrics" carga FleetMultiMetricData
+#      cuando modo=visual + subject=vehicles + layout=metrics
+#    ~ src/app/(product)/actividad/resumen/page.tsx
+#      Wire del nuevo kind al ReportesClient
 #
 #  Comportamiento:
-#    · Click en Bell → abre dropdown
-#    · Auto-fetch al abrir si no hay data cargada
-#    · Empty state · "Estás al día"
-#    · Items linkean a su página (alarma → vehículo, boletín → /direccion/
-#      boletin/<periodo>, feedback → /admin/feedback)
-#    · Footer link a /configuracion?seccion=notificaciones
-#    · Sin DB nueva · solo agrega lectura · próximas iteraciones
-#      podrían persistir read state
+#    /actividad/resumen?modo=visual → bullet table con vehículos × 8 métricas
+#    Distancia · Horas · Idle · Viajes · Eventos · Excesos · Vmax · Fuel
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -28,7 +30,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S3-L5 · centro de notificaciones ═══"
+echo "═══ S3-L4-resumen-visual-bullet · vehículos × métricas (visual) ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -41,11 +43,11 @@ apply_file() {
   else cp "$src" "$dst"; echo "  ~ $rel  (actualizado)"; C_UPD=$((C_UPD+1)); fi
 }
 
-apply_file "src/lib/queries/user-notifications.ts"
-apply_file "src/app/api/notifications/route.ts"
-apply_file "src/components/shell/NotificationsBell.tsx"
-apply_file "src/components/shell/NotificationsBell.module.css"
-apply_file "src/components/shell/Topbar.tsx"
+apply_file "src/app/(product)/actividad/reportes/BulletMetricView.tsx"
+apply_file "src/app/(product)/actividad/reportes/BulletMetricView.module.css"
+apply_file "src/app/(product)/actividad/reportes/ReportesClient.tsx"
+apply_file "src/app/(product)/actividad/_lib/loadReportesData.ts"
+apply_file "src/app/(product)/actividad/resumen/page.tsx"
 
 echo ""
 echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
@@ -57,6 +59,8 @@ echo ""
 echo "Próximo paso · reiniciar dev server:"
 echo "  rm -rf .next && npm run dev"
 echo ""
-echo "Validación · click en el Bell del Topbar (esquina superior derecha):"
-echo "  - Debería abrir dropdown con tu data real"
-echo "  - Si no hay nada · empty state 'Estás al día'"
+echo "Validación · entrá a /actividad/resumen y elegí modo Visual:"
+echo "  - Tabla de vehículos × 8 métricas con barras inline"
+echo "  - Barras gris para métricas neutras"
+echo "  - Barras rojo para anomalías (top 25% en métricas reverse:"
+echo "    idle, eventos, excesos, vmax)"

@@ -22,6 +22,7 @@ import { DriversDistributionView } from "./DriversDistributionView";
 import { MultiMetricView } from "./MultiMetricView";
 import { DriversMultiMetricView } from "./DriversMultiMetricView";
 import { VisualView } from "./VisualView";
+import { BulletMetricView } from "./BulletMetricView";
 import styles from "./ReportesClient.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -71,11 +72,14 @@ interface PropsVisualTime {
   baseUrl: string;
 }
 interface PropsVisualMetrics {
-  // Visual + vehicles + metrics = /resumen modo visual · solo ranking
+  // Visual + vehicles + metrics = /resumen modo visual · BulletMetricView (S3-L4)
   layout: "metrics";
   modo: "visual";
   subject: "vehicles";
-  visualData: FleetAnalysisData;
+  /** Cuando es bullet table · vehículos × métricas */
+  multiData?: FleetMultiMetricData;
+  /** Legacy fallback · ranking de 1 métrica · queda por compat */
+  visualData?: FleetAnalysisData;
   baseUrl: string;
 }
 interface PropsTablaVT {
@@ -267,8 +271,13 @@ export function ReportesClient(props: Props) {
         <VisualView vista={props.vista} data={props.visualData} />
       )}
       {props.modo === "visual" && props.layout === "metrics" && (
-        // /resumen visual = ranking forzado (sin selector vista)
-        <VisualView vista="ranking" data={props.visualData} />
+        // S3-L4 · /resumen visual = bullet table (vehículos × métricas)
+        // Si por alguna razón no hay multiData, fallback al ranking legacy
+        props.multiData ? (
+          <BulletMetricView data={props.multiData} />
+        ) : props.visualData ? (
+          <VisualView vista="ranking" data={props.visualData} />
+        ) : null
       )}
       {props.modo === "tabla" &&
         props.subject === "vehicles" &&
