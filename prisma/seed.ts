@@ -587,17 +587,28 @@ async function main() {
     // to guess.
     const shiftMs = 0;
 
-    // Insert positions in chunks of 200 (SQLite param limit)
-    const positionRows = parsed.positions.map((p) => ({
-      assetId: a.id,
-      recordedAt: new Date(p.recordedAt.getTime() + shiftMs),
-      receivedAt: new Date(p.receivedAt.getTime() + shiftMs),
-      lat: p.lat,
-      lng: p.lng,
-      speedKmh: p.speedKmh,
-      heading: p.heading,
-      ignition: p.ignition,
-    }));
+    // S3-L4.5 · deduplicar por recordedAt antes de insertar.
+    // Los CSVs reales tienen timestamps duplicados (eventos múltiples
+    // al mismo segundo). Sin esto, el createMany() falla con P2002
+    // por unique constraint (assetId, recordedAt).
+    const seenTs = new Set<number>();
+    const positionRows = parsed.positions
+      .filter((p) => {
+        const ts = p.recordedAt.getTime();
+        if (seenTs.has(ts)) return false;
+        seenTs.add(ts);
+        return true;
+      })
+      .map((p) => ({
+        assetId: a.id,
+        recordedAt: new Date(p.recordedAt.getTime() + shiftMs),
+        receivedAt: new Date(p.receivedAt.getTime() + shiftMs),
+        lat: p.lat,
+        lng: p.lng,
+        speedKmh: p.speedKmh,
+        heading: p.heading,
+        ignition: p.ignition,
+      }));
     while (positionRows.length > 0) {
       const chunk = positionRows.splice(0, 200);
       await db.position.createMany({ data: chunk });
