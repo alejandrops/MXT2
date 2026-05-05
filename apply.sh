@@ -1,44 +1,70 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S4-L3d-redesign · Recibo de infracción · estilo editorial
+#  S5-T1 · DataTable v2 unificado · 5 pantallas migradas
 #  ─────────────────────────────────────────────────────────────
-#  Reemplaza los 2 archivos del recibo PDF (Receipt.module.css +
-#  InfractionReceipt.tsx) con un lenguaje editorial corporativo.
-#  Primer eslabón del sistema de boletines (Conducción · Dirección
-#  · post-MVP).
+#  Lote grande · unifica las tablas de toda la app al patrón
+#  validado con el usuario (estilo "Posiciones del libro").
 #
-#  CAMBIOS FUNDAMENTALES vs el receipt anterior:
+#  CAMBIOS:
 #
-#    1. Header editorial · "MAXTRACKER · CONDUCCIÓN" uppercase
-#       con tracking amplio + folio mono. Quita el look
-#       "comprobante" del legacy.
+#  1. DataTable v2 (reemplazo del v1, retrocompat)
+#     · src/components/maxtracker/ui/DataTable.tsx  (~430 líneas)
+#     · src/components/maxtracker/ui/DataTable.module.css
 #
-#    2. Título h1 + subtítulo · jerarquía de revista, no de
-#       formulario.
+#     Patrón visual unificado:
+#       · Headers uppercase pequeños en gris · poco peso visual
+#       · Tipografía monoespaciada (--m IBM Plex Mono) en datos
+#         numéricos · alineación perfecta por dígito
+#       · Numeración de fila opcional (showRowNumber)
+#       · Zebra striping muy sutil
+#       · Hover state con tinte azul (--blu-bg)
+#       · Sin bordes verticales · solo separadores horizontales
+#       · Header del bloque con título + count + botón export
+#       · Sticky header al scroll
+#       · Empty state con texto gris centrado
+#       · Click-row → side panel (callback opcional)
+#       · Sortable headers (column.sortable)
+#       · Paginación footer estándar
+#       · Severity badges con color (mantenidos)
 #
-#    3. LEAD NARRATIVO · NUEVO. Oración que cuenta la historia
-#       ("Landen Armstrong superó en +31 km/h durante 6 minutos
-#       17 segundos sobre Av. del Trabajador..."). Es el quiebre
-#       del legacy · función buildLead() template-based, lista
-#       para reemplazo por IA generativa cuando llegue.
+#     API retrocompat con v1 · ScorecardClient (único user de v1)
+#     sigue funcionando sin cambios.
 #
-#    4. Secciones numeradas 01·02·03 · prefigura el formato del
-#       boletín. Cada bloque editorial es una sección numerada.
+#  2. CSV export nativo (sin libs)
+#     · src/lib/export/csv.ts
+#     RFC 4180 compliant · BOM para Excel · downloadCsv() helper.
+#     Cada tabla declara `exportColumns` con header + extractor.
 #
-#    5. KPI strip de 4 celdas · Pico/Vmax/Exceso/Distancia con
-#       color funcional solo donde "duele" (Pico, Exceso).
+#  3. Pantallas migradas:
+#     · /conduccion/infracciones · InfractionsClient
+#     · /actividad/eventos · EventsClient
+#     · /actividad/viajes · DaysList
+#     · /catalogos/grupos · usa GroupsTable wrapper
+#     · /gestion/grupos · usa GroupsTable wrapper
 #
-#    6. Detalles como tabla clave/valor · sin bordes verticales,
-#       solo separadores sutiles.
+#  4. GroupsTable wrapper
+#     · src/components/maxtracker/groups/GroupsTable.tsx
+#     Client component reusable para las dos páginas de grupos
+#     (catalogos y gestion) que son server. Recibe rows +
+#     linkBuilder y delega click-row a router.push.
 #
-#    7. Footer editorial · 3 líneas centradas con autoría +
-#       solicitud + identificador único mono.
+#  NO MIGRADO EN ESTE LOTE:
 #
-#  TOKENS DEL REPO RESPETADOS:
-#    · Tipografía  · IBM Plex Sans (--f) + Plex Mono (--m)
-#    · Color marca · #2563EB (--blu) sectionNum + #1E3A8A en kicker
-#    · Severidad   · #E8352A (--red) y #C42820 (--red-dark)
-#    · No serif    · respeta /actividad/imprimible existente
+#    /configuracion/empresa · EmpresaUsuariosTab
+#       Cada UserRow tiene estado interno (edición inline de
+#       perfil, modales por fila) que requiere descomponer el
+#       componente. Es un refactor distinto · sub-lote S5-T1b.
+#
+#    /conduccion/scorecard · ScorecardClient
+#       Ya usa DataTable (v1) · sigue funcionando con la API
+#       retrocompat. Si querés migrarlo a la nueva API explícita
+#       (con title, count, export) avísame.
+#
+#  PENDIENTE PARA SUB-LOTES:
+#    · S5-T1b · Empresa Usuarios
+#    · S5-E1  · Boletín de conductor (mensual/anual)
+#    · S5-E2  · Boletín de grupo (ranking, scatter)
+#    · S5-E3  · Boletín de empresa (cross-grupo, evolución 12m)
 #
 #  Idempotente · usa cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
@@ -46,7 +72,7 @@ set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S4-L3d-redesign · Recibo editorial ═══"
+echo "═══ S5-T1 · DataTable v2 · 5 pantallas migradas ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -71,8 +97,19 @@ rm -rf "$PAYLOAD"
 echo ""
 echo "✅ Lote aplicado"
 echo ""
-echo "Probá:"
 echo "  npx tsc --noEmit"
 echo "  npm run dev"
-echo "  → /conduccion/infracciones · click cualquier infracción"
-echo "  → 'Abrir recibo imprimible' → nueva tab"
+echo ""
+echo "Probá las 5 pantallas migradas:"
+echo "  · /conduccion/infracciones"
+echo "  · /actividad/eventos"
+echo "  · /actividad/viajes"
+echo "  · /catalogos/grupos"
+echo "  · /gestion/grupos"
+echo ""
+echo "En cualquiera deberías ver:"
+echo "  · Header de tabla 'NOMBRE  count' arriba con botón Exportar CSV"
+echo "  · Headers uppercase chicos en gris"
+echo "  · Datos numéricos en monoespaciada alineada a la derecha"
+echo "  · Hover azul claro · click abre side panel (donde aplica)"
+echo "  · Zebra muy sutil · sin bordes verticales"

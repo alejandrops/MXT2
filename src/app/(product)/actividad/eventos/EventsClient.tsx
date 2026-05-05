@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Map as MapIcon, List } from "lucide-react";
+import Link from "next/link";
+import { Map as MapIcon, List } from "lucide-react";
+import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
 import type { EventType, Severity } from "@/types/domain";
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
@@ -171,143 +173,153 @@ export function EventsClient(props: Props) {
 
       {/* Vista · Lista o Heatmap */}
       {props.view === "lista" ? (
-        <>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Tipo</th>
-                  <th>Severidad</th>
-                  <th>Vehículo</th>
-                  <th>Conductor</th>
-                  <th>Ubicación</th>
-                  <th className={styles.cellRight}>Velocidad</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {props.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className={styles.empty}>
-                      No se registraron eventos para los filtros aplicados.
-                    </td>
-                  </tr>
+        <DataTable<EventListRow>
+          columns={[
+            {
+              key: "occurredAt",
+              label: "Hora",
+              mono: true,
+              sortable: false,
+              render: (r) =>
+                new Date(r.occurredAt).toLocaleString("es-AR", {
+                  timeZone: "America/Argentina/Buenos_Aires",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+            },
+            {
+              key: "type",
+              label: "Tipo",
+              sortable: false,
+              render: (r) => (
+                <span className={styles.typeCell}>
+                  <span
+                    className={styles.typeDot}
+                    style={{ background: getEventColor(r.type) }}
+                  />
+                  {getEventLabel(r.type)}
+                </span>
+              ),
+            },
+            {
+              key: "severity",
+              label: "Severidad",
+              sortable: false,
+              render: (r) => {
+                const colorMap: Record<Severity, string> = {
+                  LOW: "#64748b",
+                  MEDIUM: "#f59e0b",
+                  HIGH: "#ea580c",
+                  CRITICAL: "#dc2626",
+                };
+                return (
+                  <span
+                    className={styles.sevBadge}
+                    style={{
+                      color: colorMap[r.severity],
+                      borderColor: colorMap[r.severity],
+                    }}
+                  >
+                    {SEVERITY_LABELS[r.severity]}
+                  </span>
+                );
+              },
+            },
+            {
+              key: "vehicle",
+              label: "Vehículo",
+              sortable: false,
+              render: (r) => (
+                <Link
+                  href={`/objeto/vehiculo/${r.assetId}`}
+                  className={styles.assetLink}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className={styles.assetName}>{r.assetName}</span>
+                  {r.assetPlate && (
+                    <span className={styles.assetPlate}>{r.assetPlate}</span>
+                  )}
+                </Link>
+              ),
+            },
+            {
+              key: "person",
+              label: "Conductor",
+              sortable: false,
+              render: (r) =>
+                r.personName ? (
+                  <span>{r.personName}</span>
                 ) : (
-                  props.rows.map((r) => {
-                    const colorMap: Record<Severity, string> = {
-                      LOW: "#64748b",
-                      MEDIUM: "#f59e0b",
-                      HIGH: "#ea580c",
-                      CRITICAL: "#dc2626",
-                    };
-                    return (
-                      <tr
-                        key={r.id}
-                        className={styles.row}
-                        onClick={() => setSelectedEvent(r)}
-                      >
-                        <td className={styles.timeCell}>
-                          {new Date(r.occurredAt).toLocaleString("es-AR", {
-                            timeZone: "America/Argentina/Buenos_Aires",
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td>
-                          <span className={styles.typeCell}>
-                            <span
-                              className={styles.typeDot}
-                              style={{ background: getEventColor(r.type) }}
-                            />
-                            {getEventLabel(r.type)}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={styles.sevBadge}
-                            style={{
-                              color: colorMap[r.severity],
-                              borderColor: colorMap[r.severity],
-                            }}
-                          >
-                            {SEVERITY_LABELS[r.severity]}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={styles.assetCell}>
-                            <span className={styles.assetName}>
-                              {r.assetName}
-                            </span>
-                            {r.assetPlate && (
-                              <span className={styles.assetPlate}>
-                                {r.assetPlate}
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td>
-                          {r.personName ?? (
-                            <span className={styles.muted}>—</span>
-                          )}
-                        </td>
-                        <td>
-                          {r.lat && r.lng ? (
-                            <span className={styles.coordsMono}>
-                              {r.lat.toFixed(3)}, {r.lng.toFixed(3)}
-                            </span>
-                          ) : (
-                            <span className={styles.muted}>—</span>
-                          )}
-                        </td>
-                        <td className={styles.cellRight}>
-                          {r.speedKmh !== null && r.speedKmh !== undefined
-                            ? `${Math.round(r.speedKmh)} km/h`
-                            : "—"}
-                        </td>
-                        <td>
-                          <ChevronRight
-                            size={14}
-                            className={styles.muted}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Paginación */}
-          {props.pageCount > 1 && (
-            <div className={styles.pagination}>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={props.page <= 1}
-                onClick={() => navTo(buildHref({ page: props.page - 1 }))}
-              >
-                ← Anterior
-              </button>
-              <span className={styles.pageInfo}>
-                Página {props.page} de {props.pageCount} ·{" "}
-                {props.total.toLocaleString("es-AR")} eventos
-              </span>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={props.page >= props.pageCount}
-                onClick={() => navTo(buildHref({ page: props.page + 1 }))}
-              >
-                Siguiente →
-              </button>
-            </div>
-          )}
-        </>
+                  <span className={styles.muted}>—</span>
+                ),
+            },
+            {
+              key: "location",
+              label: "Ubicación",
+              sortable: false,
+              mono: true,
+              render: (r) =>
+                r.lat && r.lng ? (
+                  <span>
+                    {r.lat.toFixed(3)}, {r.lng.toFixed(3)}
+                  </span>
+                ) : (
+                  <span className={styles.muted}>—</span>
+                ),
+            },
+            {
+              key: "speedKmh",
+              label: "Velocidad",
+              align: "right",
+              mono: true,
+              sortable: false,
+              render: (r) =>
+                r.speedKmh !== null && r.speedKmh !== undefined
+                  ? `${Math.round(r.speedKmh)} km/h`
+                  : "—",
+            },
+          ]}
+          rows={props.rows}
+          rowKey={(r) => r.id}
+          title="Eventos"
+          count={props.total}
+          onRowClick={(r) => setSelectedEvent(r)}
+          selectedRowKey={selectedEvent?.id ?? null}
+          page={props.page}
+          pageCount={props.pageCount}
+          totalCount={props.total}
+          pageSize={props.pageSize}
+          onPageChange={(p) => navTo(buildHref({ page: p }))}
+          exportFormats={["csv"]}
+          exportFilename={`eventos-${props.anchorIso}`}
+          exportColumns={[
+            {
+              header: "Hora",
+              value: (r) =>
+                new Date(r.occurredAt).toLocaleString("es-AR", {
+                  timeZone: "America/Argentina/Buenos_Aires",
+                }),
+            },
+            { header: "Tipo", value: (r) => getEventLabel(r.type) },
+            { header: "Severidad", value: (r) => SEVERITY_LABELS[r.severity] },
+            { header: "Vehiculo", value: (r) => r.assetName },
+            { header: "Patente", value: (r) => r.assetPlate ?? "" },
+            { header: "Conductor", value: (r) => r.personName ?? "" },
+            { header: "Latitud", value: (r) => r.lat ?? "" },
+            { header: "Longitud", value: (r) => r.lng ?? "" },
+            {
+              header: "Velocidad (km/h)",
+              value: (r) =>
+                r.speedKmh !== null && r.speedKmh !== undefined
+                  ? Math.round(r.speedKmh)
+                  : "",
+            },
+          ]}
+          emptyMessage="No se registraron eventos para los filtros aplicados."
+        />
       ) : (
         <EventHeatmap points={props.heatPoints} height={650} />
       )}

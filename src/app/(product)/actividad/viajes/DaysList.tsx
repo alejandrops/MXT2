@@ -1,24 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
 import type { Day } from "@/lib/queries/trips-by-day";
 import styles from "./DaysList.module.css";
 
 // ═══════════════════════════════════════════════════════════════
-//  DaysList · tabla densa Tufte · una fila por (día, asset)
+//  DaysList · S5-T1 · migrado a DataTable v2
 //  ─────────────────────────────────────────────────────────────
-//  Reemplaza al approach de cards anidadas (frágil, fallaba con
-//  CSS scoping). HTML <table> nativa = robusta, ordenable mental-
-//  mente, copy-paste friendly a Excel.
+//  Una fila por (día, asset) · click abre panel lateral con
+//  timeline cronológica del día. Drill-down a vehículo/conductor
+//  con stopPropagation.
 //
-//  Click en fila → onSelectDay(dayId) → abre panel lateral con
-//  timeline cronológica del día. Click otra vez = deselecciona.
-//
-//  L11 · drill-down · click en nombre del vehículo o conductor
-//  navega al libro del objeto · usa e.stopPropagation() para no
-//  abrir también el panel lateral.
-//
-//  Header sticky para que las columnas siempre se vean al scroll.
+//  Cambios vs versión anterior:
+//    · Se reemplaza la tabla custom por DataTable v2
+//    · Tipografía mono en columnas numéricas (km, viajes, etc.)
+//    · Header del bloque con título + count
+//    · CSV export disponible
+//    · Filas sin numeración (son grupos día×asset, no secuencia)
 // ═══════════════════════════════════════════════════════════════
 
 interface Props {
@@ -28,87 +27,20 @@ interface Props {
 }
 
 export function DaysList({ days, selectedDayId, onSelectDay }: Props) {
-  if (days.length === 0) {
-    return (
-      <div className={styles.empty}>
-        <p>Sin viajes en el período seleccionado.</p>
-        <p className={styles.emptyHint}>
-          Probá con un rango más amplio o quitá filtros.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead className={styles.thead}>
-          <tr>
-            <th className={styles.thDay}>Día</th>
-            <th className={styles.thAsset}>Vehículo</th>
-            <th className={styles.thDriver}>Conductor</th>
-            <th className={styles.thNum}>Distancia</th>
-            <th className={styles.thNum}>Viajes</th>
-            <th className={styles.thNum}>Paradas</th>
-            <th className={styles.thNum}>En ruta</th>
-            <th className={styles.thNum}>Eventos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <Row
-              key={day.id}
-              day={day}
-              isSelected={selectedDayId === day.id}
-              onSelect={() =>
-                onSelectDay(day.id === selectedDayId ? null : day.id)
-              }
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Row · una fila por (día, asset)
-// ═══════════════════════════════════════════════════════════════
-
-function Row({
-  day,
-  isSelected,
-  onSelect,
-}: {
-  day: Day;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  // Calcular events totales y críticos del día (sumados de los trips)
-  let eventTotal = 0;
-  let eventCritical = 0;
-  for (const item of day.items) {
-    if (item.kind === "trip") {
-      eventTotal += item.eventCount;
-      eventCritical += item.highSeverityEventCount;
-    }
-  }
-
-  return (
-    <tr
-      className={`${styles.row} ${isSelected ? styles.rowSelected : ""}`}
-      onClick={onSelect}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-    >
-      <td className={styles.tdDay}>{formatDay(day.dayIso)}</td>
-      <td className={styles.tdAsset}>
+  const columns: ColumnDef<Day>[] = [
+    {
+      key: "day",
+      label: "Día",
+      sortable: false,
+      render: (day) => (
+        <span className={styles.dayCell}>{formatDay(day.dayIso)}</span>
+      ),
+    },
+    {
+      key: "asset",
+      label: "Vehículo",
+      sortable: false,
+      render: (day) => (
         <Link
           href={`/objeto/vehiculo/${day.assetId}`}
           className={styles.assetLink}
@@ -116,12 +48,17 @@ function Row({
         >
           <span className={styles.assetName}>{day.assetName}</span>
           {day.assetPlate && (
-            <span className={styles.plate}> · {day.assetPlate}</span>
+            <span className={styles.plate}>{day.assetPlate}</span>
           )}
         </Link>
-      </td>
-      <td className={styles.tdDriver}>
-        {day.driverId && day.driverName ? (
+      ),
+    },
+    {
+      key: "driver",
+      label: "Conductor",
+      sortable: false,
+      render: (day) =>
+        day.driverId && day.driverName ? (
           <Link
             href={`/objeto/conductor/${day.driverId}`}
             className={styles.driverLink}
@@ -131,43 +68,127 @@ function Row({
           </Link>
         ) : (
           <span className={styles.dim}>—</span>
-        )}
-      </td>
-      <td className={styles.tdNum}>
-        {formatKm(day.totalDistanceKm)}
-        <span className={styles.unit}> km</span>
-      </td>
-      <td className={styles.tdNum}>{day.tripCount}</td>
-      <td className={styles.tdNum}>
-        {day.stopCount === 0 ? (
+        ),
+    },
+    {
+      key: "distance",
+      label: "Distancia",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (day) => (
+        <>
+          {formatKm(day.totalDistanceKm)}
+          <span className={styles.unit}> km</span>
+        </>
+      ),
+    },
+    {
+      key: "tripCount",
+      label: "Viajes",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (day) => day.tripCount,
+    },
+    {
+      key: "stopCount",
+      label: "Paradas",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (day) =>
+        day.stopCount === 0 ? (
           <span className={styles.dim}>—</span>
         ) : (
           day.stopCount
-        )}
-      </td>
-      <td className={styles.tdNum}>{formatDuration(day.totalDrivingMs)}</td>
-      <td className={styles.tdNum}>
-        {eventTotal === 0 ? (
-          <span className={styles.dim}>—</span>
-        ) : (
+        ),
+    },
+    {
+      key: "drivingTime",
+      label: "En ruta",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (day) => formatDuration(day.totalDrivingMs),
+    },
+    {
+      key: "events",
+      label: "Eventos",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (day) => {
+        const { eventTotal, eventCritical } = countEvents(day);
+        if (eventTotal === 0) return <span className={styles.dim}>—</span>;
+        return (
           <>
             <span>{eventTotal}</span>
             {eventCritical > 0 && (
-              <span className={styles.critical}>
-                {" "}
-                ({eventCritical}!)
-              </span>
+              <span className={styles.critical}> ({eventCritical}!)</span>
             )}
           </>
-        )}
-      </td>
-    </tr>
+        );
+      },
+    },
+  ];
+
+  return (
+    <DataTable<Day>
+      columns={columns}
+      rows={days}
+      rowKey={(d) => d.id}
+      title="Viajes por día"
+      count={days.length}
+      onRowClick={(d) => onSelectDay(d.id === selectedDayId ? null : d.id)}
+      selectedRowKey={selectedDayId}
+      density="normal"
+      emptyMessage="Sin viajes en el período seleccionado."
+      exportFormats={["csv"]}
+      exportFilename="viajes-por-dia"
+      exportColumns={[
+        { header: "Dia", value: (d) => d.dayIso },
+        { header: "Vehiculo", value: (d) => d.assetName },
+        { header: "Patente", value: (d) => d.assetPlate ?? "" },
+        { header: "Conductor", value: (d) => d.driverName ?? "" },
+        { header: "Distancia (km)", value: (d) => d.totalDistanceKm },
+        { header: "Viajes", value: (d) => d.tripCount },
+        { header: "Paradas", value: (d) => d.stopCount },
+        {
+          header: "En ruta (min)",
+          value: (d) => Math.round(d.totalDrivingMs / 60000),
+        },
+        {
+          header: "Eventos totales",
+          value: (d) => countEvents(d).eventTotal,
+        },
+        {
+          header: "Eventos criticos",
+          value: (d) => countEvents(d).eventCritical,
+        },
+      ]}
+    />
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  Helpers
 // ═══════════════════════════════════════════════════════════════
+
+function countEvents(day: Day): {
+  eventTotal: number;
+  eventCritical: number;
+} {
+  let eventTotal = 0;
+  let eventCritical = 0;
+  for (const item of day.items) {
+    if (item.kind === "trip") {
+      eventTotal += item.eventCount;
+      eventCritical += item.highSeverityEventCount;
+    }
+  }
+  return { eventTotal, eventCritical };
+}
 
 const DOW = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
 const MES = [

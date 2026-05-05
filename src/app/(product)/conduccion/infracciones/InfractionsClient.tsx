@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Map as MapIcon, List } from "lucide-react";
+import Link from "next/link";
+import { Map as MapIcon, List } from "lucide-react";
 import { PeriodNavigator } from "@/components/maxtracker/period/PeriodNavigator";
 import { ScopeFilters as ScopeFiltersBar } from "@/components/maxtracker/analysis/ScopeFilters";
 import { PageHeader } from "@/components/maxtracker/ui";
+import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
 import { InfractionSeverityFilterChips } from "@/components/maxtracker/infractions/InfractionSeverityFilter";
-import {
-  InfractionHeatmap,
-} from "@/components/maxtracker/infractions/InfractionHeatmap";
+import { InfractionHeatmap } from "@/components/maxtracker/infractions/InfractionHeatmap";
 import { InfractionDetailPanel } from "@/components/maxtracker/infractions/InfractionDetailPanel";
 import type {
   AnalysisGranularity,
@@ -21,6 +21,20 @@ import type {
   InfractionSeverityFilter,
 } from "@/lib/queries/infractions-list";
 import styles from "./InfractionsClient.module.css";
+
+// ═══════════════════════════════════════════════════════════════
+//  InfractionsClient · S5-T1 · migrado a DataTable v2
+//  ─────────────────────────────────────────────────────────────
+//  La tabla custom interna de S4-L3c se reemplaza por DataTable
+//  v2 con el patrón unificado "Posiciones". Cambios:
+//    · Headers uppercase pequeños en gris
+//    · Tipografía monoespaciada en columnas numéricas
+//    · Click-row → side panel via onRowClick
+//    · selectedRowKey marca la fila abierta con tinte azul
+//    · Header del bloque con título "Infracciones" + count
+//    · Botón export CSV nativo
+//    · Paginación delegada al DataTable (page/pageCount/totalCount)
+// ═══════════════════════════════════════════════════════════════
 
 const BASE_PATH = "/conduccion/infracciones";
 
@@ -107,6 +121,108 @@ export function InfractionsClient(props: Props) {
     startTransition(() => router.push(href));
   }
 
+  // ── Definición de columnas para DataTable v2 ──────────────
+  const columns: ColumnDef<InfractionListRow>[] = [
+    {
+      key: "startedAt",
+      label: "Inicio",
+      mono: true,
+      sortable: false, // server-sorted
+      render: (r) =>
+        new Date(r.startedAt).toLocaleString("es-AR", {
+          timeZone: "America/Argentina/Buenos_Aires",
+          day: "2-digit",
+          month: "2-digit",
+          year: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    },
+    {
+      key: "severity",
+      label: "Severidad",
+      sortable: false,
+      render: (r) => (
+        <span
+          className={styles.sevBadge}
+          style={{
+            color: SEVERITY_COLORS[r.severity],
+            borderColor: SEVERITY_COLORS[r.severity],
+          }}
+        >
+          {SEVERITY_LABELS[r.severity]}
+        </span>
+      ),
+    },
+    {
+      key: "vehicle",
+      label: "Vehículo",
+      sortable: false,
+      render: (r) => (
+        <Link
+          href={`/objeto/vehiculo/${r.assetId}`}
+          className={styles.assetLink}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className={styles.assetName}>{r.assetName}</span>
+          {r.assetPlate && (
+            <span className={styles.assetPlate}>{r.assetPlate}</span>
+          )}
+        </Link>
+      ),
+    },
+    {
+      key: "person",
+      label: "Conductor",
+      sortable: false,
+      render: (r) =>
+        r.personId && r.personName ? (
+          <Link
+            href={`/objeto/conductor/${r.personId}`}
+            className={styles.driverLink}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {r.personName}
+          </Link>
+        ) : (
+          <span className={styles.muted}>—</span>
+        ),
+    },
+    {
+      key: "peakVmax",
+      label: "Pico / Vmax",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (r) => (
+        <>
+          <strong>{Math.round(r.peakSpeedKmh)}</strong>
+          <span className={styles.muted}> / {r.vmaxKmh}</span>
+        </>
+      ),
+    },
+    {
+      key: "excess",
+      label: "Exceso",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (r) => (
+        <span style={{ color: SEVERITY_COLORS[r.severity] }}>
+          +{Math.round(r.maxExcessKmh)}
+        </span>
+      ),
+    },
+    {
+      key: "duration",
+      label: "Duración",
+      align: "right",
+      mono: true,
+      sortable: false,
+      render: (r) => formatDurationShort(r.durationSec),
+    },
+  ];
+
   return (
     <div className={styles.wrap}>
       <PageHeader
@@ -115,7 +231,6 @@ export function InfractionsClient(props: Props) {
         subtitle="Excesos de velocidad detectados · filtrables, georreferenciables, descartables"
       />
 
-      {/* Toolbar superior · navegador período + tabs */}
       <div className={styles.toolbar}>
         <PeriodNavigator
           granularity={props.granularity}
@@ -125,9 +240,7 @@ export function InfractionsClient(props: Props) {
           onChangeGranularity={(g) => navTo(buildHref({ g }))}
           onChangeAnchor={(d) => navTo(buildHref({ d }))}
         />
-
         <div className={styles.toolbarSpacer} />
-
         <div className={styles.viewTabs} role="tablist">
           <button
             type="button"
@@ -169,117 +282,45 @@ export function InfractionsClient(props: Props) {
       </div>
 
       {props.view === "lista" ? (
-        <>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Inicio</th>
-                  <th>Severidad</th>
-                  <th>Vehículo</th>
-                  <th>Conductor</th>
-                  <th className={styles.cellRight}>Pico / Vmax</th>
-                  <th className={styles.cellRight}>Exceso</th>
-                  <th className={styles.cellRight}>Duración</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {props.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className={styles.empty}>
-                      No se registraron infracciones para los filtros aplicados.
-                    </td>
-                  </tr>
-                ) : (
-                  props.rows.map((r) => (
-                    <tr
-                      key={r.id}
-                      className={styles.row}
-                      onClick={() => setSelected(r)}
-                    >
-                      <td className={styles.timeCell}>
-                        {new Date(r.startedAt).toLocaleString("es-AR", {
-                          timeZone: "America/Argentina/Buenos_Aires",
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td>
-                        <span
-                          className={styles.sevBadge}
-                          style={{
-                            color: SEVERITY_COLORS[r.severity],
-                            borderColor: SEVERITY_COLORS[r.severity],
-                          }}
-                        >
-                          {SEVERITY_LABELS[r.severity]}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={styles.assetCell}>
-                          <span className={styles.assetName}>{r.assetName}</span>
-                          {r.assetPlate && (
-                            <span className={styles.assetPlate}>{r.assetPlate}</span>
-                          )}
-                        </span>
-                      </td>
-                      <td>
-                        {r.personName ?? (
-                          <span className={styles.muted}>—</span>
-                        )}
-                      </td>
-                      <td className={styles.cellRight}>
-                        <strong>{Math.round(r.peakSpeedKmh)}</strong>
-                        <span className={styles.muted}> / {r.vmaxKmh}</span>
-                      </td>
-                      <td
-                        className={styles.cellRight}
-                        style={{ color: SEVERITY_COLORS[r.severity], fontFamily: "ui-monospace" }}
-                      >
-                        +{Math.round(r.maxExcessKmh)}
-                      </td>
-                      <td className={styles.cellRight}>
-                        {formatDurationShort(r.durationSec)}
-                      </td>
-                      <td>
-                        <ChevronRight size={14} className={styles.muted} />
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {props.pageCount > 1 && (
-            <div className={styles.pagination}>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={props.page <= 1}
-                onClick={() => navTo(buildHref({ page: props.page - 1 }))}
-              >
-                ← Anterior
-              </button>
-              <span className={styles.pageInfo}>
-                Página {props.page} de {props.pageCount} ·{" "}
-                {props.total.toLocaleString("es-AR")} infracciones
-              </span>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={props.page >= props.pageCount}
-                onClick={() => navTo(buildHref({ page: props.page + 1 }))}
-              >
-                Siguiente →
-              </button>
-            </div>
-          )}
-        </>
+        <DataTable
+          columns={columns}
+          rows={props.rows}
+          rowKey={(r) => r.id}
+          title="Infracciones"
+          count={props.total}
+          onRowClick={(r) => setSelected(r)}
+          selectedRowKey={selected?.id ?? null}
+          page={props.page}
+          pageCount={props.pageCount}
+          totalCount={props.total}
+          pageSize={props.pageSize}
+          onPageChange={(p) => navTo(buildHref({ page: p }))}
+          exportFormats={["csv"]}
+          exportFilename={`infracciones-${props.anchorIso}`}
+          exportColumns={[
+            {
+              header: "Inicio",
+              value: (r) =>
+                new Date(r.startedAt).toLocaleString("es-AR", {
+                  timeZone: "America/Argentina/Buenos_Aires",
+                }),
+            },
+            { header: "Severidad", value: (r) => SEVERITY_LABELS[r.severity] },
+            { header: "Vehiculo", value: (r) => r.assetName },
+            { header: "Patente", value: (r) => r.assetPlate ?? "" },
+            { header: "Conductor", value: (r) => r.personName ?? "" },
+            { header: "Pico (km/h)", value: (r) => Math.round(r.peakSpeedKmh) },
+            { header: "Vmax (km/h)", value: (r) => r.vmaxKmh },
+            { header: "Exceso (km/h)", value: (r) => Math.round(r.maxExcessKmh) },
+            { header: "Duracion (s)", value: (r) => r.durationSec },
+            {
+              header: "Distancia (km)",
+              value: (r) => (r.distanceMeters / 1000).toFixed(2),
+            },
+            { header: "Tipo de via", value: (r) => r.roadType },
+          ]}
+          emptyMessage="No se registraron infracciones para los filtros aplicados."
+        />
       ) : (
         <InfractionHeatmap points={props.heatPoints} height={650} />
       )}
@@ -296,6 +337,6 @@ function formatDurationShort(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   if (m === 0) return `${s}s`;
-  if (s === 0) return `${m}min`;
+  if (s === 0) return `${m}m`;
   return `${m}m ${s}s`;
 }

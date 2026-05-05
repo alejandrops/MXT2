@@ -1,356 +1,354 @@
 /* ═══════════════════════════════════════════════════════════════
-   Receipt v2 · Lenguaje editorial Maxtracker · S4-L3d-redesign
+   Receipt v2 · Lenguaje editorial Maxtracker
    ─────────────────────────────────────────────────────────────
-   Estilo "saas-enterprise editorial" · referencias Stripe
-   annual letter, McKinsey insights, Linear changelog. Sin azul
-   Maxtracker brillante · acento navy sobrio (--navy) en kicker
-   y dividers. Color funcional solo donde duele (severidad).
-
-   Tipografía:
-     · IBM Plex Sans (--font-sans)  · datos, tablas, KPIs
-     · IBM Plex Serif (--font-serif) · título y lead narrativo
-     · IBM Plex Mono (--font-mono)  · folio, identificador, tiempos
+   IMPORTANTE · CSS Modules NO permite selectores no-puros como
+   :root · todas las variables las consumimos del globals.css
+   del repo (que SÍ tiene :root global):
+     · --f         → IBM Plex Sans
+     · --m         → IBM Plex Mono
+     · --blu       → #2563EB · azul Maxtracker
+     · --blu-t     → #1E3A8A · navy editorial
+     · --red       → #E8352A
+     · --red-dark  → #C42820
+     · --red-bg    → #FEF0EF
+     · --red-b     → #FECACA
+     · --red-t     → #7F1D1D
    ═══════════════════════════════════════════════════════════════ */
 
-:root {
-  --navy: #1e3a8a;
-  --ink: #0f172a;
-  --ink-soft: #334155;
-  --ink-muted: #64748b;
-  --ink-faint: #94a3b8;
-  --rule: #e5e7eb;
-  --rule-soft: #f1f5f9;
-  --canvas: #f3f4f6;
-  --paper: #ffffff;
-  --tint: #f8fafc;
-}
-
-/* ── Lienzo ────────────────────────────────────────────────── */
-
 .report {
-  background: var(--canvas);
+  background: #f3f4f6;
   min-height: 100vh;
-  padding: 32px 0;
-  font-family: var(--font-sans);
-  color: var(--ink);
+  padding: 24px 0;
+  font-family: var(--f);
+  color: #111827;
 }
+
+/* ── Acción flotante · solo en pantalla ───────────────────── */
 
 .floatActions {
   position: fixed;
-  top: 20px;
-  right: 24px;
+  top: 16px;
+  right: 16px;
   z-index: 100;
 }
 
 .printBtn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--navy);
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--blu);
   color: #fff;
   border: 0;
   border-radius: 4px;
-  font-family: var(--font-sans);
+  font-family: var(--f);
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  letter-spacing: 0.01em;
 }
 .printBtn:hover {
-  background: #1e3a72;
+  background: var(--blu-t);
 }
 
-/* ── Página A4 ─────────────────────────────────────────────── */
+/* ── Hoja A4 ──────────────────────────────────────────────── */
 
 .page {
-  background: var(--paper);
+  background: #fff;
   width: 210mm;
   min-height: 297mm;
-  padding: 22mm 22mm 18mm 22mm;
+  padding: 22mm 24mm 18mm 24mm;
   margin: 0 auto;
-  border: 1px solid var(--rule);
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  gap: 9mm;
   position: relative;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #111827;
 }
 
-/* ── Cabecera editorial ────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   1. Header editorial
+   ═══════════════════════════════════════════════════════════ */
 
 .docHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--ink);
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #d1d5db;
+  margin-bottom: 9mm;
 }
 
 .kicker {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
+  font-family: var(--f);
+  font-size: 11px;
+  letter-spacing: 0.18em;
   font-weight: 500;
-  color: var(--ink);
+  color: var(--blu-t);
   text-transform: uppercase;
-  letter-spacing: 0.2em;
 }
 
 .folio {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 400;
-  color: var(--ink-muted);
+  font-family: var(--m);
+  font-size: 10px;
+  color: #6b7280;
   letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
 }
 
-/* ── Título + subtítulo ────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   2. Title block
+   ═══════════════════════════════════════════════════════════ */
 
 .titleBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 2mm;
+  margin-bottom: 7mm;
 }
 
 .title {
-  font-family: var(--font-serif);
-  font-size: 28px;
+  font-family: var(--f);
+  font-size: 26px;
   font-weight: 500;
-  color: var(--ink);
-  margin: 0;
-  letter-spacing: -0.005em;
   line-height: 1.2;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
+  color: #111827;
 }
 
 .subtitle {
-  font-family: var(--font-sans);
   font-size: 13px;
+  color: #6b7280;
   font-weight: 400;
-  color: var(--ink-muted);
   letter-spacing: 0.01em;
 }
 
-/* ── Banner descartada (precede al lead) ───────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   3. Banner descartada (precede al lead si aplica)
+   ═══════════════════════════════════════════════════════════ */
 
 .discardedBanner {
-  background: var(--rule-soft);
-  border-left: 3px solid var(--ink-soft);
-  border-radius: 0 4px 4px 0;
+  margin-bottom: 6mm;
   padding: 12px 16px;
+  background: var(--red-bg);
+  border: 1px solid var(--red-b);
+  border-left: 3px solid var(--red);
+  border-radius: 0 3px 3px 0;
+  color: var(--red-t);
 }
 
 .discardedTitle {
-  font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--ink);
-  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+  margin-bottom: 3px;
 }
 
 .discardedBody {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  color: var(--ink-soft);
-  line-height: 1.55;
+  font-size: 11.5px;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
-/* ── Lead narrativo · la "noticia" ─────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   4. Lead narrativo · la "noticia"
+   ─────────────────────────────────────────────────────────
+   El borderLeftColor lo setea el TSX inline según severity ·
+   acá solo definimos border-left-width y un color de fallback.
+   ═══════════════════════════════════════════════════════════ */
 
 .lead {
-  background: var(--tint);
-  border-left: 3px solid var(--ink-soft);
-  border-radius: 0 4px 4px 0;
+  background: #f9fafb;
+  border-left: 3px solid var(--red);
   padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  margin-bottom: 8mm;
+  border-radius: 0 4px 4px 0;
 }
 
 .leadProse {
-  font-family: var(--font-serif);
-  font-size: 16px;
+  font-family: var(--f);
+  font-size: 14.5px;
+  line-height: 1.65;
   font-weight: 400;
-  color: var(--ink);
-  line-height: 1.55;
-  letter-spacing: 0.005em;
+  color: #1f2937;
+  margin: 0;
 }
 
 .leadMeta {
+  margin-top: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .leadMetaLabel {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
+  font-size: 9.5px;
   letter-spacing: 0.14em;
-  color: var(--ink-muted);
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
 }
 
 .severityChip {
-  display: inline-block;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
+  font-family: var(--f);
+  font-size: 10.5px;
   letter-spacing: 0.1em;
-  padding: 2px 9px;
-  border: 1px solid;
+  font-weight: 500;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
   border-radius: 2px;
-  background: transparent;
+  text-transform: uppercase;
 }
 
-/* ── Sección numerada ──────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   5. Sections numeradas · 01 · 02 · 03 ...
+   ═══════════════════════════════════════════════════════════ */
 
 .section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin-bottom: 7mm;
 }
 
 .sectionHeader {
   display: flex;
   align-items: baseline;
-  gap: 14px;
-  padding: 0 0 4px 0;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 0.5px solid #e5e7eb;
 }
 
 .sectionNum {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--ink-faint);
-  letter-spacing: 0.05em;
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--blu);
+  letter-spacing: 0.06em;
+  font-weight: 500;
 }
 
 .sectionTitle {
-  font-family: var(--font-sans);
+  font-family: var(--f);
   font-size: 13px;
   font-weight: 500;
-  color: var(--ink);
   margin: 0;
+  color: #111827;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
-/* ── Sección 01 · Mapa + ubicaciones ───────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   6. Sección 01 · Mapa + Inicio/Fin
+   ═══════════════════════════════════════════════════════════ */
 
 .mapWrap {
   width: 100%;
-  height: 78mm;
-  border: 1px solid var(--rule);
+  height: 80mm;
+  border: 1px solid #e5e7eb;
   border-radius: 3px;
   overflow: hidden;
+  margin-bottom: 8px;
 }
 
 .locationGrid {
   display: grid;
-  grid-template-columns: 60px 1fr;
+  grid-template-columns: 70px 1fr;
   gap: 6px 16px;
-  font-family: var(--font-sans);
   font-size: 11.5px;
-  align-items: baseline;
+  margin-top: 8px;
 }
 
 .locationLabel {
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
+  font-size: 9.5px;
   letter-spacing: 0.12em;
-  color: var(--ink-muted);
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
   padding-top: 1px;
 }
 
 .locationValue {
-  color: var(--ink);
+  color: #111827;
+  line-height: 1.5;
 }
 
 .locationTime {
-  font-family: var(--font-mono);
-  color: var(--ink-muted);
-  margin-right: 12px;
-  font-size: 10.5px;
+  font-family: var(--m);
+  color: #4b5563;
+  margin-right: 10px;
+  font-size: 11px;
 }
 
 .coords {
-  font-family: var(--font-mono);
-  color: var(--ink-soft);
-  font-size: 10.5px;
+  font-family: var(--m);
+  font-size: 11px;
+  color: #4b5563;
 }
 
-/* ── Sección 02 · KPI strip + curva ────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   7. Sección 02 · KPI strip + curva
+   ─────────────────────────────────────────────────────────
+   Los colores danger en kpiValue los setea el TSX inline.
+   ═══════════════════════════════════════════════════════════ */
 
 .kpiStrip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
-  background: var(--rule);
+  background: #e5e7eb;
+  border: 1px solid #e5e7eb;
   border-radius: 3px;
   overflow: hidden;
+  margin-bottom: 10px;
 }
 
 .kpiCell {
-  background: var(--paper);
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  background: #fff;
+  padding: 12px 14px;
 }
 
 .kpiLabel {
-  font-family: var(--font-sans);
   font-size: 9.5px;
-  font-weight: 500;
-  text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--ink-muted);
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .kpiValue {
-  font-family: var(--font-sans);
-  font-size: 26px;
+  font-family: var(--f);
+  font-size: 22px;
   font-weight: 500;
-  color: var(--ink);
   line-height: 1;
-  margin-top: 2px;
+  color: #111827;
   letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
 }
 
 .kpiUnit {
-  font-family: var(--font-sans);
   font-size: 10.5px;
+  color: #9ca3af;
+  margin-top: 3px;
   font-weight: 400;
-  color: var(--ink-muted);
 }
 
 .curveWrap {
-  margin-top: 4px;
-  /* SpeedCurve viene con su propio wrap · el componente está
-     pensado para fondo gris claro · le doy fondo paper acá */
-  background: var(--tint);
-  border: 1px solid var(--rule);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 3px;
-  padding: 6px 8px;
+  padding: 10px 12px;
 }
 
-/* ── Sección 03 · Detalles ─────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   8. Sección 03 · Detalles · tabla clave/valor
+   ═══════════════════════════════════════════════════════════ */
 
 .detailsTable {
   width: 100%;
-  font-family: var(--font-sans);
-  font-size: 12px;
   border-collapse: collapse;
+  font-size: 11.5px;
 }
 
 .detailsTable tr {
-  border-bottom: 1px solid var(--rule-soft);
+  border-bottom: 0.5px solid #f1f5f9;
 }
 
 .detailsTable tr:last-child {
@@ -358,76 +356,68 @@
 }
 
 .detailLabel {
-  width: 130px;
-  padding: 8px 0;
+  padding: 7px 0;
+  width: 140px;
   font-size: 9.5px;
-  font-weight: 500;
-  text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--ink-muted);
-  vertical-align: middle;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  vertical-align: top;
 }
 
 .detailValue {
-  padding: 8px 0;
-  color: var(--ink);
-  vertical-align: middle;
+  padding: 7px 0;
+  color: #111827;
+  font-weight: 400;
 }
 
 .detailMono {
-  font-family: var(--font-mono);
+  font-family: var(--m);
+  color: #4b5563;
+  margin-left: 8px;
   font-size: 11px;
-  color: var(--ink-soft);
-  margin-left: 12px;
 }
 
 .muted {
-  color: var(--ink-faint);
-  font-style: italic;
-  font-family: var(--font-sans);
-}
-
-/* ── Pie editorial ─────────────────────────────────────────── */
-
-.docFooter {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--rule);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: center;
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  line-height: 1.6;
-  color: var(--ink-muted);
-}
-
-.footerLine {
-  color: var(--ink-soft);
-}
-
-.footerLine strong {
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.footerId {
-  margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  color: var(--ink-faint);
-  letter-spacing: 0.04em;
+  color: #9ca3af;
+  font-style: normal;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Print styles · activan al hacer Cmd+P
+   9. Footer editorial
    ═══════════════════════════════════════════════════════════ */
 
-@page {
-  size: A4;
-  margin: 0;
+.docFooter {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #d1d5db;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #9ca3af;
 }
+
+.footerLine {
+  color: #6b7280;
+}
+
+.footerLine strong {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.footerId {
+  font-family: var(--m);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Print styles · A4
+   ═══════════════════════════════════════════════════════════ */
 
 @media print {
   .report {
@@ -446,4 +436,11 @@
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+/* @page rule debe ir fuera de cualquier wrap · CSS Modules
+   permite @page como at-rule sin requerir local class */
+@page {
+  size: A4;
+  margin: 0;
 }
