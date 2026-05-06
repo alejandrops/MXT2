@@ -7,39 +7,35 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Trash2,
-  Pause,
-  Play,
   X,
   Info,
-  KeyRound,
 } from "lucide-react";
-import {
-  createAccountUser,
-  updateAccountUser,
-  toggleUserStatus,
-  deleteAccountUser,
-} from "../actions-empresa";
+import { DataTable, type ColumnDef } from "@/components/maxtracker/ui/DataTable";
+import { UserDetailPanel } from "@/components/maxtracker/users/UserDetailPanel";
+import { createAccountUser } from "../actions-empresa";
 import sharedStyles from "../ConfiguracionPage.module.css";
 import styles from "./EmpresaUsuariosTab.module.css";
 import { SetPasswordModal } from "./SetPasswordModal";
 
 // ═══════════════════════════════════════════════════════════════
-//  Tab Empresa · Usuarios y permisos (S1)
+//  Tab Empresa · Usuarios y permisos · S5-T1b · canónico
 //  ─────────────────────────────────────────────────────────────
-//  CRUD de usuarios del Account. Solo crea User local · NO invita
-//  por mail (decisión del producto · invite manual por ahora).
+//  Reescritura del tab usando DataTable v2 + side panel canónico.
 //
-//  Acciones:
-//   · Crear user (firstName, lastName, email, profile)
-//   · Editar perfil (CLIENT_ADMIN ↔ OPERATOR)
-//   · Suspender / reactivar (toggle status)
-//   · Eliminar (soft delete via status DELETED)
+//  ANTES                              AHORA
+//  ──────────────────────────────     ─────────────────────────
+//  <table> custom HTML                DataTable v2
+//  UserRow con state inline           Click → side panel canónico
+//  Edit perfil inline en celda        Edit perfil dentro del side
+//  Acciones en columna "Acciones"     panel · botones de acción
+//  Sin export                         Menú export CSV/XLSX/PDF
 //
-//  Reglas:
+//  Las funciones server (createAccountUser · updateAccountUser ·
+//  toggleUserStatus · deleteAccountUser) NO cambiaron.
+//
+//  Reglas de permisos (preservadas):
 //   · No te podés borrar a vos mismo
 //   · No podés cambiar tu propio perfil (evitar lock-out)
-//   · Solo CA puede gestionar otros CA u OP de su cuenta
 // ═══════════════════════════════════════════════════════════════
 
 interface AccountUser {
@@ -78,6 +74,7 @@ export function EmpresaUsuariosTab({
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
   const [setPassUser, setSetPassUser] = useState<AccountUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AccountUser | null>(null);
   const [feedback, setFeedback] = useState<
     { kind: "success" | "error"; text: string } | null
   >(null);
@@ -92,6 +89,64 @@ export function EmpresaUsuariosTab({
   function showFeedback(kind: "success" | "error", text: string) {
     setFeedback({ kind, text });
   }
+
+  // ── Columnas del DataTable ────────────────────────────────
+  const columns: ColumnDef<AccountUser>[] = [
+    {
+      key: "name",
+      label: "Nombre",
+      sortable: false,
+      render: (u) => (
+        <span>
+          <strong>
+            {u.firstName} {u.lastName}
+          </strong>
+          {u.id === currentUserId && (
+            <span className={styles.youBadge}> · Vos</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "email",
+      label: "Email",
+      sortable: false,
+      render: (u) => <span className={styles.emailCell}>{u.email}</span>,
+    },
+    {
+      key: "profile",
+      label: "Perfil",
+      sortable: false,
+      render: (u) => (
+        <span className={styles.profileCell}>{u.profile.nameLabel}</span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Estado",
+      sortable: false,
+      render: (u) => {
+        const isActive = u.status === "ACTIVE";
+        const label =
+          u.status === "ACTIVE"
+            ? "Activo"
+            : u.status === "SUSPENDED"
+              ? "Suspendido"
+              : u.status;
+        return (
+          <span
+            className={`${sharedStyles.statusBadge} ${
+              isActive
+                ? sharedStyles.statusBadgeActive
+                : sharedStyles.statusBadgeSuspended
+            }`}
+          >
+            {label}
+          </span>
+        );
+      },
+    },
+  ];
 
   return (
     <div>
@@ -120,51 +175,47 @@ export function EmpresaUsuariosTab({
         </div>
       )}
 
-      <div className={styles.toolbar}>
-        <span className={styles.count}>
-          {users.length} usuario{users.length !== 1 ? "s" : ""}
-        </span>
-        <button
-          type="button"
-          className={sharedStyles.btnPrimary}
-          onClick={() => setShowCreate(true)}
-        >
-          <Plus size={14} />
-          Nuevo usuario
-        </button>
-      </div>
+      <DataTable<AccountUser>
+        columns={columns}
+        rows={users}
+        rowKey={(u) => u.id}
+        title="Usuarios"
+        count={users.length}
+        density="normal"
+        onRowClick={(u) => setSelectedUser(u)}
+        selectedRowKey={selectedUser?.id ?? null}
+        exportFilename={`usuarios-${account.name.toLowerCase().replace(/\s+/g, "-")}`}
+        exportColumns={[
+          { header: "Nombre", value: (u) => u.firstName },
+          { header: "Apellido", value: (u) => u.lastName },
+          { header: "Email", value: (u) => u.email },
+          { header: "Perfil", value: (u) => u.profile.nameLabel },
+          { header: "Estado", value: (u) => u.status },
+        ]}
+        headerActions={
+          <button
+            type="button"
+            className={sharedStyles.btnPrimary}
+            onClick={() => setShowCreate(true)}
+          >
+            <Plus size={14} />
+            Nuevo usuario
+          </button>
+        }
+        emptyMessage="Aún no hay usuarios en esta cuenta."
+      />
 
-      <table className={sharedStyles.dataTable}>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Perfil</th>
-            <th>Estado</th>
-            <th style={{ width: 120, textAlign: "right" }}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              isCurrentUser={user.id === currentUserId}
-              assignableProfiles={assignableProfiles}
-              onFeedback={showFeedback}
-              onChange={() => router.refresh()}
-              onSetPass={() => setSetPassUser(user)}
-            />
-          ))}
-          {users.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ textAlign: "center", padding: 32, color: "var(--t3)" }}>
-                Aún no hay usuarios en esta cuenta.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <UserDetailPanel
+        user={selectedUser}
+        isCurrentUser={selectedUser?.id === currentUserId}
+        assignableProfiles={assignableProfiles}
+        onClose={() => setSelectedUser(null)}
+        onChange={() => router.refresh()}
+        onFeedback={showFeedback}
+        onSetPass={() => {
+          if (selectedUser) setSetPassUser(selectedUser);
+        }}
+      />
 
       {showCreate && (
         <CreateUserModal
@@ -192,208 +243,9 @@ export function EmpresaUsuariosTab({
   );
 }
 
-// ─── User row ────────────────────────────────────────────────
-
-interface UserRowProps {
-  user: AccountUser;
-  isCurrentUser: boolean;
-  assignableProfiles: AssignableProfile[];
-  onFeedback: (kind: "success" | "error", text: string) => void;
-  onChange: () => void;
-  onSetPass: () => void;
-}
-
-function UserRow({
-  user,
-  isCurrentUser,
-  assignableProfiles,
-  onFeedback,
-  onChange,
-  onSetPass,
-}: UserRowProps) {
-  const [pending, startTransition] = useTransition();
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [profileId, setProfileId] = useState(user.profileId);
-
-  const isActive = user.status === "ACTIVE";
-  const statusLabel =
-    user.status === "ACTIVE"
-      ? "Activo"
-      : user.status === "SUSPENDED"
-      ? "Suspendido"
-      : user.status;
-
-  function handleProfileChange() {
-    if (profileId === user.profileId) {
-      setEditingProfile(false);
-      return;
-    }
-    startTransition(async () => {
-      const result = await updateAccountUser({
-        userId: user.id,
-        profileId,
-      });
-      if (result.ok) {
-        onFeedback("success", "Perfil actualizado.");
-        setEditingProfile(false);
-        onChange();
-      } else {
-        onFeedback("error", result.error);
-        setProfileId(user.profileId);
-      }
-    });
-  }
-
-  function handleToggleStatus() {
-    const newStatus = isActive ? "SUSPENDED" : "ACTIVE";
-    if (
-      !confirm(
-        isActive
-          ? `Suspender a ${user.firstName}? No podrá iniciar sesión hasta reactivarlo.`
-          : `Reactivar a ${user.firstName}?`,
-      )
-    ) {
-      return;
-    }
-    startTransition(async () => {
-      const result = await toggleUserStatus({
-        userId: user.id,
-        newStatus,
-      });
-      if (result.ok) {
-        onFeedback("success", isActive ? "Usuario suspendido." : "Usuario reactivado.");
-        onChange();
-      } else {
-        onFeedback("error", result.error);
-      }
-    });
-  }
-
-  function handleDelete() {
-    if (
-      !confirm(
-        `Eliminar a ${user.firstName} ${user.lastName}? Esto es irreversible.`,
-      )
-    ) {
-      return;
-    }
-    startTransition(async () => {
-      const result = await deleteAccountUser({ userId: user.id });
-      if (result.ok) {
-        onFeedback("success", "Usuario eliminado.");
-        onChange();
-      } else {
-        onFeedback("error", result.error);
-      }
-    });
-  }
-
-  return (
-    <tr>
-      <td>
-        <strong>{user.firstName} {user.lastName}</strong>
-        {isCurrentUser && <span className={styles.youBadge}>Vos</span>}
-      </td>
-      <td className={styles.emailCell}>{user.email}</td>
-      <td>
-        {editingProfile && !isCurrentUser ? (
-          <div className={styles.inlineEdit}>
-            <select
-              value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
-              className={sharedStyles.select}
-              style={{ height: 28, width: 160 }}
-              disabled={pending}
-            >
-              {assignableProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nameLabel}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleProfileChange}
-              className={styles.iconBtn}
-              disabled={pending}
-              title="Guardar"
-            >
-              <CheckCircle2 size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setProfileId(user.profileId);
-                setEditingProfile(false);
-              }}
-              className={styles.iconBtn}
-              disabled={pending}
-              title="Cancelar"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => !isCurrentUser && setEditingProfile(true)}
-            className={styles.profileButton}
-            disabled={isCurrentUser}
-            title={isCurrentUser ? "No podés cambiar tu propio perfil" : "Click para editar"}
-          >
-            {user.profile.nameLabel}
-          </button>
-        )}
-      </td>
-      <td>
-        <span
-          className={`${sharedStyles.statusBadge} ${
-            isActive ? sharedStyles.statusBadgeActive : sharedStyles.statusBadgeSuspended
-          }`}
-        >
-          {statusLabel}
-        </span>
-      </td>
-      <td style={{ textAlign: "right" }}>
-        <div className={styles.rowActions}>
-          {!isCurrentUser && (
-            <>
-              <button
-                type="button"
-                onClick={onSetPass}
-                className={styles.iconBtn}
-                disabled={pending}
-                title="Cambiar contraseña"
-              >
-                <KeyRound size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleStatus}
-                className={styles.iconBtn}
-                disabled={pending}
-                title={isActive ? "Suspender" : "Reactivar"}
-              >
-                {isActive ? <Pause size={14} /> : <Play size={14} />}
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={`${styles.iconBtn} ${styles.dangerBtn}`}
-                disabled={pending}
-                title="Eliminar"
-              >
-                <Trash2 size={14} />
-              </button>
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-// ─── Create user modal ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  Create user modal · sin cambios respecto al original
+// ═══════════════════════════════════════════════════════════════
 
 interface CreateUserModalProps {
   accountId: string;

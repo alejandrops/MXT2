@@ -151,3 +151,27 @@
   color: var(--blu);
   background: var(--blu-bg);
 }
+
+/* Boletín ejecutivo · botón en header de Scorecard · S5-E3 */
+.boletinEmpresaLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.boletinEmpresaLink:hover {
+  border-color: var(--blu);
+  color: var(--blu);
+  background: var(--blu-bg);
+}

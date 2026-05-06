@@ -1,95 +1,123 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S5-E1 · Boletín de conductor · mensual + anual
+#  S5-E3 · Boletín de empresa · Sistema Editorial COMPLETO
 #  ─────────────────────────────────────────────────────────────
-#  Segundo nivel del Sistema Editorial Maxtracker:
+#  Quinto y último nivel del Sistema Editorial Maxtracker:
 #    1. Recibo de infracción individual           ✅ (S4-L3d)
 #    2. Recibo de viaje individual                ✅ (S5-T4)
-#    3. Boletín de conductor (mensual + anual)    ✅ (este lote)
-#    4. Boletín de grupo                          🔴 (S5-E2)
-#    5. Boletín de empresa                        🔴 (S5-E3)
+#    3. Boletín de conductor (mensual + anual)    ✅ (S5-E1)
+#    4. Boletín de grupo                          ✅ (S5-E2)
+#    5. Boletín de empresa                        ✅ (este lote)
 #
-#  Diseño aplicado · mockup v2 con score 42px (decisión usuario):
-#    · Score integrado al flujo · sin tile aislado
-#    · Severidad codificada por símbolo (○ ◐ ●), no color
-#    · Sparklines Unicode inline para evolución
-#    · Líneas guía en chart anual (no bandas pintadas)
-#    · Tendencias con texto explícito "vs período anterior"
-#    · Funciona idéntico en B&N
+#  ─────────────────────────────────────────────────────────────
+#  ESTRUCTURA DEL BOLETÍN EJECUTIVO
+#  ─────────────────────────────────────────────────────────────
+#
+#  01 · Calificación corporativa
+#       Score promedio empresa · ponderado por km de los grupos
+#       KPIs · Distancia · Viajes · Conductores · Vehículos activos
+#
+#  02 · Infracciones agregadas
+#       Distribución por severidad
+#       Indicador "infracciones por 100 km" · útil para
+#       comparativa multi-empresa
+#
+#  03 · Top 3 infracciones más graves del período
+#       Tabla con conductor + grupo + vehículo + pico/vmax/exceso
+#
+#  04 · Ranking de grupos
+#       Top 5 mejores · Bottom 5 peores
+#       Ranking por SCORE · no por volumen
+#
+#  05 · Panorama · scatter (km vs score) por grupo
+#       Tamaño del punto = conductores activos del grupo
+#       (hint visual de tamaño operativo)
+#
+#  06 · Evolución temporal
+#       Mensual · sparklines + chart
+#       Anual · chart 12 meses con líneas guía
+#
+#  ─────────────────────────────────────────────────────────────
+#  PUNTO DE ENTRADA
+#  ─────────────────────────────────────────────────────────────
+#
+#  /conduccion/scorecard
+#  En el header del módulo aparecen 2 botones:
+#    · Boletín mensual  → /conduccion/boletin/empresa/{YYYY-MM}
+#    · Boletín anual    → /conduccion/boletin/empresa/{YYYY}
+#
+#  El boletín respeta multi-tenant:
+#    · CA / OP   · su propia cuenta
+#    · MA / SA   · pasar ?account=X · default = scope
 #
 #  ─────────────────────────────────────────────────────────────
 #  ARCHIVOS
 #  ─────────────────────────────────────────────────────────────
 #
 #  Backend
-#    src/lib/sparkline.ts                          util Unicode
-#    src/lib/conduccion/boletin-driver-text.ts     helpers de texto
-#    src/lib/queries/driver-boletin-data.ts        query agregadora
-#    src/lib/boletin/driver-snapshot.ts            cache + fallback
+#    src/lib/queries/account-boletin-data.ts
+#    src/lib/conduccion/boletin-account-text.ts
 #
 #  Print UI
-#    src/app/(print)/conduccion/boletin/conductor/[id]/[period]/
-#      page.tsx           server · resuelve scope, llama snapshot
-#      DriverBoletin.tsx  client · port mockup v2 con score 42px
-#      Boletin.module.css A4 · serif para títulos · mono para datos
+#    src/app/(print)/conduccion/boletin/empresa/[period]/
+#      page.tsx              server · multi-tenant scope
+#      AccountBoletin.tsx    client · port mockup v2 · scatter SVG
+#      Boletin.module.css    A4 · base + ranking + scatter
 #
-#  Schema (Prisma)
-#    prisma/_driver-boletin-snapshot.prisma   fragment a anexar
-#
-#  Punto de entrada
+#  Punto de entrada (mod)
 #    src/app/(product)/conduccion/scorecard/ScorecardClient.tsx
-#    nueva columna "Boletín" con links M (mensual) y A (anual)
-#    que abren el boletín en nueva pestaña.
+#    src/app/(product)/conduccion/scorecard/ScorecardClient.module.css
 #
 #  ─────────────────────────────────────────────────────────────
-#  PRE-GENERACIÓN CON FALLBACK
+#  CIERRA EL SISTEMA EDITORIAL · 5 niveles consistentes
 #  ─────────────────────────────────────────────────────────────
 #
-#  El boletín se sirve desde DriverBoletinSnapshot si existe.
-#  Si la tabla no se migró aún · cae a cómputo on-demand sin
-#  guardar (no rompe nada). Después del primer hit con la tabla
-#  migrada · queda cacheado · siguientes hits son instantáneos.
-#
-#  Para cron de pre-generación al cierre · S5-E1b (siguiente lote).
+#  Cada nivel hereda el mismo lenguaje visual:
+#    · Score 42px integrado al flujo de KPIs
+#    · Severidad por símbolo (○ ◐ ●) + peso tipográfico
+#    · Sparklines Unicode inline para evolución
+#    · Líneas guía horizontales (no bandas pintadas)
+#    · Markers ○ verde / ● amarilla o roja
+#    · Funciona idéntico en B&N
+#    · A4 limpio · Cmd+P → PDF nativo
 #
 #  ─────────────────────────────────────────────────────────────
-#  MIGRACIÓN PRISMA · MANUAL
+#  EN ESTE LOTE NO INCLUYE
 #  ─────────────────────────────────────────────────────────────
 #
-#  El apply.sh se encarga de mergear el schema:
-#    1. Anexa el modelo DriverBoletinSnapshot al final del schema
-#       (si no existe ya)
-#    2. Inyecta la relación inversa en Person (si no existe ya)
+#  ❌ Pre-generación con snapshot · cae a on-demand
+#  ❌ Cron · sub-lote post-validación
+#  ❌ Schema AccountBoletinSnapshot · sub-lote post-validación
 #
-#  Después de aplicar el lote, correr manualmente:
-#    npx prisma generate
-#    npx prisma migrate dev --name add-driver-boletin-snapshot
-#
-#  Si NO migrás · el boletín igual funciona on-demand sin caché.
+#  Nota · ya existe BoletinSnapshot del S1 que es de cuenta y se
+#  usa en /direccion/boletin/[period]. Ese boletín es operativo.
+#  El boletín que agrega este lote es ejecutivo (con ranking de
+#  grupos · scatter · etc.) y vive en /conduccion/boletin/empresa.
+#  Coexisten · son productos distintos para audiencias distintas.
 #
 #  ─────────────────────────────────────────────────────────────
 #  AUDITORÍAS
 #  ─────────────────────────────────────────────────────────────
 #
-#  ✓ Ningún .module.css con selector :root real
+#  ✓ Ningún .module.css con :root real
 #  ✓ Ningún server→client prop es función
 #  ✓ npx tsc --noEmit · 0 errores
-#  ✓ Multi-tenant scope respetado en getDriverBoletinData
+#  ✓ Multi-tenant scope respetado
+#  ✓ Tufte + B&N first · todos los símbolos refuerzan, no son
+#    señal única
 #
-#  Idempotente · usa cmp -s antes de cp · grep antes de patch.
+#  Idempotente · cmp -s antes de cp.
 # ═══════════════════════════════════════════════════════════════
 set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S5-E1 · Boletín de conductor (mensual + anual) ═══"
+echo "═══ S5-E3 · Boletín de empresa · Sistema Editorial COMPLETO ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
   local rel="$1"; local src="$PAYLOAD/$rel"; local dst="$rel"
   [ ! -f "$src" ] && return
-  # Saltar el fragment de prisma · se trata aparte
-  [ "$rel" = "prisma/_driver-boletin-snapshot.prisma" ] && return
   if [ ! -f "$dst" ]; then
     mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"
     echo "  + $rel  (nuevo)"; C_NEW=$((C_NEW+1))
@@ -103,63 +131,43 @@ while IFS= read -r src; do
 done < <(find "$PAYLOAD" -type f)
 
 echo ""
-echo "  Archivos aplicados · Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
-
-# ─────────────────────────────────────────────────────────────
-# Patch del schema Prisma · idempotente
-# ─────────────────────────────────────────────────────────────
-
-SCHEMA="prisma/schema.prisma"
-PRISMA_FRAGMENT="$PAYLOAD/prisma/_driver-boletin-snapshot.prisma"
-
-if [ -f "$SCHEMA" ] && [ -f "$PRISMA_FRAGMENT" ]; then
-  # 1. Anexar modelo si no existe
-  if grep -q "^model DriverBoletinSnapshot " "$SCHEMA"; then
-    echo "  · DriverBoletinSnapshot · ya está en el schema"
-  else
-    cat "$PRISMA_FRAGMENT" >> "$SCHEMA"
-    echo "  + DriverBoletinSnapshot · anexado al schema"
-  fi
-
-  # 2. Inyectar la relación inversa en Person si no existe
-  if grep -q "boletinSnapshots\s*DriverBoletinSnapshot" "$SCHEMA"; then
-    echo "  · Person.boletinSnapshots · ya está en el schema"
-  else
-    # Insertar después de la línea 'infractions Infraction[]' del modelo Person
-    # Usamos un sed que solo afecta la primera ocurrencia (la de Person)
-    if grep -q "^  infractions      Infraction\[\]$" "$SCHEMA"; then
-      sed -i.bak '0,/^  infractions      Infraction\[\]$/{s|^  infractions      Infraction\[\]$|  infractions      Infraction[]\
-  boletinSnapshots DriverBoletinSnapshot[]|}' "$SCHEMA"
-      rm -f "$SCHEMA.bak"
-      echo "  + Person.boletinSnapshots · inyectada en el schema"
-    else
-      echo "  ⚠ No pude inyectar Person.boletinSnapshots (línea esperada no encontrada)"
-      echo "    Agregalo a mano dentro de model Person:"
-      echo "      boletinSnapshots DriverBoletinSnapshot[]"
-    fi
-  fi
-fi
-
+echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
 rm -rf "$PAYLOAD"
 
 echo ""
-echo "✅ Lote aplicado"
+echo "✅ Lote aplicado · Sistema Editorial Maxtracker COMPLETO"
 echo ""
-echo "  npx tsc --noEmit                                  # validar TS"
-echo "  npx prisma generate                                # regenerar client"
-echo "  npx prisma migrate dev --name add-driver-boletin   # migrar DB"
-echo "  npm run dev                                        # arrancar"
+echo "  npx tsc --noEmit"
+echo "  npm run dev"
 echo ""
 echo "Probá:"
+echo ""
 echo "  · /conduccion/scorecard"
-echo "  · click en columna \"Boletín\" → links M (mensual) y A (anual)"
-echo "  · M abre /conduccion/boletin/conductor/{id}/{YYYY-MM}"
-echo "  · A abre /conduccion/boletin/conductor/{id}/{YYYY}"
-echo "  · Cmd+P para guardar como PDF"
+echo "    En el header aparecen los nuevos botones:"
+echo "      · Boletín mensual  → /conduccion/boletin/empresa/{YYYY-MM}"
+echo "      · Boletín anual    → /conduccion/boletin/empresa/{YYYY}"
+echo "    Junto al menú de export existente."
 echo ""
-echo "Si NO migrás Prisma · el boletín igual funciona on-demand"
-echo "(sin cache · ~200-500ms por hit · suficiente para MVP)."
+echo "  · El boletín ejecutivo muestra:"
+echo "      - Score corporativo 42px ponderado por km"
+echo "      - KPIs · distancia · viajes · conductores · vehículos"
+echo "      - Top 3 infracciones más graves"
+echo "      - Ranking top 5 + bottom 5 GRUPOS"
+echo "      - Scatter de grupos (km vs score) · tamaño = conductores"
+echo "      - Evolución temporal (semanas o meses)"
 echo ""
-echo "PRÓXIMO · S5-E1b · cron de pre-generación al cierre"
-echo "          S5-T5 · Alarmas al patrón canónico"
-echo "          S5-E2 · Boletín de grupo"
+echo "  · Cmd+P → guardar como PDF (A4 limpio)"
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo " Sistema Editorial Maxtracker · 5 niveles consistentes"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo " 1. Recibo de infracción       /infracciones/recibo/{id}"
+echo " 2. Recibo de viaje            /actividad/viaje/{id}"
+echo " 3. Boletín de conductor       /conduccion/boletin/conductor/{id}/{period}"
+echo " 4. Boletín de grupo           /conduccion/boletin/grupo/{id}/{period}"
+echo " 5. Boletín de empresa         /conduccion/boletin/empresa/{period}"
+echo ""
+echo " Todos · Tufte + B&N first · Cmd+P → PDF · pre-generables"
+echo " con snapshot (S5-E1 ya migrado · resto on-demand por ahora)."
+echo ""

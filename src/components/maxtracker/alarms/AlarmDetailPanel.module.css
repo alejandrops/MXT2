@@ -1,0 +1,83 @@
+.actionsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attend {
+  border-color: var(--amber, #f59e0b);
+  color: #b45309;
+}
+
+.attend:hover:not(:disabled) {
+  background: #fffbeb;
+}
+
+.close {
+  border-color: var(--green, #16a34a);
+  color: #15803d;
+}
+
+.close:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.dismiss {
+  border-color: var(--brd);
+  color: var(--tx-dim, #6b7280);
+}
+
+.actionError {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid var(--red, #dc2626);
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--red-dark, #b91c1c);
+}
+
+.terminalNote {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--tx-dim, #6b7280);
+  font-style: italic;
+  text-align: center;
+}
+
+.notes {
+  font-style: italic;
+  color: var(--tx-soft);
+  font-size: 11.5px;
+  line-height: 1.45;
+}

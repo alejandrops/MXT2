@@ -1,0 +1,66 @@
+/* ═══════════════════════════════════════════════════════════════
+   StatusBadge · S5-T5 · Tufte + B&N first
+   ─────────────────────────────────────────────────────────────
+   Sin variables fantasma · usa --tx, --brd, --m del repo.
+   El color es refuerzo · el peso tipográfico y el símbolo son
+   las señales primarias.
+   ═══════════════════════════════════════════════════════════════ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  background: #fff;
+  white-space: nowrap;
+  font-family: var(--f);
+}
+
+.symbol {
+  font-family: var(--m);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.label {
+  line-height: 1.4;
+}
+
+/* ── OPEN · borde marcado · peso bold · color rojo refuerzo ── */
+.open {
+  border-color: var(--red, #dc2626);
+  border-width: 1.5px;
+  color: var(--red-dark, #b91c1c);
+  font-weight: 700;
+}
+
+/* ── ATTENDED · borde medio · peso medium · color amber refuerzo ── */
+.attended {
+  border-color: var(--amber, #f59e0b);
+  color: #b45309;
+  font-weight: 500;
+}
+
+/* ── CLOSED · borde fino · peso regular · color verde refuerzo · texto soft ── */
+.closed {
+  border-color: var(--green, #16a34a);
+  color: #15803d;
+  font-weight: 400;
+}
+
+/* ── DISMISSED · borde gris · peso regular · texto dim ── */
+.dismissed {
+  border-color: var(--brd);
+  color: var(--tx-dim, #9ca3af);
+  font-weight: 400;
+}
+
+.dismissed .label {
+  text-decoration: line-through;
+  text-decoration-thickness: 0.5px;
+}

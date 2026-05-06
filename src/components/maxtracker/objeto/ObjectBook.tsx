@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, FileText } from "lucide-react";
 import {
   PageHeader,
   type ObjectStatus,
@@ -133,9 +133,13 @@ export function ObjectBook({
   const back = TYPE_BACK[type];
 
   // Acciones contextuales del header.
-  // Por ahora solo "Ver en mapa" para vehículos · el ABM tradicional
-  // ya no vive como pantalla separada · si en el futuro hace falta
-  // edición de metadata, vivirá como tab "Configuración" del Libro.
+  // · vehiculo · Ver en mapa
+  // · conductor · Boletín mensual + anual (S5-E1)
+  // · grupo · TBD (S5-E2)
+  const todayLocal = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const currentMonthly = `${todayLocal.getUTCFullYear()}-${String(todayLocal.getUTCMonth() + 1).padStart(2, "0")}`;
+  const currentAnnual = String(todayLocal.getUTCFullYear());
+
   const actions =
     type === "vehiculo" ? (
       <div className={styles.actions}>
@@ -146,6 +150,52 @@ export function ObjectBook({
         >
           <MapPin size={13} />
           <span>Ver en mapa</span>
+        </Link>
+      </div>
+    ) : type === "conductor" ? (
+      <div className={styles.actions}>
+        <Link
+          href={`/conduccion/boletin/conductor/${id}/${currentMonthly}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.actionLink}
+          title={`Boletín mensual · ${currentMonthly}`}
+        >
+          <FileText size={13} />
+          <span>Boletín mensual</span>
+        </Link>
+        <Link
+          href={`/conduccion/boletin/conductor/${id}/${currentAnnual}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.actionLink}
+          title={`Boletín anual · ${currentAnnual}`}
+        >
+          <FileText size={13} />
+          <span>Boletín anual</span>
+        </Link>
+      </div>
+    ) : type === "grupo" ? (
+      <div className={styles.actions}>
+        <Link
+          href={`/conduccion/boletin/grupo/${id}/${currentMonthly}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.actionLink}
+          title={`Boletín mensual del grupo · ${currentMonthly}`}
+        >
+          <FileText size={13} />
+          <span>Boletín mensual</span>
+        </Link>
+        <Link
+          href={`/conduccion/boletin/grupo/${id}/${currentAnnual}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.actionLink}
+          title={`Boletín anual del grupo · ${currentAnnual}`}
+        >
+          <FileText size={13} />
+          <span>Boletín anual</span>
         </Link>
       </div>
     ) : null;

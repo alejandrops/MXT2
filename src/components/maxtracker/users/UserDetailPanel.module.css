@@ -1,0 +1,162 @@
+.youBadge {
+  font-family: var(--m);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--blu);
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.email {
+  font-family: var(--m);
+  font-size: 11.5px;
+  color: var(--tx);
+  word-break: break-all;
+}
+
+/* ── Inline edit del perfil ─────────────────────── */
+
+.inlineEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.select {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--brd);
+  border-radius: 3px;
+  font-family: var(--f);
+  font-size: 12px;
+  color: var(--tx);
+  background: #fff;
+  min-width: 140px;
+}
+
+.profileButton {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #fff;
+  border: 1px solid var(--brd);
+  border-radius: 999px;
+  font-family: var(--f);
+  font-size: 11px;
+  color: var(--tx);
+  cursor: pointer;
+}
+
+.profileButton:hover:not(:disabled) {
+  border-color: var(--blu);
+  color: var(--blu);
+  background: var(--blu-bg);
+}
+
+.profileButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border: 1px solid var(--brd);
+  border-radius: 3px;
+  color: var(--tx);
+  cursor: pointer;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Status badge ───────────────────────────────── */
+
+.statusBadge {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-family: var(--f);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  background: #fff;
+}
+
+.statusActive {
+  border-color: var(--green, #16a34a);
+  color: #15803d;
+}
+
+.statusSuspended {
+  border-color: var(--amber, #f59e0b);
+  color: #b45309;
+}
+
+/* ── Acciones ──────────────────────────────────── */
+
+.actionsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dangerBtn {
+  border-color: var(--red, #dc2626);
+  color: var(--red-dark, #b91c1c);
+}
+
+.dangerBtn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+/* ── Nota terminal · current user ───────────────── */
+
+.terminalNote {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--tx-dim, #6b7280);
+  font-style: italic;
+  text-align: center;
+}

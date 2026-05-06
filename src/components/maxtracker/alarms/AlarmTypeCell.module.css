@@ -1,0 +1,11 @@
+.full {
+  font-size: 12px;
+  color: var(--tx);
+  font-weight: 500;
+}
+
+.compact {
+  font-size: 11px;
+  color: var(--tx);
+  font-weight: 400;
+}

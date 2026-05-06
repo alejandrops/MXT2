@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 import {
   type AnalysisGranularity,
   type DriversMultiMetricData,
@@ -375,11 +375,33 @@ export function ScorecardClient({ data }: Props) {
           ranked.length === 1 ? "conductor" : "conductores"
         }`}
         actions={
-          <ExportMenu
-            onExportCsv={exportCsv}
-            onExportXlsx={exportXlsx}
-            printPeriod={granularityToPeriod(data.granularity)}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link
+              href={`/conduccion/boletin/empresa/${data.anchorIso.slice(0, 7)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.boletinEmpresaLink}
+              title={`Boletín ejecutivo · mensual ${data.anchorIso.slice(0, 7)}`}
+            >
+              <FileText size={13} />
+              <span>Boletín mensual</span>
+            </Link>
+            <Link
+              href={`/conduccion/boletin/empresa/${data.anchorIso.slice(0, 4)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.boletinEmpresaLink}
+              title={`Boletín ejecutivo · anual ${data.anchorIso.slice(0, 4)}`}
+            >
+              <FileText size={13} />
+              <span>Boletín anual</span>
+            </Link>
+            <ExportMenu
+              onExportCsv={exportCsv}
+              onExportXlsx={exportXlsx}
+              printPeriod={granularityToPeriod(data.granularity)}
+            />
+          </div>
         }
       />
 
@@ -407,6 +429,19 @@ export function ScorecardClient({ data }: Props) {
           rows={rowsWithIdx}
           rowKey={(r) => r.personId}
           density="normal"
+          title="Driver scorecard"
+          count={ranked.length}
+          exportFilename={`scorecard-${data.anchorIso}`}
+          exportColumns={[
+            { header: "Pos", value: (r) => r._idx + 1 },
+            { header: "Conductor", value: (r) => r.personName },
+            { header: "Score", value: (r) => r.score },
+            { header: "Km", value: (r) => Number(r.km.toFixed(1)) },
+            { header: "Eventos", value: (r) => Math.round(r.events) },
+            { header: "Excesos", value: (r) => Math.round(r.speeding) },
+            { header: "Criticos", value: (r) => Math.round(r.critical) },
+            { header: "Vmax (km/h)", value: (r) => Math.round(r.vmax) },
+          ]}
           emptyMessage="Sin conductores con actividad para los filtros aplicados."
         />
       </div>
