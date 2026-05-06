@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { exportRowsToCsv, type CsvColumn } from "@/lib/export/csv";
 import { exportRowsToXlsx } from "@/lib/export/xlsx";
+import { exportRowsToPdf } from "@/lib/export/pdf";
 import styles from "./DataTable.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -66,7 +67,7 @@ export interface ColumnDef<R> {
   width?: string;
 }
 
-export type ExportFormat = "csv" | "xlsx";
+export type ExportFormat = "csv" | "xlsx" | "pdf";
 
 interface DataTableProps<R> {
   // ── Datos ──────────────────────────────────────────────────
@@ -205,8 +206,8 @@ export function DataTable<R>({
     });
   }, [rows, columns, internalSort, isControlled]);
 
-  // Export · default = csv + xlsx cuando hay filename
-  const formats = exportFormats ?? (exportFilename ? ["csv", "xlsx"] : []);
+  // Export · default = csv + xlsx + pdf cuando hay filename
+  const formats = exportFormats ?? (exportFilename ? ["csv", "xlsx", "pdf"] : []);
   const canExport = formats.length > 0 && rows.length > 0;
 
   async function handleExport(format: ExportFormat) {
@@ -231,6 +232,14 @@ export function DataTable<R>({
       exportRowsToCsv(exportFilename, displayRows, cols);
     } else if (format === "xlsx") {
       await exportRowsToXlsx(exportFilename, displayRows, cols);
+    } else if (format === "pdf") {
+      await exportRowsToPdf(exportFilename, displayRows, cols, {
+        title: title ?? exportFilename,
+        subtitle:
+          count !== undefined
+            ? `${count.toLocaleString("es-AR")} registros · exportados ${displayRows.length}`
+            : undefined,
+      });
     }
   }
 

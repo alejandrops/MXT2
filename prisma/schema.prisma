@@ -1118,3 +1118,33 @@ enum DiscardReason {
   /// Vehículo o conductor con inmunidad operacional (servicios de emergencia, etc.)
   DRIVER_VEHICLE_IMMUNITY
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  DriverBoletinSnapshot · S5-E1
+//  ─────────────────────────────────────────────────────────────
+//  Cache pre-computada del boletín de un conductor para un
+//  período ("YYYY-MM" mensual o "YYYY" anual).
+//
+//  Análogo a BoletinSnapshot pero por driver en lugar de cuenta.
+//
+//  Lectura · /conduccion/boletin/conductor/[id]/[period]
+//  Escritura · cron de cierre (S5-E1b) o on-demand al primer hit
+// ═══════════════════════════════════════════════════════════════
+model DriverBoletinSnapshot {
+  id          String   @id @default(cuid())
+  driverId    String
+  driver      Person   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  /// "YYYY-MM" mensual · "YYYY" anual
+  period      String
+  /// null = cross-tenant · de lo contrario, accountId del cliente
+  accountId   String?
+  /// Payload completo · shape DriverBoletinData
+  payload     Json
+  generatedAt DateTime @default(now())
+  /// Quién generó este snapshot · "cron" | "manual" | "onDemand"
+  source      String   @default("onDemand")
+
+  @@unique([driverId, period])
+  @@index([generatedAt])
+  @@index([accountId, period])
+}

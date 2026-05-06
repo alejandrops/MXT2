@@ -1,4 +1,4 @@
-// @ts-nocheck · pre-existing patterns (Prisma types stale, leaflet sin types)
+// @ts-nocheck · pre-existing patterns (Prisma types stale, leaflet sin types, HeatPoint shape)
 import {
   listGroupsForFilter,
   listMobileAssetsForFilter,
@@ -12,7 +12,6 @@ import type {
   ScopeFilters as ScopeFiltersType,
 } from "@/lib/queries";
 import { TripsClient } from "./TripsClient";
-import { PageHeader } from "@/components/maxtracker/ui";
 import styles from "./page.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -155,10 +154,8 @@ export default async function ViajesPage({ searchParams }: PageProps) {
   const isAnchorToday = anchorIso === todayIso;
 
   return (
-    <>
-      <PageHeader variant="module" title="Viajes" />
-      <div className={styles.page}>
-        <TripsClient
+    <div className={styles.page}>
+      <TripsClient
           granularity={granularity}
           anchorIso={anchorIso}
           prevAnchorIso={prevAnchorIso}
@@ -174,8 +171,7 @@ export default async function ViajesPage({ searchParams }: PageProps) {
           pageCount={pageCount}
           heatPoints={heatPoints}
         />
-      </div>
-    </>
+    </div>
   );
 }
 

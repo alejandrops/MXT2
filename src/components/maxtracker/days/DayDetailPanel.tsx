@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Printer, ExternalLink } from "lucide-react";
 import {
   EntityDetailPanel,
   PanelDataSection,
   PanelMapSection,
   PanelCustomSection,
+  PanelActionsSection,
   type DataRow,
 } from "@/components/maxtracker/EntityDetailPanel";
 import {
@@ -243,6 +245,41 @@ export function DayDetailPanel({ day, onClose }: Props) {
             },
           ]}
         />
+      )}
+
+      {/* Botón "Abrir recibo" · solo cuando hay un trip seleccionado */}
+      {selectedItem && selectedItem.kind === "trip" && (
+        <PanelActionsSection title="Acciones">
+          <button
+            type="button"
+            onClick={() => {
+              window.open(
+                `/actividad/viaje/${encodeURIComponent(selectedItem.id)}`,
+                "_blank",
+              );
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 14px",
+              background: "#fff",
+              border: "1px solid var(--brd)",
+              borderRadius: 4,
+              fontFamily: "var(--f)",
+              fontSize: 12.5,
+              fontWeight: 500,
+              color: "var(--tx)",
+              cursor: "pointer",
+              textAlign: "left",
+              width: "100%",
+            }}
+          >
+            <Printer size={13} />
+            <span>Abrir recibo del viaje</span>
+            <ExternalLink size={11} style={{ marginLeft: "auto" }} />
+          </button>
+        </PanelActionsSection>
       )}
     </EntityDetailPanel>
   );

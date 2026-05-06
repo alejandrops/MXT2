@@ -1,0 +1,516 @@
+/* ═══════════════════════════════════════════════════════════════
+   DriverBoletin · Tufte + B&N first · S5-E1
+   ─────────────────────────────────────────────────────────────
+   CSS Modules · usa variables del globals.css del repo:
+     --f --m --s   tipografías
+     --tx --tx-soft --tx-dim   colores de texto
+     --brd --brd-soft           bordes
+     --blu                       accent (refuerzo, no señal única)
+   Las variables NO se redefinen acá (CSS Modules no permite :root).
+   ═══════════════════════════════════════════════════════════════ */
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 18mm 16mm;
+  margin: 0 auto;
+  background: #fff;
+  font-family: var(--f);
+  color: var(--tx);
+  font-size: 11px;
+  line-height: 1.5;
+  position: relative;
+}
+
+/* ── Botón flotante de imprimir · solo screen ───────────── */
+
+.printButton {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--blu);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.printButton:hover {
+  background: var(--blu-dark, #1d4ed8);
+}
+
+/* ── Header editorial ──────────────────────────────────── */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.kicker {
+  font-size: 8.5px;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--tx);
+}
+
+.folio {
+  font-family: var(--m);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+/* ── Title block · sin border-bottom (lección Tufte v2) ── */
+
+.titleBlock { margin-top: 14px; }
+
+.title {
+  font-family: var(--s, Georgia, serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: var(--tx);
+  letter-spacing: -0.012em;
+  margin: 0 0 5px 0;
+}
+
+.subtitle {
+  font-size: 11.5px;
+  color: var(--tx-soft);
+}
+
+.subtitle strong {
+  font-weight: 500;
+  color: var(--tx);
+}
+
+/* ── Lead · borde gris (no azul) ────────────────────────── */
+
+.lead {
+  margin-top: 14px;
+  font-family: var(--s, Georgia, serif);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--tx);
+  padding-left: 12px;
+  border-left: 2px solid var(--tx-dim);
+}
+
+/* ── Section header ─────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 22px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--brd);
+}
+
+.sectionNum {
+  font-family: var(--m);
+  font-size: 9.5px;
+  color: var(--tx-dim);
+  letter-spacing: 0.06em;
+}
+
+.sectionTitle {
+  font-family: var(--f);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tx);
+}
+
+.sectionSummary {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--tx-soft);
+  font-family: var(--m);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Score line · Tufte v2 + score 42px (decisión usuario)
+   ─────────────────────────────────────────────────────────
+   Score integrado al flujo de KPIs · sin tile aislado.
+   ═══════════════════════════════════════════════════════════ */
+
+.scoreLine {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: baseline;
+  padding: 4px 0 12px;
+}
+
+.scoreBlock {
+  white-space: nowrap;
+}
+
+.scoreNum {
+  font-family: var(--m);
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--tx);
+}
+
+.scoreOf {
+  font-family: var(--m);
+  font-size: 14px;
+  color: var(--tx-dim);
+  margin-left: 2px;
+}
+
+.scoreMeta {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--tx-soft);
+  margin-top: 6px;
+}
+
+/* KPI strip · sin border-radius · solo líneas verticales */
+
+.kpiFlex {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: baseline;
+}
+
+.kpi {
+  border-left: 1px solid var(--brd);
+  padding-left: 10px;
+}
+
+.kpi:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.kpiLabel {
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  color: var(--tx-dim);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.kpiValue {
+  font-family: var(--m);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--tx);
+  line-height: 1.1;
+}
+
+.kpiUnit {
+  font-size: 11px;
+  color: var(--tx-dim);
+  font-weight: 400;
+  margin-left: 1px;
+}
+
+.kpiTrend {
+  margin-top: 2px;
+  font-family: var(--m);
+  font-size: 9.5px;
+  color: var(--tx-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Distribution stack · símbolos + sparkline
+   ───────────────────────────────────────────────────────── */
+
+.distStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--m);
+  font-size: 11px;
+}
+
+.distRow {
+  display: grid;
+  grid-template-columns: 18px 70px 80px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.distSymbol {
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+.distSymbol.leve  { color: var(--tx-dim); }
+.distSymbol.media { color: var(--tx-soft); }
+.distSymbol.grave { color: var(--tx); font-weight: 600; }
+
+.distLabel {
+  font-family: var(--f);
+  font-size: 11px;
+}
+
+.distLabel.leve  { font-weight: 400; color: var(--tx-soft); }
+.distLabel.media { font-weight: 500; color: var(--tx); }
+.distLabel.grave { font-weight: 700; color: var(--tx); }
+
+.distCount {
+  font-family: var(--m);
+  color: var(--tx);
+}
+
+.distSpark {
+  font-family: var(--m);
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: var(--tx-dim);
+}
+
+.distSpark.media { color: var(--tx-soft); }
+.distSpark.grave { color: var(--tx); }
+
+/* ═══════════════════════════════════════════════════════════
+   Empty block (sin infracciones)
+   ───────────────────────────────────────────────────────── */
+
+.emptyBlock {
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid var(--brd);
+  color: var(--tx-dim);
+  font-style: italic;
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Tabla compacta
+   ───────────────────────────────────────────────────────── */
+
+.compactTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+
+.compactTable th {
+  text-align: left;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--tx-dim);
+  text-transform: uppercase;
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--brd);
+}
+
+.compactTable td {
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--brd-soft);
+  color: var(--tx);
+  vertical-align: baseline;
+}
+
+.compactTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.right { text-align: right; }
+.mono { font-family: var(--m); font-size: 10.5px; }
+.dim { color: var(--tx-dim); }
+
+.sevPrefix {
+  font-family: var(--m);
+  font-weight: 700;
+  width: 14px;
+  color: var(--tx);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Sparkline blocks (mensual)
+   ───────────────────────────────────────────────────────── */
+
+.sparkBlock {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--brd-soft);
+}
+
+.sparkBlock:last-child {
+  border-bottom: 0;
+}
+
+.sparkLabel {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: var(--tx-dim);
+  text-transform: uppercase;
+}
+
+.sparkData {
+  font-family: var(--m);
+  font-size: 10.5px;
+  color: var(--tx);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sparkGlyph {
+  font-family: var(--m);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  color: var(--tx-soft);
+}
+
+.sparkTrend {
+  color: var(--tx-soft);
+  font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Annual chart + aside (mejor/peor mes)
+   ───────────────────────────────────────────────────────── */
+
+.annualChart {
+  width: 100%;
+  height: 130px;
+  display: block;
+}
+
+.annualAside {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.monthBlock {
+  line-height: 1.5;
+}
+
+.monthLabel {
+  font-family: var(--f);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--tx-dim);
+}
+
+.monthValue {
+  font-family: var(--m);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--tx);
+  margin-top: 2px;
+}
+
+.monthDetail {
+  font-size: 10px;
+  color: var(--tx-soft);
+  margin-top: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Vehicles list
+   ───────────────────────────────────────────────────────── */
+
+.vehiclesList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 24px;
+}
+
+.vehicleRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--brd-soft);
+  gap: 10px;
+}
+
+.vehicleName {
+  font-size: 11px;
+  color: var(--tx);
+}
+
+.vehicleName strong {
+  font-weight: 500;
+}
+
+.plate {
+  font-family: var(--m);
+  color: var(--tx-soft);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.vehicleStat {
+  font-family: var(--m);
+  font-size: 10px;
+  color: var(--tx-soft);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Footer
+   ───────────────────────────────────────────────────────── */
+
+.footer {
+  margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px solid var(--brd);
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--tx-dim);
+  font-family: var(--m);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Print rules · A4 sin chrome screen
+   ───────────────────────────────────────────────────────── */
+
+@media print {
+  .printButton {
+    display: none;
+  }
+  .page {
+    box-shadow: none;
+  }
+}
