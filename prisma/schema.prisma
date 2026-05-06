@@ -49,24 +49,25 @@ model Organization {
 /// operation, a delivery network). Everything the user sees is
 /// scoped to an Account.
 model Account {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  name           String
-  slug           String       @unique
-  tier           Tier         @default(PRO)
-  industry       String?
-  groups         Group[]
-  assets         Asset[]
-  settings       AccountSettings?
-  persons        Person[]
-  alarms         Alarm[]
-  assetDriverDays AssetDriverDay[]
-  assetWeeklyStats AssetWeeklyStats[]
-  users          User[]
-  geofences      Geofence[]
-  infractions    Infraction[]
-  createdAt      DateTime     @default(now())
+  id                   String                   @id @default(cuid())
+  organizationId       String
+  organization         Organization             @relation(fields: [organizationId], references: [id])
+  name                 String
+  slug                 String                   @unique
+  tier                 Tier                     @default(PRO)
+  industry             String?
+  groups               Group[]
+  assets               Asset[]
+  settings             AccountSettings?
+  persons              Person[]
+  alarms               Alarm[]
+  assetDriverDays      AssetDriverDay[]
+  assetWeeklyStats     AssetWeeklyStats[]
+  users                User[]
+  geofences            Geofence[]
+  infractions          Infraction[]
+  createdAt            DateTime                 @default(now())
+  boletinSnapshotsExec AccountBoletinSnapshot[]
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -92,7 +93,7 @@ model AccountSettings {
   // ─── Umbrales · conducción agresiva ──────────────────────
   /// Frenada brusca · g-force mínimo · default LATAM 0.35g
   /// (US standard 0.45g · LATAM ajustado por estudios locales)
-  harshBrakingThreshold     Float @default(0.35)
+  harshBrakingThreshold      Float @default(0.35)
   /// Aceleración brusca · g-force mínimo
   harshAccelerationThreshold Float @default(0.35)
   /// Curva agresiva · g-force lateral mínimo
@@ -104,9 +105,9 @@ model AccountSettings {
 
   // ─── Umbrales · viajes ───────────────────────────────────
   /// Distancia mínima para considerar un viaje válido (km)
-  tripMinDistanceKm Float @default(0.5)
+  tripMinDistanceKm  Float @default(0.5)
   /// Duración mínima para considerar un viaje válido (segundos)
-  tripMinDurationSec Int @default(60)
+  tripMinDurationSec Int   @default(60)
 
   // ─── Notificaciones a nivel cuenta ───────────────────────
   /// Email de contacto general del cliente para alertas críticas
@@ -129,7 +130,6 @@ model AccountSettings {
   updatedAt DateTime @updatedAt
 }
 
-
 enum Tier {
   BASE
   PRO
@@ -151,6 +151,8 @@ model Group {
   assets    Asset[]
   createdAt DateTime @default(now())
 
+  boletinSnapshots GroupBoletinSnapshot[]
+
   @@index([accountId])
 }
 
@@ -161,41 +163,41 @@ model Group {
 /// The thing being monitored. Mobile (vehicle, machine) or fixed
 /// (silo, elevator, refrigerator unit).
 model Asset {
-  id              String       @id @default(cuid())
-  accountId       String
-  account         Account      @relation(fields: [accountId], references: [id])
+  id                String             @id @default(cuid())
+  accountId         String
+  account           Account            @relation(fields: [accountId], references: [id])
   /// ADR-001: nullable FK, 1:N cardinality.
-  groupId         String?
-  group           Group?       @relation(fields: [groupId], references: [id])
-  name            String
-  plate           String?      @unique
-  vin             String?      @unique
-  mobilityType    MobilityType @default(MOBILE)
+  groupId           String?
+  group             Group?             @relation(fields: [groupId], references: [id])
+  name              String
+  plate             String?            @unique
+  vin               String?            @unique
+  mobilityType      MobilityType       @default(MOBILE)
   /// Used by the live tracking map to pick an icon when the
   /// "icons by type" view option is enabled. Falls back to the
   /// generic shape if GENERIC.
-  vehicleType     VehicleType  @default(LIVIANO)
-  make            String?
-  model           String?
-  year            Int?
+  vehicleType       VehicleType        @default(LIVIANO)
+  make              String?
+  model             String?
+  year              Int?
   /// Lectura del odómetro al momento del alta (km). El kilometraje
   /// "actual" se deriva sumando los Trips posteriores. Permite
   /// planes de mantenimiento por kilómetros sin perder el histórico
   /// previo a Maxtracker.
   initialOdometerKm Int?
-  status          AssetStatus  @default(IDLE)
-  currentDriverId String?
-  currentDriver   Person?      @relation("CurrentDriver", fields: [currentDriverId], references: [id])
-  devices         Device[]
-  positions       Position[]
-  livePosition    LivePosition?
-  trips           Trip[]
-  events          Event[]
-  alarms          Alarm[]
-  assetDriverDays AssetDriverDay[]
-  weeklyStats     AssetWeeklyStats[]
-  infractions     Infraction[]
-  createdAt       DateTime     @default(now())
+  status            AssetStatus        @default(IDLE)
+  currentDriverId   String?
+  currentDriver     Person?            @relation("CurrentDriver", fields: [currentDriverId], references: [id])
+  devices           Device[]
+  positions         Position[]
+  livePosition      LivePosition?
+  trips             Trip[]
+  events            Event[]
+  alarms            Alarm[]
+  assetDriverDays   AssetDriverDay[]
+  weeklyStats       AssetWeeklyStats[]
+  infractions       Infraction[]
+  createdAt         DateTime           @default(now())
 
   @@index([accountId, status])
   @@index([groupId])
@@ -245,14 +247,14 @@ enum AssetStatus {
 /// multiple devices simultaneously; exactly one is marked as
 /// primary for position reporting.
 model Device {
-  id          String    @id @default(cuid())
+  id String @id @default(cuid())
 
   /// Asset al que está instalado el dispositivo. NULL cuando el
   /// device está en stock, en reparación o dado de baja.
-  assetId     String?
-  asset       Asset?    @relation(fields: [assetId], references: [id])
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id])
 
-  imei        String    @unique
+  imei         String  @unique
   /// Número de serie del fabricante (puede coexistir con IMEI).
   /// No todos los vendors lo proveen.
   serialNumber String?
@@ -260,26 +262,26 @@ model Device {
   /// Marca del dispositivo. Limitamos a un set conocido para
   /// poder mantener integraciones (codecs, configs, comandos).
   /// "OTHER" deja espacio para casos esporádicos.
-  vendor      DeviceVendor
-  model       String
+  vendor DeviceVendor
+  model  String
 
   /// Versión de firmware actualmente cargada · útil para tracking
   /// de updates y troubleshooting de bugs específicos por versión.
   firmwareVersion String?
 
   /// Estado en el ciclo de vida del dispositivo · ver DeviceStatus
-  status      DeviceStatus @default(STOCK)
+  status DeviceStatus @default(STOCK)
 
   /// Si está marcado, es el dispositivo principal del Asset
   /// (cuando un Asset tiene múltiples devices, ej · GPS + cámara).
-  isPrimary   Boolean   @default(false)
+  isPrimary Boolean @default(false)
 
   /// SIM card insertada en el dispositivo. NULL cuando el device
   /// no tiene SIM (recién recibido, en stock sin SIM provista, o
   /// en reparación con la SIM removida). La relación es 1-1 vía
   /// @unique en simId · una SIM no puede estar en dos devices.
-  simId       String?   @unique
-  sim         Sim?      @relation(fields: [simId], references: [id])
+  simId String? @unique
+  sim   Sim?    @relation(fields: [simId], references: [id])
 
   lastSeenAt  DateTime?
   installedAt DateTime  @default(now())
@@ -314,43 +316,43 @@ enum DeviceStatus {
 /// relación SIM ↔ Device vive en `Device.simId` (1-1). Una SIM
 /// puede estar en stock (sin device) o asignada (en un device).
 model Sim {
-  id           String    @id @default(cuid())
+  id String @id @default(cuid())
 
   /// Integrated Circuit Card ID · 19-20 dígitos numéricos.
   /// Es el identificador único físico de la SIM, impreso en
   /// el plástico y leído por el modem del Device.
-  iccid        String    @unique
+  iccid String @unique
 
   /// Número telefónico (MSISDN) asignado por el carrier. No
   /// siempre se conoce · algunas APIs IoT no lo exponen.
-  phoneNumber  String?
+  phoneNumber String?
 
   /// IMSI · International Mobile Subscriber Identity. Usado para
   /// algunos provisioning automáticos · opcional para el demo.
-  imsi         String?
+  imsi String?
 
   /// Carrier comercial · acotado a los principales del Cono Sur.
   /// "OTHER" cubre carriers regionales (Bitel, Tigo, etc.).
-  carrier      Carrier
+  carrier Carrier
 
   /// Access Point Name · necesario para que el modem se conecte
   /// a la red de datos. Cada carrier tiene su APN específico.
   /// Ej · "internet.movistar.com.ar"
-  apn          String
+  apn String
 
   /// Cuota mensual de datos en MB. Los planes IoT típicos van
   /// de 10 MB (telemetría básica) a 500 MB (cámaras + video).
-  dataPlanMb   Int       @default(50)
+  dataPlanMb Int @default(50)
 
-  status       SimStatus @default(STOCK)
+  status SimStatus @default(STOCK)
 
   /// Backref · una SIM puede estar dentro de un Device. La FK
   /// real vive en Device.simId (con @unique). Acá es el otro
   /// lado de la relación, opcional.
-  device       Device?
+  device Device?
 
-  activatedAt  DateTime?
-  createdAt    DateTime  @default(now())
+  activatedAt DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([status])
   @@index([carrier])
@@ -401,6 +403,8 @@ model Person {
   assetDriverDays  AssetDriverDay[]
   infractions      Infraction[]
 
+  boletinSnapshots DriverBoletinSnapshot[]
+
   @@index([accountId])
 }
 
@@ -441,7 +445,7 @@ model LivePosition {
 
   /// S2-L3 · canData del último ping · espejo del Position más
   /// reciente para evitar JOIN al consultar el "ahora" del vehículo.
-  canData    Json?
+  canData Json?
 
   @@index([recordedAt])
   @@index([speedKmh])
@@ -546,34 +550,34 @@ model AssetDriverDay {
 /// All time fields are minutes. distanceKm is float because we
 /// inherit fractional km from AssetDriverDay rollups.
 model AssetWeeklyStats {
-  id              String   @id @default(cuid())
-  accountId       String
-  account         Account  @relation(fields: [accountId], references: [id])
-  assetId         String
-  asset           Asset    @relation(fields: [assetId], references: [id])
-  weekStart       DateTime
+  id             String   @id @default(cuid())
+  accountId      String
+  account        Account  @relation(fields: [accountId], references: [id])
+  assetId        String
+  asset          Asset    @relation(fields: [assetId], references: [id])
+  weekStart      DateTime
   /// Total km in the week (sum across all drivers of the asset)
-  distanceKm      Float
+  distanceKm     Float
   /// Active driving minutes
-  activeMin       Int
+  activeMin      Int
   /// Idle minutes (ignition on, no movement)
-  idleMin         Int
+  idleMin        Int
   /// Distinct days with at least one trip
-  activeDays      Int
-  tripCount       Int
+  activeDays     Int
+  tripCount      Int
   /// Total events generated in the week (any severity)
-  eventCount      Int
+  eventCount     Int
   /// Events with severity HIGH or CRITICAL
-  highEventCount  Int
+  highEventCount Int
   /// Speeding-type events specifically (counts toward "infracciones")
-  speedingCount   Int
+  speedingCount  Int
   /// Peak speed reached during the week (km/h)
-  maxSpeedKmh     Float
+  maxSpeedKmh    Float
   /// Estimated fuel consumption in liters (placeholder · refined
   /// when we add real fuel sensor data; today derived from
   /// activeMin × consumption coefficient by vehicleType)
-  fuelLiters      Float
-  createdAt       DateTime @default(now())
+  fuelLiters     Float
+  createdAt      DateTime @default(now())
 
   @@unique([assetId, weekStart])
   @@index([assetId, weekStart])
@@ -605,17 +609,17 @@ model Position {
   /// llegó el primer parser de Flespi. Shape definido en
   /// src/lib/mock-can/types.ts (interface CanSnapshot) · cuando
   /// llegue el ingestor real, este campo se persiste igual.
-  canData    Json?
+  canData Json?
 
   /// S4-L3a · Tipo de vía inferido del entorno OSM al momento del
   /// ping. Null si no se pudo determinar (zona sin datos OSM o
   /// ingestor sin lookup). Usado por el resolver de vmax para
   /// aplicar la tabla Ley 24.449 sin recomputar OSM en cada query.
   /// En seed se asigna heurísticamente desde la velocidad del segmento.
-  roadType   RoadType?
+  roadType RoadType?
 
-  @@index([assetId, recordedAt])
   @@unique([assetId, recordedAt])
+  @@index([assetId, recordedAt])
 }
 
 /// Discrete observation derived from telemetry (harsh braking,
@@ -759,47 +763,47 @@ enum AlarmStatus {
 // ═══════════════════════════════════════════════════════════════
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
+  id    String @id @default(cuid())
+  email String @unique
 
   /// ID en auth.users de Supabase. Null si el user todavía
   /// no fue provisionado en Supabase Auth (caso seed inicial).
-  supabaseAuthId String?     @unique
-  firstName       String
-  lastName        String
-  phone           String?
-  documentNumber  String?
+  supabaseAuthId String? @unique
+  firstName      String
+  lastName       String
+  phone          String?
+  documentNumber String?
 
   /// Dummy en demo · auth real (Auth0) en v1.1+
-  passwordHash    String
-  status          UserStatus @default(ACTIVE)
+  passwordHash String
+  status       UserStatus @default(ACTIVE)
 
   // ─── Tenant scoping ──────────────────────────────────────
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   /// Null si Super admin o Admin Maxtracker (cross-account).
   /// Set si Admin de Cliente u Operador (scoped a un Account).
-  accountId       String?
-  account         Account?  @relation(fields: [accountId], references: [id])
+  accountId      String?
+  account        Account?     @relation(fields: [accountId], references: [id])
 
   // ─── Role assignment ─────────────────────────────────────
-  profileId       String
-  profile         Profile   @relation(fields: [profileId], references: [id])
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id])
 
   // ─── Personal preferences (Configuración) ────────────────
-  language             String   @default("es-AR")
-  theme                Theme    @default(LIGHT)
-  notifyAlarmHighCrit  Boolean  @default(true)
-  notifyScoreDrop      Boolean  @default(true)
-  notifyBoletinClosed  Boolean  @default(true)
-  notifyCriticalEvent  Boolean  @default(true)
+  language            String  @default("es-AR")
+  theme               Theme   @default(LIGHT)
+  notifyAlarmHighCrit Boolean @default(true)
+  notifyScoreDrop     Boolean @default(true)
+  notifyBoletinClosed Boolean @default(true)
+  notifyCriticalEvent Boolean @default(true)
 
   // ─── S1-L8 · feedback widget · relación inversa ───────────
-  feedbacks            Feedback[]
+  feedbacks Feedback[]
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastLoginAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
 }
 
 enum UserStatus {
@@ -818,7 +822,7 @@ enum Theme {
 /// CLIENT_ADMIN, OPERATOR) + posibles personalizados a futuro
 /// (isBuiltin = false).
 model Profile {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   systemKey   ProfileKey @unique
   /// Nombre editable por admin · "Operador" puede renombrarse a
   /// "Despachador" sin cambiar systemKey
@@ -829,10 +833,10 @@ model Profile {
   /// en src/lib/permissions.ts. Editable desde /admin/perfiles.
   permissions Json
 
-  users       User[]
-  isBuiltin   Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  users     User[]
+  isBuiltin Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum ProfileKey {
@@ -887,29 +891,29 @@ model BoletinSnapshot {
 //  cualquier cosa. NO se exporta a analytics · solo a admin DB.
 // ═══════════════════════════════════════════════════════════════
 model Feedback {
-  id          String           @id @default(cuid())
+  id         String           @id @default(cuid())
   /// Account del user · null si user anónimo (no debería pasar en prod)
-  accountId   String?
+  accountId  String?
   /// User que envió · null en demo mode sin auth
-  userId      String?
-  user        User?            @relation(fields: [userId], references: [id])
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id])
   /// Categoría del feedback
-  category    FeedbackCategory @default(OTHER)
+  category   FeedbackCategory @default(OTHER)
   /// Mensaje del user · texto libre
-  message     String
+  message    String
   /// URL donde estaba el user · ej. "/objeto/vehiculo/abc123?m=resumen"
-  pageUrl     String
+  pageUrl    String
   /// User agent del browser · ayuda a identificar bugs cross-browser
-  userAgent   String
+  userAgent  String
   /// "1920x1080" · útil para bugs de layout
-  viewport    String?
+  viewport   String?
   /// Estado de gestión · cambiable por admin
-  status      FeedbackStatus   @default(NEW)
-  createdAt   DateTime         @default(now())
+  status     FeedbackStatus   @default(NEW)
+  createdAt  DateTime         @default(now())
   /// Cuándo el admin marcó como revisado · null si NEW
-  reviewedAt  DateTime?
+  reviewedAt DateTime?
   /// Notas internas del admin · no visibles para el user
-  adminNotes  String?
+  adminNotes String?
 
   @@index([status, createdAt])
   @@index([accountId, createdAt])
@@ -975,33 +979,33 @@ enum RoadType {
 /// Para "caminos lineales" (ruta interna, camino petrolero) se
 /// usa un polígono fino (buffer del trazado, ej. 50m a cada lado).
 model Geofence {
-  id          String   @id @default(cuid())
-  accountId   String
-  account     Account  @relation(fields: [accountId], references: [id])
+  id        String  @id @default(cuid())
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
 
   name        String
   description String?
 
   /// GeoJSON Polygon stringified · ej. {"type":"Polygon","coordinates":[[[...]]]}
-  polygonGeoJson    String
+  polygonGeoJson String
 
   /// Categoría reutilizable para agrupar geocercas con reglas
   /// comunes (UI puede filtrar/colorear por categoría).
-  category    GeofenceCategory?
+  category GeofenceCategory?
 
   /// Override de vmax por VehicleType al cruzar el polígono.
   /// Stringified Record<VehicleType, number>. Ej:
   ///   {"LIVIANO":40,"CAMION_PESADO":30,"MAQUINA_VIAL":20}
   /// null = la geocerca solo dispara entry/exit events,
   /// sin afectar el cálculo de infracciones por velocidad.
-  vmaxOverrideJson  String?
+  vmaxOverrideJson String?
 
   /// Para resolver conflicto cuando un punto está adentro de
   /// múltiples geocercas con override. Mayor priority gana.
-  priority    Int      @default(0)
+  priority Int @default(0)
 
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   @@index([accountId, active])
 }
@@ -1035,62 +1039,62 @@ enum GeofenceCategory {
 /// score · el admin puede descartar por error técnico (límite
 /// incorrecto, GPS malo, vehículo con inmunidad, etc.).
 model Infraction {
-  id              String   @id @default(cuid())
-  accountId       String
-  account         Account  @relation(fields: [accountId], references: [id])
-  assetId         String
-  asset           Asset    @relation(fields: [assetId], references: [id])
-  driverId        String?
-  driver          Person?  @relation(fields: [driverId], references: [id])
+  id        String  @id @default(cuid())
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+  assetId   String
+  asset     Asset   @relation(fields: [assetId], references: [id])
+  driverId  String?
+  driver    Person? @relation(fields: [driverId], references: [id])
 
   /// Inicio del primer sample en exceso del segmento
-  startedAt       DateTime
+  startedAt   DateTime
   /// Fin del último sample en exceso del segmento
-  endedAt         DateTime
+  endedAt     DateTime
   /// Duración del segmento en segundos · siempre >= 120 (umbral)
-  durationSec     Int
+  durationSec Int
 
   /// Velocidad máxima aplicable según resolveVmax (la que estaba
   /// vigente al momento de la infracción · snapshot, no se recalcula)
-  vmaxKmh         Int
+  vmaxKmh        Int
   /// Pico de velocidad alcanzado durante el segmento
-  peakSpeedKmh    Float
+  peakSpeedKmh   Float
   /// peakSpeedKmh - vmaxKmh · define la severity (L/M/G)
-  maxExcessKmh    Float
+  maxExcessKmh   Float
   /// Distancia recorrida en exceso · suma de geo-distance entre
   /// samples del segmento (entra al Violation Percentage Method)
-  distanceMeters  Float
+  distanceMeters Float
 
   /// LEVE | MEDIA | GRAVE según maxExcessKmh
   /// (≤9 LEVE · 10-17 MEDIA · ≥18 GRAVE · configurable post-MVP)
-  severity        InfractionSeverity
+  severity    InfractionSeverity
   /// Snapshot del tipo de vehículo al momento de la infracción
-  vehicleType     VehicleType
+  vehicleType VehicleType
   /// Snapshot del tipo de vía al momento de la infracción
-  roadType        RoadType
+  roadType    RoadType
 
-  startLat        Float
-  startLon        Float
-  startAddress    String?
-  endLat          Float
-  endLon          Float
-  endAddress      String?
+  startLat     Float
+  startLon     Float
+  startAddress String?
+  endLat       Float
+  endLon       Float
+  endAddress   String?
 
   /// JSON stringified · array de samples del segmento para
   /// reconstruir polilínea + curva velocidad/tiempo en el
   /// recibo PDF. Shape: [[lat, lon, isoTimestamp, speedKmh], ...]
-  trackJson       String
+  trackJson String
 
   /// ACTIVE entra al score · DISCARDED queda en BD pero no
   /// afecta score (audit trail de descartes manuales).
-  status          InfractionStatus @default(ACTIVE)
+  status        InfractionStatus @default(ACTIVE)
   /// Razón del descarte · solo populado cuando status=DISCARDED
-  discardReason   DiscardReason?
+  discardReason DiscardReason?
   /// User que descartó · solo populado cuando status=DISCARDED
-  discardedById   String?
-  discardedAt     DateTime?
+  discardedById String?
+  discardedAt   DateTime?
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([accountId, startedAt])
   @@index([assetId, startedAt])
@@ -1147,4 +1151,61 @@ model DriverBoletinSnapshot {
   @@unique([driverId, period])
   @@index([generatedAt])
   @@index([accountId, period])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GroupBoletinSnapshot · S5-E2b
+//  ─────────────────────────────────────────────────────────────
+//  Cache pre-computada del boletín de un grupo para un período
+//  ("YYYY-MM" mensual o "YYYY" anual).
+//
+//  Análogo a DriverBoletinSnapshot pero por grupo.
+//
+//  Lectura · /conduccion/boletin/grupo/[id]/[period]
+//  Escritura · cron de cierre o on-demand al primer hit
+// ═══════════════════════════════════════════════════════════════
+model GroupBoletinSnapshot {
+  id          String   @id @default(cuid())
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  /// "YYYY-MM" mensual · "YYYY" anual
+  period      String
+  /// null = cross-tenant · de lo contrario, accountId del cliente
+  accountId   String?
+  /// Payload completo · shape GroupBoletinData
+  payload     Json
+  generatedAt DateTime @default(now())
+  /// Quién generó este snapshot · "cron" | "manual" | "onDemand"
+  source      String   @default("onDemand")
+
+  @@unique([groupId, period])
+  @@index([generatedAt])
+  @@index([accountId, period])
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AccountBoletinSnapshot · S5-E3b
+//  ─────────────────────────────────────────────────────────────
+//  Cache pre-computada del boletín ejecutivo de empresa.
+//
+//  Coexiste con BoletinSnapshot del S1 que es el boletín
+//  operativo (otra audiencia · otro layout). Este es ejecutivo.
+//
+//  Lectura · /conduccion/boletin/empresa/[period]
+//  Escritura · cron o on-demand
+// ═══════════════════════════════════════════════════════════════
+model AccountBoletinSnapshot {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// "YYYY-MM" mensual · "YYYY" anual
+  period      String
+  /// Payload completo · shape AccountBoletinData
+  payload     Json
+  generatedAt DateTime @default(now())
+  /// Quién generó este snapshot · "cron" | "manual" | "onDemand"
+  source      String   @default("onDemand")
+
+  @@unique([accountId, period])
+  @@index([generatedAt])
 }
