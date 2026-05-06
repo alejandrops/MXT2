@@ -1,0 +1,47 @@
+# Torre de control
+
+Vista densa para operadores de monitoreo · todos los vehículos con alarmas, telemetría en vivo y acceso rápido a acciones.
+
+## Para qué sirve
+
+Pantalla operativa para el equipo de monitoreo de seguridad · permite atender múltiples eventos simultáneamente sin perder contexto.
+
+## Qué muestra
+
+Tres paneles:
+
+1. **Mapa en vivo** · marcadores con estado · click selecciona un vehículo
+2. **Lista de alarmas activas** · ordenadas por severidad · botones de acción rápida
+3. **Detalle del vehículo seleccionado** · telemetría · último viaje · alarmas históricas
+
+## Cómo se usa
+
+1. Click en una alarma de la lista → centra el mapa en el vehículo
+2. Botones de acción rápida en cada alarma:
+   - **Atender** · pasa OPEN → ATTENDED
+   - **Cerrar** · pasa ATTENDED → CLOSED
+   - **Llamar** · abre tel: con número del conductor (si está cargado)
+
+## Diferencia con Mapa y Alarmas
+
+| | Mapa | Alarmas | Torre de control |
+|---|---|---|---|
+| Foco | Posiciones | Bandeja | Operativo en vivo |
+| Filtros | Ligeros | Completos | Mínimos |
+| Drill-down | Libro | Side panel | Inline 3 paneles |
+| Uso típico | Navegación general | Atención individual | Turnos de monitoreo |
+
+## Tips
+
+- Para turnos de 24h · esta pantalla en monitor primario
+- Atajos de teclado · `1` selecciona alarma, `Enter` atiende, `Esc` deselecciona
+- Sound alerts pueden activarse en preferencias del usuario
+
+## Permisos
+
+OP y CA · MA/SA pueden filtrar cross-cuenta.
+
+## Ver también
+
+- [Mapa en vivo](/seguimiento/mapa)
+- [Alarmas](/seguridad/alarmas)

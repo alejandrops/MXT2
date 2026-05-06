@@ -1,0 +1,47 @@
+# Gestión · Vehículos
+
+CRUD de vehículos · alta, modificación, asignación a grupo, baja.
+
+## Para qué sirve
+
+Mantener actualizada la base de vehículos · alta cuando entra un vehículo nuevo, asignación de patente, cambio de grupo, baja al vender o desafectar.
+
+## Acciones disponibles
+
+- **Alta** · crear un vehículo nuevo · datos básicos + dispositivo asignado
+- **Editar** · modificar nombre, patente, tipo, grupo, datos secundarios
+- **Asignar grupo** · cambiar el grupo de uno o varios vehículos (acción masiva)
+- **Suspender** · marcar como inactivo (no aparece en operativo)
+- **Reactivar** · volver a habilitar un suspendido
+- **Baja** · eliminar permanentemente (irreversible)
+
+## Cómo se usa
+
+1. Buscar el vehículo que querés modificar
+2. Click en el ícono de edición de la fila o usar acciones masivas (selección múltiple)
+3. Confirmar el cambio · acción inmediata
+
+## Permisos
+
+- **CA** · todas las acciones de su cuenta
+- **OP** · solo asignación de grupo (no alta/baja)
+- **MA / SA** · cross-cuenta
+
+## Validaciones
+
+Al dar de alta:
+- **Patente** · única en la cuenta · formato según país
+- **Tipo** · obligatorio · afecta vmax y reglas de cálculo
+- **Grupo** · puede ser nulo (sin grupo asignado)
+- **Dispositivo IMEI** · si se asigna, debe ser único en el sistema
+
+## Tips
+
+- Para **import masivo** desde Excel · usar la herramienta de bulk import (próximamente)
+- Cambiar el tipo de vehículo afecta retroactivamente cómo se computan las infracciones
+- La baja es irreversible · si dudás, suspender en lugar de borrar
+
+## Ver también
+
+- [Catálogo de vehículos](/catalogos/vehiculos) · vista de solo lectura
+- [Gestión de grupos](/gestion/grupos)

@@ -1,0 +1,40 @@
+# Gestión · Conductores
+
+CRUD de conductores · alta, edición de datos personales, asignación de vehículo, baja.
+
+## Acciones disponibles
+
+- **Alta** · datos básicos (nombre, documento, fecha de ingreso, vencimiento de licencia)
+- **Editar** · cualquier campo
+- **Asignar vehículo** · vincular conductor con un vehículo específico
+- **Desasignar** · quitar vínculo
+- **Baja** · eliminar permanentemente (irreversible)
+
+## Cómo se usa
+
+1. Buscar el conductor o crear uno nuevo
+2. Editar campos · cambios efectivos al guardar
+3. Asignación de vehículo · puede ser exclusiva o múltiple (depende de la configuración)
+
+## Validaciones
+
+- **Documento** · único en la cuenta
+- **Vencimiento de licencia** · alerta si está a vencer en < 30 días
+- **Email** · opcional pero recomendado · necesario para envío de boletines
+
+## Tips
+
+- Conductores con licencia **vencida** se marcan en rojo en todas las vistas
+- El **email** del conductor permite envío automático del boletín mensual (post-MVP)
+- Para auditoría · todos los cambios quedan en el log de actividad
+
+## Permisos
+
+- **CA** · alta/baja/edición de su cuenta
+- **OP** · solo asignación a vehículo (no datos personales)
+- **MA / SA** · cross-cuenta
+
+## Ver también
+
+- [Catálogo de conductores](/catalogos/conductores) · solo lectura
+- [Scorecard](/conduccion/scorecard) · ranking

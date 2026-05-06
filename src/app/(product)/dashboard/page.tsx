@@ -27,8 +27,10 @@ export default function DashboardPage() {
   return (
     <div className={styles.page}>
       <PageHeader
+        variant="module"
         title="Dashboard"
         subtitle="Estado actual de la flota · cross-módulo"
+        helpSlug="dashboard"
       />
 
       <div className={styles.body}>

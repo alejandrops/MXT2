@@ -106,7 +106,7 @@ export default async function ConduccionDashboardPage() {
       <PageHeader
         variant="module"
         title="Dashboard de conducción"
-        subtitle="Últimos 30 días · score, infracciones y conductores a foco"
+        subtitle="Últimos 30 días · score, infracciones y conductores a foco" helpSlug="conduccion/dashboard"
       />
       <div className="appPage">
         {/* ── KPI Strip ──────────────────────────────────────── */}

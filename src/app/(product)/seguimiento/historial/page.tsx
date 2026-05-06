@@ -79,7 +79,7 @@ export default async function HistoricosPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Historial" />
+      <PageHeader variant="module" title="Historial" helpSlug="seguimiento/historial" />
       {/* Invisible · setea/lee localStorage del último asset */}
       <HistoricosLastSeenSync
         urlHadAssetId={params.assetId !== null}

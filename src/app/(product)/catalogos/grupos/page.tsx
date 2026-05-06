@@ -38,7 +38,7 @@ export default async function GruposPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Grupos" />
+      <PageHeader variant="module" title="Grupos" helpSlug="catalogos/grupos" />
       <div className="appPage">
         <div className={styles.kpiStrip}>
           <KpiTile label="Grupos totales" value={counts.totalGroups} />
@@ -66,7 +66,7 @@ export default async function GruposPage({ searchParams }: PageProps) {
 
         <GroupsTable
           rows={rows}
-          linkBuilder={(id) => `/objeto/grupo/${encodeURIComponent(id)}`}
+          linkVariant="libro-objeto"
           emptyMessage={
             search
               ? `No hay grupos que coincidan con "${search}".`

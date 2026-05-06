@@ -91,7 +91,7 @@ export function ComparativasClient({ data }: Props) {
       <PageHeader
         variant="module"
         title="Comparativas"
-        subtitle="Slope chart · variación entre 2 períodos consecutivos. Cada vehículo es una línea con pendiente · ideal para detectar quiénes mejoraron o empeoraron significativamente."
+        subtitle="Slope chart · variación entre 2 períodos consecutivos. Cada vehículo es una línea con pendiente · ideal para detectar quiénes mejoraron o empeoraron significativamente." helpSlug="direccion/comparativas"
       />
       <div className="appPage">
 

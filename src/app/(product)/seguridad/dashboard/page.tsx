@@ -57,7 +57,7 @@ export default async function SeguridadDashboardPage() {
       <PageHeader
         variant="module"
         title="Dashboard de seguridad"
-        subtitle="Estado en tiempo real · alarmas activas, assets críticos y eventos recientes"
+        subtitle="Estado en tiempo real · alarmas activas, assets críticos y eventos recientes" helpSlug="seguridad/dashboard"
       />
       <div className="appPage">
       {/* ── KPI Strip ──────────────────────────────────────── */}

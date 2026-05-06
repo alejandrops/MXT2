@@ -91,7 +91,7 @@ export function ComparativaObjetosClient({ data }: Props) {
       <PageHeader
         variant="module"
         title="Distribución por grupo"
-        subtitle="Box plot · cada grupo de vehículos como caja con su Q1, mediana, Q3 y outliers. Útil para detectar heterogeneidad operativa intragrupal."
+        subtitle="Box plot · cada grupo de vehículos como caja con su Q1, mediana, Q3 y outliers. Útil para detectar heterogeneidad operativa intragrupal." helpSlug="direccion/comparativa-objetos"
       />
       <div className="appPage">
 

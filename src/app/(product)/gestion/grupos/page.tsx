@@ -38,7 +38,7 @@ export default async function GruposGestionPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Grupos" />
+      <PageHeader variant="module" title="Grupos" helpSlug="gestion/grupos" />
       <div className="appPage">
         <div className={styles.kpiStrip}>
           <KpiTile label="Grupos totales" value={counts.totalGroups} />
@@ -66,9 +66,7 @@ export default async function GruposGestionPage({ searchParams }: PageProps) {
 
         <GroupsTable
           rows={rows}
-          linkBuilder={(id) =>
-            `/gestion/vehiculos?groupId=${encodeURIComponent(id)}`
-          }
+          linkVariant="gestion-vehiculos"
           emptyMessage={
             search
               ? `No hay grupos que coincidan con "${search}".`

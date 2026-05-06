@@ -1,0 +1,43 @@
+# Correlaciones · Dirección
+
+Análisis estadístico de relaciones entre KPIs · ¿hay correlación entre score y antigüedad del conductor? ¿entre tipo de vehículo y consumo?
+
+## Para qué sirve
+
+Vista ejecutiva para detectar **patrones invisibles** · qué variable predice mejor el score, qué grupo es outlier, qué tipo de vehículo tiene mejor performance.
+
+## Qué muestra
+
+- **Matriz de correlación** · heatmap de correlaciones de Pearson entre los KPIs
+- **Scatter plots seleccionables** · cualquier par de KPIs para inspección visual
+- **Outliers detectados** · entidades > 2σ del promedio
+- **Insights automáticos** · texto generado · qué correlaciones son significativas
+
+## Cómo se usa
+
+1. La matriz arriba muestra todas las correlaciones de un vistazo
+2. Click en una celda → scatter detallado de ese par de variables
+3. Hover en un punto → identidad de la entidad (vehículo, grupo, conductor)
+
+## Cómo interpretar
+
+- **Correlación cercana a 1** · positiva fuerte (suben juntas)
+- **Correlación cercana a -1** · negativa fuerte (una sube, la otra baja)
+- **Cercana a 0** · sin relación lineal
+
+**Ojo · correlación ≠ causalidad.** Que dos variables se muevan juntas no significa que una cause la otra.
+
+## Permisos
+
+CA y MA · vista ejecutiva. OP no necesita esta complejidad.
+
+## Tips
+
+- Filtrar por grupo o tipo de vehículo para comparar correlaciones
+- Si una correlación cambia mucho entre grupos · investigar por qué
+- Las correlaciones débiles pero consistentes a veces son más útiles que las fuertes pero ruidosas
+
+## Ver también
+
+- [Comparativas](/direccion/comparativas)
+- [Comparativa de objetos](/direccion/comparativa-objetos)

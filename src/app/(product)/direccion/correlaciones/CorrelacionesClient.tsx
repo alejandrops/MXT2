@@ -93,7 +93,7 @@ export function CorrelacionesClient({
       <PageHeader
         variant="module"
         title="Correlaciones"
-        subtitle="Scatter · cada vehículo es un punto. Permite explorar correlaciones entre dos métricas a nivel de flota."
+        subtitle="Scatter · cada vehículo es un punto. Permite explorar correlaciones entre dos métricas a nivel de flota." helpSlug="direccion/correlaciones"
       />
       <div className="appPage">
 

@@ -1,0 +1,44 @@
+# Gestión · Grupos
+
+CRUD de la jerarquía de grupos · crear, mover, renombrar, eliminar grupos y sub-grupos.
+
+## Para qué sirve
+
+Mantener la estructura organizacional reflejada en el sistema · cada grupo define un perímetro operativo (ej. zona geográfica, unidad de negocio, contrato).
+
+## Acciones disponibles
+
+- **Crear grupo raíz** · grupo de nivel superior
+- **Crear sub-grupo** · grupo hijo dentro de otro
+- **Renombrar** · cambiar el nombre · no afecta histórico
+- **Mover** · cambiar el padre de un grupo (con todos sus hijos)
+- **Eliminar** · borrar grupo · solo si está vacío
+
+## Cómo se usa
+
+1. Vista en árbol · click en grupo para acciones
+2. Drag & drop para reorganizar (planificado · post-MVP)
+3. Por ahora · usar el menú "Mover" para reasignar padre
+
+## Validaciones
+
+- **Nombre** · único entre hermanos
+- **Eliminar** · solo si no tiene vehículos NI sub-grupos
+- **Mover** · no se puede mover a un descendiente (ciclo)
+
+## Tips
+
+- La estructura jerárquica permite **roll-up automático** de KPIs · grupo padre suma datos de hijos
+- Antes de eliminar · mover los vehículos a otro grupo
+- Para empresas grandes · estructura recomendada · País / Región / Tipo / Operación
+
+## Permisos
+
+- **CA** · gestión completa de su cuenta
+- **OP** · sin acceso a esta vista
+- **MA / SA** · cross-cuenta
+
+## Ver también
+
+- [Catálogo de grupos](/catalogos/grupos)
+- [Gestión de vehículos](/gestion/vehiculos)

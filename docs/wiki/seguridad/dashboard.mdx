@@ -1,0 +1,43 @@
+# Dashboard de seguridad
+
+Centro de control para el equipo de monitoreo · alarmas abiertas, dispositivos críticos, eventos en curso.
+
+## Para qué sirve
+
+Tener una pantalla persistente que el equipo de monitoreo (OP) deja abierta durante el turno · cualquier evento crítico aparece arriba para reacción inmediata.
+
+## Qué muestra
+
+Bloques principales:
+
+- **Alarmas abiertas** · contador prominente · OPEN sin atender
+- **Vehículos críticos** · sin reportar, fuera de geocerca, baja batería
+- **Eventos 24h** · agregado por tipo y severidad
+- **Score de la flota** · promedio ponderado · color band
+- **Top 5 conductores con score bajo** · los que requieren intervención
+- **Mini-mapa con alarmas activas** · ubicación de cada una
+
+## Cómo se usa
+
+1. Pantalla principal del turno de monitoreo · dejar abierta
+2. Click en cualquier bloque → drill-down a la vista correspondiente
+3. Las alarmas abiertas tienen indicador parpadeante hasta atenderse
+
+## Refresh
+
+Auto-refresh cada 60 segundos · no hace falta recargar.
+
+## Tips
+
+- En turno largo, dejar esta pantalla en un monitor secundario
+- Si una alarma crítica aparece, sonar (si está habilitado en preferencias)
+- El "score de la flota" es promedio ponderado por km · NO promedio simple
+
+## Permisos
+
+OP y CA ven el dashboard de su cuenta · MA/SA pueden filtrar.
+
+## Ver también
+
+- [Alarmas](/seguridad/alarmas)
+- [Mapa en vivo](/seguimiento/mapa)

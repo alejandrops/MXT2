@@ -40,7 +40,7 @@ export default async function EvolucionPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Evolución temporal" />
+      <PageHeader variant="module" title="Evolución temporal" helpSlug="actividad/evolucion" />
       <div className="appPage">
       {result.kind === "visual" && params.subject === "vehicles" ? (
         <ActivityViewSwitcher

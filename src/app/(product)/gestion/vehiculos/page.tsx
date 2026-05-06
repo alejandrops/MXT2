@@ -72,7 +72,7 @@ export default async function AssetsListPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Vehículos" />
+      <PageHeader variant="module" title="Vehículos" helpSlug="gestion/vehiculos" />
       <div className="appPage">
       {/* ── KPI Strip · status distribution ────────────────── */}
       <div className={styles.kpiStrip}>

@@ -47,7 +47,7 @@ export default async function ResumenPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Resumen de actividad" />
+      <PageHeader variant="module" title="Resumen de actividad" helpSlug="actividad/resumen" />
       <div className="appPage">
       {result.kind === "visual-metrics" ? (
         <ActivityViewSwitcher

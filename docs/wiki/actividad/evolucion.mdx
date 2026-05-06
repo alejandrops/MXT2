@@ -1,0 +1,43 @@
+# Evolución de actividad
+
+Charts temporales de los KPIs de la flota · cómo viene la operación a lo largo del tiempo.
+
+## Para qué sirve
+
+Detectar tendencias y anomalías que no se ven en una foto puntual. Si un mes tuvo más infracciones, si la distancia cae por debajo de lo normal, si un grupo está mejorando.
+
+## Qué muestra
+
+Series temporales con granularidad ajustable:
+
+- **Distancia recorrida** · km totales por sub-período
+- **Viajes** · cantidad
+- **Eventos de comportamiento** · todos los tipos
+- **Score promedio** · línea con líneas guía en 80 y 60
+- **Infracciones** · stack por severidad
+
+## Granularidades disponibles
+
+- **day-hours** · 24 horas del día
+- **week-days** · 7 días de la semana (lun-dom)
+- **month-days** · días del mes en curso
+- **year-weeks** · 52 semanas del año
+- **year-months** · 12 meses del año
+
+## Cómo se usa
+
+1. Elegir granularidad arriba (default: month-days)
+2. Filtrar por grupo / tipo de vehículo / conductor
+3. Comparar series · usar checkbox para mostrar/ocultar líneas
+
+## Tips
+
+- Para detectar **anomalías**, comparar con el período anterior (chart sombreado)
+- La granularidad **year-months** es la mejor para ver tendencias de largo plazo
+- Si un día tiene un pico, click → drill-down a /actividad/eventos con el día filtrado
+
+## Ver también
+
+- [Resumen de actividad](/actividad/resumen)
+- [Eventos](/actividad/eventos)
+- [Boletín de empresa](/conduccion/boletin/empresa) · vista ejecutiva

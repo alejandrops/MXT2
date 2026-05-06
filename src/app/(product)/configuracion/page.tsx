@@ -163,7 +163,7 @@ export default async function ConfiguracionPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Configuración" />
+      <PageHeader variant="module" title="Configuración" helpSlug="configuracion" />
       <div className="appPage">
       <ConfiguracionShell
         session={session}

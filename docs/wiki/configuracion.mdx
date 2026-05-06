@@ -1,0 +1,36 @@
+# Configuración
+
+Centro de configuración de la cuenta · datos de empresa, plan, integraciones, umbrales operativos, usuarios.
+
+## Tabs disponibles
+
+### Empresa · Datos
+Información básica · razón social, CUIT, dirección, contacto principal.
+
+### Empresa · Plan
+Plan contratado (Base / Pro / Enterprise) · límites de assets, viajes, retención de datos.
+
+### Empresa · Usuarios
+Gestión de usuarios y permisos · alta, baja, cambio de perfil, suspender/reactivar. Ver [doc específica](/configuracion/empresa).
+
+### Empresa · Integraciones
+Webhooks, API keys, conectores con sistemas externos.
+
+### Empresa · Umbrales
+Configuración de umbrales operativos · g-force, velocidad de detección de exceso, duración mínima de infracción, etc. Defaults LATAM ya cargados.
+
+## Permisos
+
+- **CA** · acceso completo a todas las tabs de su cuenta
+- **OP** · sin acceso a esta sección
+- **MA / SA** · pueden cambiar entre cuentas con el AccountSwitcher
+
+## Tips
+
+- Cambios en **umbrales** afectan retroactivamente cómo se calculan las infracciones · usar con cuidado en producción
+- El **plan** tiene límites · al alcanzar el límite, contactar a soporte
+- Los **webhooks** permiten enviar eventos a sistemas externos en tiempo real
+
+## Ver también
+
+- [Empresa · Usuarios](/configuracion/empresa) · gestión detallada

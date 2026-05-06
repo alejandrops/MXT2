@@ -61,7 +61,7 @@ export default async function ConductoresListPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Conductores" />
+      <PageHeader variant="module" title="Conductores" helpSlug="catalogos/conductores" />
       <div className="appPage">
       {/* ── KPI strip ─────────────────────────────────────── */}
       <div className={styles.kpiStrip}>

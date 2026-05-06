@@ -59,7 +59,7 @@ export default async function TorreDeControlPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader variant="module" title="Torre de control" />
+      <PageHeader variant="module" title="Torre de control" helpSlug="seguimiento/torre-de-control" />
       <div className={`${styles.page} appPageFull`}>
         <TorreClient
           urlState={urlState}

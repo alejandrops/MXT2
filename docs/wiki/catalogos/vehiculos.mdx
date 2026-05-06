@@ -1,0 +1,42 @@
+# Catálogo · Vehículos
+
+Listado de **todos los vehículos** registrados en la cuenta · solo lectura · navegación al libro de cada uno.
+
+## Para qué sirve
+
+Vista general de la flota · cuántos vehículos hay, cómo están distribuidos por tipo y grupo, cuál es su estado actual.
+
+## Diferencia con Gestión
+
+- **Catálogo** · solo lectura · navegación rápida
+- **Gestión** · CRUD · crear / editar / dar de baja
+
+Si necesitás modificar datos del vehículo, ir a [Gestión / Vehículos](/gestion/vehiculos).
+
+## Qué muestra
+
+| Columna | Descripción |
+|---|---|
+| Nombre | Nombre interno del vehículo |
+| Patente | Patente / placa |
+| Tipo | Liviano · camión · motocicleta · etc |
+| Grupo | Grupo asignado |
+| Estado | En movimiento · detenido · apagado · sin reportar |
+| Última actividad | Timestamp del último reporte |
+
+## Cómo se usa
+
+1. Filtrar por grupo / tipo / estado
+2. Búsqueda libre por patente o nombre
+3. Click en una fila → libro del vehículo
+
+## Tips
+
+- Para encontrar vehículos **sin reportar > 30 días** · filtrar por estado y ordenar por última actividad
+- Para auditoría · exportar a XLSX
+- Si un vehículo aparece sin grupo · gestionar desde [/gestion/vehiculos](/gestion/vehiculos)
+
+## Ver también
+
+- [Gestión de vehículos](/gestion/vehiculos)
+- [Mapa](/seguimiento/mapa)
