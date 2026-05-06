@@ -40,7 +40,7 @@ export default async function DriverBoletinPage({ params }: PageProps) {
 
   // Multi-tenant scope
   const session = await getSession();
-  const scopedAccountId = resolveAccountScope(session, "conduccion", null);
+  const scopedAccountId = resolveAccountScope(session, "actividad", null);
 
   // Cargar boletín con fallback on-demand
   const result = await getOrGenerateDriverBoletin({

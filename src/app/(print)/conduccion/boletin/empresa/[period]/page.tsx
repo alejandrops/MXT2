@@ -51,7 +51,7 @@ export default async function AccountBoletinPage({
     typeof sp.account === "string" ? sp.account : null;
   const scopedAccountId = resolveAccountScope(
     session,
-    "conduccion",
+    "actividad",
     explicitAccount,
   );
 

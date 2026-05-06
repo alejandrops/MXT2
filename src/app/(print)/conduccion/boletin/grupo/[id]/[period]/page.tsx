@@ -34,7 +34,7 @@ export default async function GroupBoletinPage({ params }: PageProps) {
   if (!period) notFound();
 
   const session = await getSession();
-  const scopedAccountId = resolveAccountScope(session, "conduccion", null);
+  const scopedAccountId = resolveAccountScope(session, "actividad", null);
 
   const result = await getOrGenerateGroupBoletin({
     groupId: id,
