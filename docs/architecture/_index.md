@@ -33,7 +33,7 @@ Referencias:
 |---|---|---|---|---|
 | [001](./ADR-001-multi-tenancy-isolation.md) | Multi-tenancy isolation | Accepted | 2026-05-06 | ✅ Cierra issue #2 |
 | [002](./ADR-002-background-jobs.md) | Background jobs architecture | Accepted | 2026-05-06 | ✅ Cierra issue #3 |
-| 003 | Pipeline TCP de ingestión | Proposed | — | 🟡 Cierra issue #1 |
+| [003](./ADR-003-tcp-ingest-pipeline.md) | Pipeline TCP de ingestión + storage | Accepted | 2026-05-06 | ✅ Cierra issue #1 |
 | 004 | Estrategia de tests | Proposed | — | — |
 | 005 | Observabilidad y logging | Proposed | — | — |
 
