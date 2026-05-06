@@ -7,7 +7,7 @@ import {
   accountBoletinFolio,
   accountBoletinLead,
 } from "@/lib/conduccion/boletin-account-text";
-import { getAccountBoletinData } from "@/lib/queries/account-boletin-data";
+import { getOrGenerateAccountBoletin } from "@/lib/boletin/account-snapshot";
 import { AccountBoletin } from "./AccountBoletin";
 
 // ═══════════════════════════════════════════════════════════════
@@ -60,11 +60,13 @@ export default async function AccountBoletinPage({
     notFound();
   }
 
-  const data = await getAccountBoletinData({
+  const result = await getOrGenerateAccountBoletin({
     accountId: scopedAccountId,
     period,
+    rawPeriod,
   });
-  if (!data) notFound();
+  if (!result) notFound();
+  const { data, generatedAtIso } = result;
 
   const folio = accountBoletinFolio({
     accountName: data.account.name,
@@ -97,7 +99,7 @@ export default async function AccountBoletinPage({
       period={period}
       folio={folio}
       lead={lead}
-      generatedAtIso={new Date().toISOString()}
+      generatedAtIso={generatedAtIso}
       generatedBy={session.user?.fullName ?? "sistema"}
     />
   );

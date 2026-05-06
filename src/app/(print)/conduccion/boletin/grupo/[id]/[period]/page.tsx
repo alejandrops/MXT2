@@ -3,11 +3,8 @@ import { notFound } from "next/navigation";
 import { resolveAccountScope } from "@/lib/queries/tenant-scope";
 import { getSession } from "@/lib/session";
 import { parsePeriod } from "@/lib/conduccion/boletin-driver-text";
-import {
-  groupBoletinFolio,
-  groupBoletinLead,
-} from "@/lib/conduccion/boletin-group-text";
-import { getGroupBoletinData } from "@/lib/queries/group-boletin-data";
+import { groupBoletinFolio, groupBoletinLead } from "@/lib/conduccion/boletin-group-text";
+import { getOrGenerateGroupBoletin } from "@/lib/boletin/group-snapshot";
 import { GroupBoletin } from "./GroupBoletin";
 
 // ═══════════════════════════════════════════════════════════════
@@ -39,12 +36,14 @@ export default async function GroupBoletinPage({ params }: PageProps) {
   const session = await getSession();
   const scopedAccountId = resolveAccountScope(session, "conduccion", null);
 
-  const data = await getGroupBoletinData({
+  const result = await getOrGenerateGroupBoletin({
     groupId: id,
     period,
+    rawPeriod,
     accountId: scopedAccountId,
   });
-  if (!data) notFound();
+  if (!result) notFound();
+  const { data, generatedAtIso } = result;
 
   const folio = groupBoletinFolio({
     groupName: data.group.name,
@@ -75,7 +74,7 @@ export default async function GroupBoletinPage({ params }: PageProps) {
       period={period}
       folio={folio}
       lead={lead}
-      generatedAtIso={new Date().toISOString()}
+      generatedAtIso={generatedAtIso}
       generatedBy={session.user?.fullName ?? "sistema"}
     />
   );
