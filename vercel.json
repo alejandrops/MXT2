@@ -12,12 +12,26 @@
     },
     "src/app/api/cron/generate-boletines/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/cron/generate-driver-boletines/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/generate-fleet-boletines/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/cron/generate-boletines",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/generate-driver-boletines",
+      "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/generate-fleet-boletines",
+      "schedule": "30 6 * * *"
     }
   ]
 }
