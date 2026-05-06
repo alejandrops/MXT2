@@ -1,0 +1,78 @@
+# Alarmas de seguridad
+
+Bandeja de eventos críticos que requieren atención humana · panic, sabotaje, jamming, GPS desconectado, breach de geocerca, etc.
+
+## Para qué sirve
+
+Centralizar todos los eventos de seguridad en un solo lugar para que el equipo de monitoreo los atienda en orden de criticidad.
+
+## Workflow de una alarma
+
+```
+OPEN ──► ATTENDED ──► CLOSED
+  │           │
+  └────────►  └──► DISMISSED (falso positivo)
+```
+
+- **OPEN** · recién disparada · requiere atención
+- **ATTENDED** · alguien la tomó · está siendo investigada
+- **CLOSED** · resuelta · acción tomada
+- **DISMISSED** · descartada · falso positivo
+
+## Cómo se atiende
+
+1. **Filtrar por estado** · default es ver "Abiertas" · click en otro chip para cambiar
+2. **Click en una alarma** → side panel con detalles completos
+3. **Tomar acción**:
+   - **Atender** · pasa a ATTENDED · marca timestamp de atención
+   - **Cerrar** · pasa a CLOSED · resuelta efectivamente
+   - **Descartar** · pasa a DISMISSED · era falso positivo
+
+## Tipos de alarma
+
+### Conducción
+- HARSH_DRIVING_PATTERN · patrón de conducción agresiva sostenida
+- SPEEDING_CRITICAL · exceso > umbral crítico
+- RECKLESS_BEHAVIOR · comportamiento temerario
+
+### Seguridad
+- PANIC · botón de pánico activado
+- UNAUTHORIZED_USE · uso fuera de horario asignado
+- SABOTAGE · intento de sabotaje detectado
+- GPS_DISCONNECT · GPS desconectado físicamente
+- POWER_DISCONNECT · alimentación cortada
+- JAMMING · jammer detectado en la zona
+- TRAILER_DETACH · acoplado desenganchado en zona no autorizada
+- CARGO_BREACH · carga comprometida (sensor)
+- DOOR_BREACH · puerta abierta en zona no autorizada
+- GEOFENCE_BREACH_CRITICAL · salida de geocerca crítica
+
+### Transversales
+- DEVICE_OFFLINE · dispositivo sin reportar > umbral
+
+## Filtros disponibles
+
+- **Período** · día / semana / mes / año
+- **Estado** · chip horizontal arriba de la tabla
+- **Grupo / Tipo de vehículo / Conductor**
+- **Búsqueda libre**
+
+## Tabs
+
+- **Lista** · tabla densa con todas las alarmas del período
+- **Heatmap** · concentración geográfica (zonas con más alarmas)
+
+## Tips
+
+- Las alarmas más críticas (PANIC · SABOTAGE) deberían atenderse en orden de timestamp
+- Si una alarma se descartó por error, no se puede revertir · queda en histórico
+- Las acciones disparan refresh sin reload del side panel
+
+## Permisos
+
+OP y CA pueden atender, cerrar y descartar alarmas de su cuenta. MA y SA pueden gestionar cross-cuenta.
+
+## Ver también
+
+- [Mapa en vivo](/seguimiento/mapa) · ubicación actual de los vehículos involucrados
+- [Eventos](/actividad/eventos) · eventos de comportamiento (no críticos)

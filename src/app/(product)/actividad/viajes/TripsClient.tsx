@@ -213,6 +213,7 @@ export function TripsClient(props: Props) {
     <div className={styles.wrap}>
       <PageHeader
         variant="module"
+        helpSlug="actividad/viajes"
         title="Viajes"
         subtitle="Listado por día · vehículo · filtrable, exportable, georeferenciable"
       />

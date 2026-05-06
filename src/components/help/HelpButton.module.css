@@ -1,0 +1,23 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--brd);
+  border-radius: 4px;
+  color: var(--tx-soft);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--blu-bg);
+  border-color: var(--blu);
+  color: var(--blu);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: 1px;
+}

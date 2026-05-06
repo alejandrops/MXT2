@@ -1,0 +1,35 @@
+# Documentación de Maxtracker
+
+Bienvenido al sistema de ayuda in-app. Cada pantalla del producto tiene su propia ficha con explicación de uso, cálculos y permisos.
+
+## Cómo funciona
+
+Hacé click en el ícono **`?`** del header de cualquier vista para abrir esta documentación. El contenido se carga desde archivos `.mdx` versionados junto al código en `docs/wiki/`.
+
+## Convención de slugs
+
+El slug coincide con el path de la URL:
+
+| URL | Slug | Archivo |
+|---|---|---|
+| `/conduccion/scorecard` | `conduccion/scorecard` | `docs/wiki/conduccion/scorecard.mdx` |
+| `/seguridad/alarmas` | `seguridad/alarmas` | `docs/wiki/seguridad/alarmas.mdx` |
+| `/actividad/eventos` | `actividad/eventos` | `docs/wiki/actividad/eventos.mdx` |
+
+## Cómo agregar documentación a una vista nueva
+
+1. Crear el archivo MDX en la ruta correspondiente bajo `docs/wiki/`
+2. Usar `_TEMPLATE.mdx` como base
+3. Pasar `helpSlug="modulo/vista"` al `<PageHeader>` de esa vista
+4. Listo · el botón `?` aparece automáticamente
+
+## Estilo de redacción
+
+- **Lenguaje claro** · sin jerga interna del equipo de producto
+- **Para usuarios finales** · CA, OP, MA, no para el equipo técnico
+- **Markdown puro** · sin componentes React por ahora (futuro: MDX completo)
+- **Spanish first** · todo en español neutro
+
+## Estado actual
+
+La documentación está en construcción. Si encontrás una vista sin doc o con info desactualizada, abrir un ticket o PR contra `docs/wiki/`.

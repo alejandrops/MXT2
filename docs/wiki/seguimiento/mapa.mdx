@@ -1,0 +1,42 @@
+# Mapa de seguimiento
+
+Vista en vivo de toda la flota · posición actual, estado y velocidad de cada vehículo monitoreado.
+
+## Para qué sirve
+
+Tener una imagen instantánea de dónde está cada vehículo y en qué condición. Útil para despacho, atención de eventos y monitoreo operativo.
+
+## Qué muestra
+
+- **Marcador por vehículo** · color según estado (en movimiento, detenido, apagado, sin reportar)
+- **Última posición conocida** · timestamp del último reporte recibido
+- **Velocidad actual** · km/h cuando el vehículo está en movimiento
+- **Conductor asignado** · si hay un conductor activo en ese viaje
+
+## Cómo se usa
+
+1. Filtrar por **grupo** o **tipo de vehículo** desde la barra superior
+2. Click en un marcador para ver detalles del vehículo
+3. Doble click para abrir el **Libro del vehículo**
+
+## Estados de los vehículos
+
+- **● En movimiento** · velocidad > 0 km/h en último reporte
+- **● Detenido** · ignición encendida, velocidad = 0
+- **● Apagado** · ignición apagada
+- **● Sin reportar** · sin datos en los últimos 30 minutos
+
+## Tips
+
+- El marcador rota según el rumbo (heading) reportado por el dispositivo
+- Si hay muchos marcadores cerca, hacer zoom o usar el cluster
+- La actualización es en tiempo real · no hace falta recargar
+
+## Permisos
+
+Todos los perfiles ven el mapa. Operadores (OP) y Cliente Admin (CA) ven solo su cuenta · MA y SA pueden filtrar cross-cuenta.
+
+## Ver también
+
+- [Historial de viajes](/seguimiento/historial)
+- [Eventos del período](/actividad/eventos)

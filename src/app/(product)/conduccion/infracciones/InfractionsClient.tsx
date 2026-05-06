@@ -212,6 +212,7 @@ export function InfractionsClient(props: Props) {
     <div className={styles.wrap}>
       <PageHeader
         variant="module"
+        helpSlug="conduccion/infracciones"
         title="Infracciones"
         subtitle="Excesos de velocidad detectados · filtrables, georreferenciables, descartables"
       />

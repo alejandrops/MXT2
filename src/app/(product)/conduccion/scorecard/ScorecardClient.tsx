@@ -370,6 +370,7 @@ export function ScorecardClient({ data }: Props) {
     <>
       <PageHeader
         variant="module"
+        helpSlug="conduccion/scorecard"
         title="Driver scorecard"
         subtitle={`${data.periodLabel} · ${data.periodSubLabel} · ${ranked.length} ${
           ranked.length === 1 ? "conductor" : "conductores"

@@ -1,0 +1,55 @@
+# Viajes
+
+Lista de viajes (trips) de la flota agrupados por día. Cada viaje es un trayecto completo · ignición ON → OFF.
+
+## Para qué sirve
+
+Auditar la actividad operativa diaria · cuántos viajes hizo cada vehículo, qué distancia recorrió, qué duración. Útil para liquidación, control de uso y análisis de productividad.
+
+## Cómo se usa
+
+1. Elegir el **período** (día / semana / mes)
+2. La tabla muestra los días con actividad · click en un día expande
+3. Click en un viaje individual → side panel con timeline cronológica de eventos
+4. Desde el side panel · botón **"Abrir recibo del viaje"** para versión print/PDF
+
+## Qué muestra
+
+| Columna | Descripción |
+|---|---|
+| Día | Fecha del día con actividad |
+| Vehículo | Patente y nombre |
+| Conductor | Quien manejó (si hay asignación) |
+| Inicio | Timestamp de la primera ignición |
+| Fin | Timestamp del último apagado |
+| Distancia | km totales del día |
+| Viajes | Cantidad de viajes (segmentos ON-OFF) |
+| Duración | Tiempo total con ignición encendida |
+
+## Tabs disponibles
+
+- **Lista** · tabla cronológica
+- **Heatmap** · puntos de inicio/fin de viajes · útil para ver patrones de origen-destino
+
+## Recibo de viaje
+
+Cada viaje individual tiene su recibo imprimible · perfil A4 con:
+
+- Resumen del viaje (distancia, duración, velocidad media, máxima)
+- Mapa con la traza completa
+- Eventos disparados durante el viaje (con severity)
+- Listado de paradas intermedias
+
+Acceso: click en viaje → side panel → "Abrir recibo del viaje"
+
+## Tips
+
+- Para conciliar con remitos físicos, exportar a XLSX y comparar
+- El día tiene cutoff a las 03:00 ART · viajes de la madrugada cuentan al día anterior
+- Si un vehículo aparece sin viajes, puede tener el dispositivo offline
+
+## Ver también
+
+- [Mapa en vivo](/seguimiento/mapa)
+- [Eventos](/actividad/eventos)
+- [Resumen del período](/actividad/resumen)

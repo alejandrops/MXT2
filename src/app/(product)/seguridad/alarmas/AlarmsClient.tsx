@@ -206,6 +206,7 @@ export function AlarmsClient(props: Props) {
     <div className={styles.wrap}>
       <PageHeader
         variant="module"
+        helpSlug="seguridad/alarmas"
         title="Alarmas"
         subtitle="Bandeja de alarmas · filtrable, exportable, georeferenciable"
       />

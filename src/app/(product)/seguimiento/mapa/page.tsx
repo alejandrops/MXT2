@@ -31,7 +31,7 @@ export default async function MapaSeguimientoPage() {
 
   return (
     <>
-      <PageHeader variant="module" title="Mapa" />
+      <PageHeader variant="module" title="Mapa" helpSlug="seguimiento/mapa" />
       <div className={`${styles.page} appPageFull`}>
         <FleetTrackingClient initialAssets={assets} groups={groups} />
       </div>

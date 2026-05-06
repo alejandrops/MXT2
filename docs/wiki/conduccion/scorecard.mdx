@@ -1,0 +1,76 @@
+# Driver scorecard
+
+Ranking de conductores por **score de seguridad** (0-100) según los eventos disparados en el período.
+
+## Para qué sirve
+
+Identificar a los mejores y peores conductores de la flota para programas de reconocimiento, capacitación o intervención.
+
+## Cómo se calcula el score
+
+El score adopta el método **Hybrid de Geotab** adaptado a LATAM (g-force 0.35g):
+
+```
+score = 100 - (kmExceso / kmTotal) × 100 × MULTIPLICADOR
+```
+
+Donde **kmExceso** es la suma de distancias recorridas en exceso de velocidad durante infracciones (con duración mínima de 2 minutos).
+
+### Bandas
+
+- **Verde (≥80)** · seguridad alta · conducción consistente
+- **Amarilla (60-80)** · zona de mejora · revisar comportamiento
+- **Roja (<60)** · requiere intervención inmediata
+
+## Qué muestra la tabla
+
+| Columna | Descripción |
+|---|---|
+| Pos | Posición en el ranking (1 = mejor) |
+| Conductor | Nombre · link al libro del conductor |
+| Score | 0-100 con código de color |
+| Km | Distancia recorrida en el período |
+| Eventos | Total de eventos de comportamiento |
+| Excesos | Cantidad de infracciones de velocidad |
+| Críticos | Eventos de severidad crítica |
+| Vmax | Velocidad máxima alcanzada (km/h) |
+| Boletín | Botones M (mensual) / A (anual) → boletín individual |
+
+## Cómo se usa
+
+1. Elegir el **período** (default: mes en curso)
+2. La tabla se ordena por **score descendente** por default
+3. Click en columna para reordenar (km, eventos, etc.)
+4. Click en una fila → libro del conductor
+
+## Acciones disponibles
+
+- **Ranking ordenable** por cualquier columna
+- **Boletín mensual / anual** · botones M / A en la columna Boletín
+- **Boletín ejecutivo de empresa** · arriba a la derecha · M / A
+- **Export** · CSV / XLSX / PDF de toda la tabla
+
+## Boletines
+
+Cada conductor tiene su boletín editorial en formato A4 (mensual y anual) con:
+- Score 42px integrado al flujo
+- Distribución de infracciones por severidad
+- Top 3 más graves del período
+- Evolución temporal (4 semanas mensual · 12 meses anual)
+- Comparativa con período anterior
+
+## Tips
+
+- Conductores con **<100 km** en el período tienen score = 100 por default · no es señal de buena conducción, es falta de datos
+- El score se calcula sobre **el período seleccionado** · no es rolling
+- Para ranking justo, comparar conductores con volúmenes similares
+
+## Permisos
+
+CA y OP ven solo conductores de su cuenta. MA y SA pueden filtrar cross-cuenta.
+
+## Ver también
+
+- [Boletín de empresa](/conduccion/boletin/empresa) · ranking de grupos
+- [Infracciones](/conduccion/infracciones) · detalle por infracción
+- [Eventos](/actividad/eventos) · todos los eventos de comportamiento

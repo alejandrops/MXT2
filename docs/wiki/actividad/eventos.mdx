@@ -1,0 +1,59 @@
+# Eventos de actividad
+
+Lista cross-flota de todos los eventos de comportamiento de conducción registrados en un período.
+
+## Para qué sirve
+
+Ver patrones agregados de conducción · frenadas bruscas, aceleraciones, excesos de velocidad, idling, etc. Útil para análisis de comportamiento y trabajo con conductores.
+
+## Qué muestra
+
+| Columna | Descripción |
+|---|---|
+| Disparo | Timestamp del evento |
+| Tipo | Frenada brusca · Aceleración · Exceso · Idling · etc |
+| Severidad | Leve · Media · Grave · Crítica |
+| Vehículo | Patente y nombre |
+| Conductor | Quien manejaba en ese momento |
+| Velocidad | km/h al momento del evento |
+| Ubicación | Lat/lng (link a mapa) |
+
+## Tabs disponibles
+
+- **Lista** · tabla con todos los eventos del período
+- **Heatmap** · concentración geográfica (zonas con más eventos)
+
+## Filtros
+
+- **Período** · día / semana / mes / año (con navegación prev/next)
+- **Grupo** · filtrar por uno o varios grupos de vehículos
+- **Tipo de vehículo** · liviano, camión, motocicleta, etc.
+- **Conductor** · uno o varios conductores específicos
+- **Búsqueda libre** · por patente, nombre del vehículo, dirección
+
+## Cómo se usa
+
+1. Por defecto muestra el mes en curso · cambiar el período arriba si hace falta
+2. Click en una fila → side panel con detalle completo + mini-mapa
+3. Para llevar a un análisis offline · menú export (CSV / XLSX / PDF)
+
+## Tipos de evento
+
+- **HARSH_BRAKING** · frenada brusca · deceleración > umbral
+- **HARSH_ACCELERATION** · aceleración brusca
+- **HARSH_CORNERING** · giro brusco
+- **SPEEDING** · exceso de velocidad
+- **IDLING** · motor encendido, vehículo detenido > umbral
+
+Los umbrales se ajustan a estándares LATAM (g-force 0.35g vs 0.45g US).
+
+## Tips
+
+- Para investigar a un conductor puntual, filtrar por su nombre
+- El heatmap es útil para detectar zonas con problemas recurrentes
+- Click en la dirección → abre Google Maps en pestaña aparte
+
+## Ver también
+
+- [Infracciones](/conduccion/infracciones) · solo speeding con duración mínima
+- [Scorecard](/conduccion/scorecard) · ranking por conductor

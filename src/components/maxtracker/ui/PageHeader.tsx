@@ -1,6 +1,7 @@
 "use client";
 
 import { BackButton } from "./BackButton";
+import { HelpButton } from "@/components/help/HelpButton";
 import styles from "./PageHeader.module.css";
 
 // ═══════════════════════════════════════════════════════════════
@@ -40,6 +41,12 @@ interface ModuleHeaderProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  /**
+   * Slug de la wiki para esta vista · si se pasa, se renderiza
+   * un botón "?" a la derecha que abre el HelpDrawer asociado.
+   * Convención · matching con docs/wiki/{slug}.mdx
+   */
+  helpSlug?: string;
 }
 
 interface ObjectHeaderProps {
@@ -60,6 +67,12 @@ interface ObjectHeaderProps {
   backHref?: string;
   /** Acciones rápidas a la derecha */
   actions?: React.ReactNode;
+  /**
+   * Slug de la wiki para esta vista · si se pasa, se renderiza
+   * un botón "?" a la derecha que abre el HelpDrawer asociado.
+   * Convención · matching con docs/wiki/{slug}.mdx
+   */
+  helpSlug?: string;
 }
 
 type Props = ModuleHeaderProps | ObjectHeaderProps;
@@ -71,14 +84,19 @@ export function PageHeader(props: Props) {
   return <ObjectHeader {...props} />;
 }
 
-function ModuleHeader({ title, subtitle, actions }: ModuleHeaderProps) {
+function ModuleHeader({ title, subtitle, actions, helpSlug }: ModuleHeaderProps) {
   return (
     <header className={styles.module}>
       <div className={styles.left}>
         <h1 className={styles.title}>{title}</h1>
         {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
       </div>
-      {actions && <div className={styles.actions}>{actions}</div>}
+      {(actions || helpSlug) && (
+        <div className={styles.actions}>
+          {actions}
+          {helpSlug && <HelpButton slug={helpSlug} />}
+        </div>
+      )}
     </header>
   );
 }
@@ -92,6 +110,7 @@ function ObjectHeader({
   backLabel,
   backHref,
   actions,
+  helpSlug,
 }: ObjectHeaderProps) {
   return (
     <header className={styles.object}>
@@ -116,7 +135,12 @@ function ObjectHeader({
           </div>
           {metadata && <div className={styles.metadata}>{metadata}</div>}
         </div>
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {(actions || helpSlug) && (
+          <div className={styles.actions}>
+            {actions}
+            {helpSlug && <HelpButton slug={helpSlug} />}
+          </div>
+        )}
       </div>
     </header>
   );

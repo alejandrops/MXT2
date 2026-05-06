@@ -1,0 +1,41 @@
+# Historial de seguimiento
+
+Recorrido reproducible de un vehículo en un período · trazado completo con paradas, velocidad y eventos.
+
+## Para qué sirve
+
+Investigar qué hizo un vehículo durante un día, semana o mes. Útil para auditoría, atención de reclamos y análisis post-incidente.
+
+## Cómo se usa
+
+1. Seleccionar un **vehículo** en el dropdown
+2. Elegir el **período** (día, semana, mes)
+3. El mapa muestra la traza completa con paradas marcadas
+
+## Qué muestra
+
+- **Polilínea del recorrido** · color gradient de inicio a fin
+- **Marcadores de parada** · ubicación, hora de inicio y duración
+- **Eventos del período** · íconos sobre el mapa para frenadas bruscas, excesos, etc.
+- **Tabla de paradas** · debajo del mapa, ordenadas cronológicamente
+
+## Filtros
+
+- Período · día / semana / mes
+- Vehículo · uno por vez (multi-select en futuro)
+- Tipos de evento a mostrar · checkboxes opcionales
+
+## Tips
+
+- Click en una parada de la tabla → centra el mapa en esa parada
+- La polilínea es interactiva · hover muestra timestamp y velocidad en ese punto
+- Para muchos días, agregar la granularidad week-days o month-days
+
+## Permisos
+
+CA y OP ven los vehículos de su cuenta · MA/SA pueden seleccionar de cualquier cuenta.
+
+## Ver también
+
+- [Mapa en vivo](/seguimiento/mapa)
+- [Viajes](/actividad/viajes)

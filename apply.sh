@@ -1,118 +1,146 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  S5-E3 · Boletín de empresa · Sistema Editorial COMPLETO
+#  S6-WIKI · Sistema de documentación in-app
 #  ─────────────────────────────────────────────────────────────
-#  Quinto y último nivel del Sistema Editorial Maxtracker:
-#    1. Recibo de infracción individual           ✅ (S4-L3d)
-#    2. Recibo de viaje individual                ✅ (S5-T4)
-#    3. Boletín de conductor (mensual + anual)    ✅ (S5-E1)
-#    4. Boletín de grupo                          ✅ (S5-E2)
-#    5. Boletín de empresa                        ✅ (este lote)
+#  22 archivos · 3201 líneas · 0 errores TS.
+#
+#  Implementación end-to-end de un sistema de ayuda contextual
+#  servida desde archivos MDX en el repo.
 #
 #  ─────────────────────────────────────────────────────────────
-#  ESTRUCTURA DEL BOLETÍN EJECUTIVO
+#  ARQUITECTURA
 #  ─────────────────────────────────────────────────────────────
 #
-#  01 · Calificación corporativa
-#       Score promedio empresa · ponderado por km de los grupos
-#       KPIs · Distancia · Viajes · Conductores · Vehículos activos
-#
-#  02 · Infracciones agregadas
-#       Distribución por severidad
-#       Indicador "infracciones por 100 km" · útil para
-#       comparativa multi-empresa
-#
-#  03 · Top 3 infracciones más graves del período
-#       Tabla con conductor + grupo + vehículo + pico/vmax/exceso
-#
-#  04 · Ranking de grupos
-#       Top 5 mejores · Bottom 5 peores
-#       Ranking por SCORE · no por volumen
-#
-#  05 · Panorama · scatter (km vs score) por grupo
-#       Tamaño del punto = conductores activos del grupo
-#       (hint visual de tamaño operativo)
-#
-#  06 · Evolución temporal
-#       Mensual · sparklines + chart
-#       Anual · chart 12 meses con líneas guía
+#                   ┌──────────────────────────────┐
+#                   │ docs/wiki/{slug}.mdx         │
+#                   │ (Markdown puro · versionado) │
+#                   └──────────────┬───────────────┘
+#                                  │ readFile
+#                   ┌──────────────▼───────────────┐
+#                   │ /api/public/wiki/[...slug]   │
+#                   │ (route handler · cache 5min) │
+#                   └──────────────┬───────────────┘
+#                                  │ fetch JSON
+#                   ┌──────────────▼───────────────┐
+#                   │ HelpDrawer (client)          │
+#                   │ react-markdown + remark-gfm  │
+#                   └──────────────▲───────────────┘
+#                                  │ open/close
+#                   ┌──────────────┴───────────────┐
+#                   │ HelpButton "?" en PageHeader │
+#                   │ activable por prop helpSlug  │
+#                   └──────────────────────────────┘
 #
 #  ─────────────────────────────────────────────────────────────
-#  PUNTO DE ENTRADA
+#  CONVENCIÓN DE SLUGS
 #  ─────────────────────────────────────────────────────────────
 #
-#  /conduccion/scorecard
-#  En el header del módulo aparecen 2 botones:
-#    · Boletín mensual  → /conduccion/boletin/empresa/{YYYY-MM}
-#    · Boletín anual    → /conduccion/boletin/empresa/{YYYY}
+#  El slug coincide con el path de la URL del producto:
 #
-#  El boletín respeta multi-tenant:
-#    · CA / OP   · su propia cuenta
-#    · MA / SA   · pasar ?account=X · default = scope
+#    URL                               Slug                   Archivo
+#    ──────────────────                ──────────────────     ──────────────────────────────
+#    /conduccion/scorecard             conduccion/scorecard   docs/wiki/conduccion/scorecard.mdx
+#    /seguridad/alarmas                seguridad/alarmas      docs/wiki/seguridad/alarmas.mdx
+#    /actividad/eventos                actividad/eventos      docs/wiki/actividad/eventos.mdx
+#
+#  Validación · solo a-z, 0-9, _, - en cada segmento. Anti
+#  path-traversal · resolved path debe estar dentro de docs/wiki/.
 #
 #  ─────────────────────────────────────────────────────────────
-#  ARCHIVOS
+#  ARCHIVOS DEL LOTE
 #  ─────────────────────────────────────────────────────────────
 #
 #  Backend
-#    src/lib/queries/account-boletin-data.ts
-#    src/lib/conduccion/boletin-account-text.ts
+#    src/app/api/public/wiki/[...slug]/route.ts
+#      · GET catchall · lee MDX del FS
+#      · Anti path-traversal con regex + path.resolve check
+#      · Cache headers · 5min cache · 1h stale-while-revalidate
+#      · 200 / 404 / 400 / 500 según corresponda
 #
-#  Print UI
-#    src/app/(print)/conduccion/boletin/empresa/[period]/
-#      page.tsx              server · multi-tenant scope
-#      AccountBoletin.tsx    client · port mockup v2 · scatter SVG
-#      Boletin.module.css    A4 · base + ranking + scatter
+#  UI Components
+#    src/components/help/HelpDrawer.tsx + .module.css
+#      · Side panel desde la derecha · 480px
+#      · Estados loading · empty · error · loaded
+#      · react-markdown + remark-gfm (tablas, GFM)
+#      · Lock body scroll · Esc para cerrar
+#      · Tipografía editorial (h1 serif, h2 con peso/letterspacing)
 #
-#  Punto de entrada (mod)
+#    src/components/help/HelpButton.tsx + .module.css
+#      · Botón "?" con HelpCircle icon
+#      · 28x28 · borde fino · hover azul
+#      · Wrapper que abre el HelpDrawer
+#
+#    src/components/maxtracker/ui/PageHeader.tsx (mod)
+#      · Prop nuevo opcional helpSlug?: string
+#      · Si está · render HelpButton dentro de actions
+#      · Backwards-compatible · sin helpSlug todo igual
+#
+#  Wiki content (MDX)
+#    docs/wiki/_TEMPLATE.mdx              · plantilla para nuevos
+#    docs/wiki/_index.mdx                 · overview general
+#    docs/wiki/seguimiento/mapa.mdx
+#    docs/wiki/seguimiento/historial.mdx
+#    docs/wiki/actividad/eventos.mdx
+#    docs/wiki/actividad/viajes.mdx
+#    docs/wiki/actividad/resumen.mdx
+#    docs/wiki/seguridad/alarmas.mdx
+#    docs/wiki/conduccion/scorecard.mdx
+#    docs/wiki/conduccion/infracciones.mdx
+#
+#  Vistas con botón "?" activado (mods)
+#    src/app/(product)/seguridad/alarmas/AlarmsClient.tsx
 #    src/app/(product)/conduccion/scorecard/ScorecardClient.tsx
-#    src/app/(product)/conduccion/scorecard/ScorecardClient.module.css
+#    src/app/(product)/conduccion/infracciones/InfractionsClient.tsx
+#    src/app/(product)/actividad/eventos/EventsClient.tsx
+#    src/app/(product)/actividad/viajes/TripsClient.tsx
+#    src/app/(product)/seguimiento/mapa/page.tsx
 #
 #  ─────────────────────────────────────────────────────────────
-#  CIERRA EL SISTEMA EDITORIAL · 5 niveles consistentes
+#  DEPENDENCIAS NUEVAS
 #  ─────────────────────────────────────────────────────────────
 #
-#  Cada nivel hereda el mismo lenguaje visual:
-#    · Score 42px integrado al flujo de KPIs
-#    · Severidad por símbolo (○ ◐ ●) + peso tipográfico
-#    · Sparklines Unicode inline para evolución
-#    · Líneas guía horizontales (no bandas pintadas)
-#    · Markers ○ verde / ● amarilla o roja
-#    · Funciona idéntico en B&N
-#    · A4 limpio · Cmd+P → PDF nativo
+#  El lote requiere instalar:
+#    · react-markdown@^9
+#    · remark-gfm@^4
+#
+#  El apply.sh corre `npm install` automáticamente al final.
 #
 #  ─────────────────────────────────────────────────────────────
-#  EN ESTE LOTE NO INCLUYE
+#  CÓMO AGREGAR DOC A UNA VISTA NUEVA
 #  ─────────────────────────────────────────────────────────────
 #
-#  ❌ Pre-generación con snapshot · cae a on-demand
-#  ❌ Cron · sub-lote post-validación
-#  ❌ Schema AccountBoletinSnapshot · sub-lote post-validación
+#  1. Crear docs/wiki/{modulo}/{vista}.mdx (usar _TEMPLATE.mdx
+#     como base)
+#  2. Editar el componente client de la vista y pasar helpSlug
+#     al PageHeader:
 #
-#  Nota · ya existe BoletinSnapshot del S1 que es de cuenta y se
-#  usa en /direccion/boletin/[period]. Ese boletín es operativo.
-#  El boletín que agrega este lote es ejecutivo (con ranking de
-#  grupos · scatter · etc.) y vive en /conduccion/boletin/empresa.
-#  Coexisten · son productos distintos para audiencias distintas.
+#       <PageHeader
+#         variant="module"
+#         title="..."
+#         helpSlug="modulo/vista"   ← NUEVO
+#       />
+#
+#  3. El botón "?" aparece automáticamente · click abre el drawer
+#     que fetch /api/public/wiki/modulo/vista
 #
 #  ─────────────────────────────────────────────────────────────
 #  AUDITORÍAS
 #  ─────────────────────────────────────────────────────────────
 #
 #  ✓ Ningún .module.css con :root real
-#  ✓ Ningún server→client prop es función
+#  ✓ Endpoint con anti path-traversal (regex + path.resolve)
+#  ✓ Endpoint cacheable · sin DB · sin auth (es público)
+#  ✓ HelpDrawer tipado · API explícita { open, slug, onClose }
+#  ✓ PageHeader backwards-compatible · sin helpSlug todo igual
 #  ✓ npx tsc --noEmit · 0 errores
-#  ✓ Multi-tenant scope respetado
-#  ✓ Tufte + B&N first · todos los símbolos refuerzan, no son
-#    señal única
 #
-#  Idempotente · cmp -s antes de cp.
+#  Idempotente · cmp -s antes de cp · npm install inteligente.
 # ═══════════════════════════════════════════════════════════════
 set -e
 PAYLOAD="_payload"
 [ ! -d "$PAYLOAD" ] && echo "❌ no encuentro $PAYLOAD" && exit 1
 [ ! -f "package.json" ] && echo "❌ no estoy en el root del repo" && exit 1
-echo "═══ S5-E3 · Boletín de empresa · Sistema Editorial COMPLETO ═══"
+echo "═══ S6-WIKI · Sistema de documentación in-app ═══"
 
 C_NEW=0; C_UPD=0; C_SAME=0
 apply_file() {
@@ -134,40 +162,50 @@ echo ""
 echo "  Nuevos: $C_NEW · Actualizados: $C_UPD · Sin cambios: $C_SAME"
 rm -rf "$PAYLOAD"
 
+# ─── Instalar dependencias nuevas si faltan ──────────
 echo ""
-echo "✅ Lote aplicado · Sistema Editorial Maxtracker COMPLETO"
+echo "─── Verificando dependencias ───"
+NEED_INSTALL=0
+if ! node -e "require.resolve('react-markdown')" 2>/dev/null; then
+  echo "  · react-markdown · faltante · se va a instalar"
+  NEED_INSTALL=1
+fi
+if ! node -e "require.resolve('remark-gfm')" 2>/dev/null; then
+  echo "  · remark-gfm · faltante · se va a instalar"
+  NEED_INSTALL=1
+fi
+
+if [ $NEED_INSTALL -eq 1 ]; then
+  echo ""
+  echo "  Ejecutando: npm install react-markdown@^9 remark-gfm@^4"
+  npm install --no-audit --no-fund react-markdown@^9 remark-gfm@^4
+  echo "  ✓ Dependencias instaladas"
+else
+  echo "  ✓ react-markdown y remark-gfm ya están instalados"
+fi
+
+echo ""
+echo "✅ Lote aplicado"
 echo ""
 echo "  npx tsc --noEmit"
 echo "  npm run dev"
 echo ""
 echo "Probá:"
 echo ""
-echo "  · /conduccion/scorecard"
-echo "    En el header aparecen los nuevos botones:"
-echo "      · Boletín mensual  → /conduccion/boletin/empresa/{YYYY-MM}"
-echo "      · Boletín anual    → /conduccion/boletin/empresa/{YYYY}"
-echo "    Junto al menú de export existente."
+echo "  · /conduccion/scorecard       → click en '?' del header"
+echo "  · /seguridad/alarmas          → click en '?'"
+echo "  · /conduccion/infracciones    → click en '?'"
+echo "  · /actividad/eventos          → click en '?'"
+echo "  · /actividad/viajes           → click en '?'"
+echo "  · /seguimiento/mapa           → click en '?'"
 echo ""
-echo "  · El boletín ejecutivo muestra:"
-echo "      - Score corporativo 42px ponderado por km"
-echo "      - KPIs · distancia · viajes · conductores · vehículos"
-echo "      - Top 3 infracciones más graves"
-echo "      - Ranking top 5 + bottom 5 GRUPOS"
-echo "      - Scatter de grupos (km vs score) · tamaño = conductores"
-echo "      - Evolución temporal (semanas o meses)"
+echo "  · El drawer se abre desde la derecha · Esc o click fuera lo cierra"
+echo "  · Si pedís un slug inexistente · muestra estado 'doc no disponible'"
+echo "    con instrucciones para contribuir"
 echo ""
-echo "  · Cmd+P → guardar como PDF (A4 limpio)"
+echo "Para agregar doc a una vista nueva:"
+echo "  1. Crear docs/wiki/{slug}.mdx (template en _TEMPLATE.mdx)"
+echo "  2. Pasar helpSlug=\"...\" al PageHeader del componente client"
 echo ""
-echo "═══════════════════════════════════════════════════════════════"
-echo " Sistema Editorial Maxtracker · 5 niveles consistentes"
-echo "═══════════════════════════════════════════════════════════════"
-echo ""
-echo " 1. Recibo de infracción       /infracciones/recibo/{id}"
-echo " 2. Recibo de viaje            /actividad/viaje/{id}"
-echo " 3. Boletín de conductor       /conduccion/boletin/conductor/{id}/{period}"
-echo " 4. Boletín de grupo           /conduccion/boletin/grupo/{id}/{period}"
-echo " 5. Boletín de empresa         /conduccion/boletin/empresa/{period}"
-echo ""
-echo " Todos · Tufte + B&N first · Cmd+P → PDF · pre-generables"
-echo " con snapshot (S5-E1 ya migrado · resto on-demand por ahora)."
-echo ""
+echo "PRÓXIMO · Agregar wikis para las vistas restantes"
+echo "          (dashboard·s · direccion · catalogos · gestion)"

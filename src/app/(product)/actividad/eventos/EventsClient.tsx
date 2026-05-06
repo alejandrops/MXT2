@@ -109,6 +109,7 @@ export function EventsClient(props: Props) {
     <div className={styles.wrap}>
       <PageHeader
         variant="module"
+        helpSlug="actividad/eventos"
         title="Eventos"
         subtitle="Listado de eventos de los vehículos · filtrable, exportable, georeferenciable"
       />

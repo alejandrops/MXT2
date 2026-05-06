@@ -1,0 +1,68 @@
+# Infracciones de velocidad
+
+Lista de infracciones de velocidad detectadas en la flota · cada una con duración mínima de 2 minutos en exceso.
+
+## Para qué sirve
+
+Detectar y atender comportamientos de conducción riesgosa basados en velocidad excesiva sostenida.
+
+## Diferencia con "Eventos"
+
+| | Eventos | Infracciones |
+|---|---|---|
+| Granularidad | Cualquier exceso instantáneo | Solo segmentos > 2 min |
+| Cantidad | Mucho más volumen | Filtrado · más relevante |
+| Cálculo de score | Sí (parcial) | Sí (entrada principal) |
+| Recibo imprimible | No | Sí |
+
+Las infracciones son un subconjunto de los eventos de speeding · agrupadas por proximidad temporal y filtradas por duración mínima.
+
+## Severidad
+
+- **○ Leve** · exceso ≤ 9 km/h sobre vmax
+- **◐ Media** · exceso 10-17 km/h sobre vmax
+- **● Grave** · exceso ≥ 18 km/h sobre vmax
+
+Los umbrales son configurables post-MVP por cuenta.
+
+## Qué muestra cada infracción
+
+- **Pico** · velocidad máxima alcanzada en el segmento
+- **Vmax** · velocidad permitida en ese tipo de vía
+- **Exceso** · `pico - vmax` (delta máximo)
+- **Distancia en exceso** · km recorridos durante la infracción
+- **Tipo de vía** · urbana, ruta, autopista (según geocoding)
+- **Tipo de vehículo** · vmax depende del tipo (camión < pasajeros < liviano)
+
+## Recibo de infracción
+
+Cada infracción tiene su recibo imprimible (formato A4) accesible desde el side panel. Contiene:
+
+- Datos del segmento (timestamps, vehículo, conductor)
+- Mapa con la traza del segmento
+- Gráfico de velocidad vs vmax durante el segmento
+- Severidad y exceso máximo
+
+## Filtros
+
+- Período · día / semana / mes / año
+- Severidad · leve / media / grave
+- Conductor · uno o varios
+- Grupo · uno o varios
+- Tipo de vehículo
+- Búsqueda libre
+
+## Tips
+
+- Para análisis ejecutivo, filtrar por **graves** · suelen ser <5% del total pero las más relevantes
+- La columna **Vmax** es snapshot del momento · no recálculo posterior
+- Si una infracción tiene `peakSpeedKmh > 200`, probablemente es ruido del GPS · revisar trace
+
+## Permisos
+
+Mismo modelo que el resto de Conducción · CA / OP / MA / SA según scope.
+
+## Ver también
+
+- [Scorecard](/conduccion/scorecard) · ranking por conductor
+- [Eventos](/actividad/eventos) · todos los eventos (no solo speeding)
